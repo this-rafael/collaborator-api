@@ -4,8 +4,9 @@ WORKDIR /app
 
 RUN corepack enable
 
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile=false
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY scripts/check-runtime.mjs ./scripts/check-runtime.mjs
+RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.json tsconfig.build.json .swcrc ./
 COPY src ./src
@@ -20,8 +21,9 @@ ENV NODE_ENV=production
 
 RUN corepack enable
 
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prod --frozen-lockfile=false
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY scripts/check-runtime.mjs ./scripts/check-runtime.mjs
+RUN pnpm install --prod --frozen-lockfile
 
 COPY --from=build /app/dist ./dist
 

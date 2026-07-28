@@ -1,0 +1,47 @@
+import {describe, expect, it} from "vitest";
+
+import {EnvironmentValidationError, loadEnv} from "../../src/config/env.js";
+
+const validEnv = {
+  NODE_ENV: "test",
+  PORT: "3000",
+  MONGODB_URI: "mongodb://localhost:27017/test?replicaSet=rs0",
+  LOG_LEVEL: "debug"
+};
+
+describe("FND-ENV", () => {
+  it("FND-ENV-001 validates a complete environment", () => {
+    expect(loadEnv(validEnv)).toEqual({
+      nodeEnv: "test",
+      port: 3000,
+      mongodbUri: validEnv.MONGODB_URI,
+      logLevel: "debug"
+    });
+  });
+
+  it("FND-ENV-002 reports every missing required value without exposing values", () => {
+    expect(() => loadEnv({})).toThrow(EnvironmentValidationError);
+    expect(() => loadEnv({})).toThrow(/NODE_ENV.*PORT.*MONGODB_URI.*LOG_LEVEL/);
+  });
+
+  it("FND-ENV-003 rejects invalid enums, port and non-replica URI", () => {
+    expect(() =>
+      loadEnv({
+        ...validEnv,
+        NODE_ENV: "local",
+        PORT: "0",
+        LOG_LEVEL: "trace",
+        MONGODB_URI: "mongodb://localhost/db"
+      })
+    ).toThrow(/NODE_ENV.*PORT.*LOG_LEVEL.*replicaSet/);
+  });
+
+  it("FND-ENV-004 accepts SRV and rejects malformed MongoDB addresses", () => {
+    expect(
+      loadEnv({...validEnv, MONGODB_URI: "mongodb+srv://cluster.example.com/test"}).mongodbUri
+    ).toContain("mongodb+srv");
+    expect(() => loadEnv({...validEnv, MONGODB_URI: "not a uri"})).toThrow(
+      "MONGODB_URI must be a valid URI"
+    );
+  });
+});

@@ -1,13 +1,17 @@
-# Git root hooks — Fase 1 quality gates for the API package.
+# Active config for git hooks (repository root).
+# Runs when files under collaborator-document-api/ are staged.
 pre-commit:
   parallel: true
   commands:
     typecheck:
       root: collaborator-document-api
+      glob: "*.{ts,tsx,js,mjs,cjs}"
       run: pnpm typecheck
     lint:
       root: collaborator-document-api
+      glob: "*.{ts,tsx,js,mjs,cjs}"
       run: pnpm lint
     test:
       root: collaborator-document-api
+      glob: "*.{ts,tsx,js,mjs,cjs}"
       run: pnpm test:unit
