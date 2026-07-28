@@ -5,29 +5,36 @@ export default defineConfig({
   plugins: [
     swc.vite({
       jsc: {
-        parser: {
-          syntax: "typescript",
-          decorators: true
-        },
-        transform: {
-          legacyDecorator: true,
-          decoratorMetadata: true
-        },
+        parser: {syntax: "typescript", decorators: true},
+        transform: {legacyDecorator: true, decoratorMetadata: true},
         keepClassNames: true,
         target: "es2024"
       },
-      module: {
-        type: "es6"
-      }
+      module: {type: "es6"}
     })
   ],
   test: {
-    globals: true,
-    environment: "node",
-    include: ["tests/**/*.spec.ts"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "html"]
-    }
+      reporter: ["text", "html", "lcov"],
+      include: ["src/**/*.ts"],
+      exclude: ["src/index.ts", "src/config/index.ts"],
+      thresholds: {lines: 90, branches: 90, functions: 90, statements: 90}
+    },
+    projects: [
+      {extends: true, test: {name: "unit", include: ["tests/unit/**/*.spec.ts"]}},
+      {extends: true, test: {name: "http", include: ["tests/http/**/*.spec.ts"]}},
+      {extends: true, test: {name: "contract", include: ["tests/contract/**/*.spec.ts"]}},
+      {
+        extends: true,
+        test: {
+          name: "integration",
+          include: ["tests/integration/**/*.spec.ts"],
+          globalSetup: ["tests/helpers/mongo-container.global.ts"],
+          testTimeout: 30_000,
+          hookTimeout: 120_000
+        }
+      }
+    ]
   }
 });

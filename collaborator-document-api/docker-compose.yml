@@ -1,6 +1,6 @@
 services:
   mongodb:
-    image: mongo:7
+    image: mongo:7.0.37
     container_name: collaborator-document-mongodb
     command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
@@ -11,7 +11,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "mongosh --quiet --eval \"try { quit(rs.status().ok === 1 ? 0 : 1) } catch (e) { quit(1) }\""
+          'mongosh --quiet --eval "try { quit(rs.status().ok === 1 ? 0 : 1) } catch (e) { quit(1) }"'
         ]
       interval: 5s
       timeout: 5s
@@ -19,7 +19,7 @@ services:
       start_period: 15s
 
   mongodb-init:
-    image: mongo:7
+    image: mongo:7.0.37
     container_name: collaborator-document-mongodb-init
     depends_on:
       - mongodb
@@ -78,7 +78,6 @@ services:
       PORT: 3000
       MONGODB_URI: mongodb://mongodb:27017/collaborator_documents?replicaSet=rs0&directConnection=true
       LOG_LEVEL: info
-      CURSOR_SIGNING_SECRET: replace-with-at-least-32-bytes
     ports:
       - "3000:3000"
     profiles:

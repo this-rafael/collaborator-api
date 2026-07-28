@@ -10,7 +10,7 @@ Uma API REST para administrar colaboradores, tipos de documento, vínculos obrig
   <img alt="Node.js 24 LTS" src="https://img.shields.io/badge/Node.js-24%20LTS-339933?logo=node.js&logoColor=white">
   <img alt="TypeScript strict" src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white">
   <img alt="Ts.ED v8" src="https://img.shields.io/badge/Ts.ED-v8-EF5350">
-  <img alt="Fastify" src="https://img.shields.io/badge/Fastify-HTTP-000000?logo=fastify&logoColor=white">
+  <img alt="Express" src="https://img.shields.io/badge/Express-HTTP-000000?logo=express&logoColor=white">
   <img alt="MongoDB Replica Set" src="https://img.shields.io/badge/MongoDB-Replica%20Set-47A248?logo=mongodb&logoColor=white">
   <img alt="OpenAPI 3.1" src="https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white">
   <img alt="Architecture" src="https://img.shields.io/badge/Architecture-Hexagonal%20%2B%20DDD-6E56CF">
