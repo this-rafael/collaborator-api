@@ -1,0 +1,11 @@
+# Active hooks live at the git root (../lefthook.yml) because the repository
+# root is the parent directory. Keep this file as the package-local mirror.
+pre-commit:
+  parallel: true
+  commands:
+    typecheck:
+      run: pnpm typecheck
+    lint:
+      run: pnpm lint
+    test:
+      run: pnpm test:unit

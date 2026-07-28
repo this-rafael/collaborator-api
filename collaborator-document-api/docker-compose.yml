@@ -1,0 +1,88 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: collaborator-document-mongodb
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet --eval \"try { quit(rs.status().ok === 1 ? 0 : 1) } catch (e) { quit(1) }\""
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+
+  mongodb-init:
+    image: mongo:7
+    container_name: collaborator-document-mongodb-init
+    depends_on:
+      - mongodb
+    network_mode: service:mongodb
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        for i in $$(seq 1 60); do
+          if mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' | grep -q 1; then
+            break
+          fi
+          sleep 1
+        done
+        mongosh --quiet --eval '
+          try {
+            const status = rs.status();
+            if (status.ok === 1) {
+              print("Replica set already initialized");
+              quit(0);
+            }
+          } catch (error) {
+            print("Initializing replica set rs0...");
+          }
+          rs.initiate({
+            _id: "rs0",
+            members: [{_id: 0, host: "localhost:27017"}]
+          });
+          const deadline = Date.now() + 30000;
+          while (Date.now() < deadline) {
+            try {
+              const current = rs.status();
+              if (current.ok === 1 && current.members?.[0]?.stateStr === "PRIMARY") {
+                print("Replica set rs0 is PRIMARY");
+                quit(0);
+              }
+            } catch (error) {}
+            sleep(1000);
+          }
+          print("Replica set did not become PRIMARY in time");
+          quit(1);
+        '
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: collaborator-document-api
+    depends_on:
+      mongodb-init:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      MONGODB_URI: mongodb://mongodb:27017/collaborator_documents?replicaSet=rs0&directConnection=true
+      LOG_LEVEL: info
+      CURSOR_SIGNING_SECRET: replace-with-at-least-32-bytes
+    ports:
+      - "3000:3000"
+    profiles:
+      - full
+
+volumes:
+  mongodb_data:
