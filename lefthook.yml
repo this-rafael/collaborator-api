@@ -1,0 +1,13 @@
+# Git root hooks — Fase 1 quality gates for the API package.
+pre-commit:
+  parallel: true
+  commands:
+    typecheck:
+      root: collaborator-document-api
+      run: pnpm typecheck
+    lint:
+      root: collaborator-document-api
+      run: pnpm lint
+    test:
+      root: collaborator-document-api
+      run: pnpm test:unit

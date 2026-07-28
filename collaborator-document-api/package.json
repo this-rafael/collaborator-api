@@ -1,0 +1,62 @@
+{
+  "name": "collaborator-document-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "API de gerenciamento de documentação de colaboradores",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "node --watch --import @swc-node/register/esm-register src/index.ts",
+    "build": "swc src -d dist --strip-leading-paths --delete-dir-on-start",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:watch": "vitest",
+    "prepare": "lefthook install || true"
+  },
+  "dependencies": {
+    "@tsed/ajv": "8.37.1",
+    "@tsed/core": "8.37.1",
+    "@tsed/di": "8.37.1",
+    "@tsed/exceptions": "8.37.1",
+    "@tsed/json-mapper": "8.37.1",
+    "@tsed/logger": "8.0.5",
+    "@tsed/openspec": "8.37.1",
+    "@tsed/platform-express": "8.37.1",
+    "@tsed/platform-http": "8.37.1",
+    "@tsed/platform-views": "8.37.1",
+    "@tsed/schema": "8.37.1",
+    "ajv": "^8.17.1",
+    "body-parser": "^1.20.3",
+    "express": "^5.2.1",
+    "multer": "^2.0.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.32.0",
+    "@swc-node/register": "^1.12.1",
+    "@swc/cli": "^0.8.1",
+    "@swc/core": "^1.15.46",
+    "@types/express": "^5.0.3",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.1.0",
+    "@types/supertest": "^6.0.3",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.3.0",
+    "lefthook": "^1.12.2",
+    "prettier": "^3.6.2",
+    "supertest": "^7.1.4",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.38.0",
+    "unplugin-swc": "^1.5.9",
+    "vitest": "^3.2.4"
+  }
+}
