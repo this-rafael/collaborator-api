@@ -10,7 +10,8 @@ export const openApiSettings: SwaggerSettings = {
     info: {
       title: "Collaborator Document API",
       version: "1.0.0",
-      description: "Public contract for the discoverApi operation."
+      description:
+        "Public contract for the discoverApi operation and the operational health endpoints."
     },
     components: {
       headers: {

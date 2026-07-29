@@ -1,12 +1,19 @@
 import type {Request, Response, NextFunction} from "express";
 import {$log} from "@tsed/logger";
 
+const CPF_PATTERN = /\d{3}\.?\d{3}\.?\d{3}-?\d{2}/g;
+const EMAIL_PATTERN = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
+
+export function maskSensitive(value: string): string {
+  return value.replace(CPF_PATTERN, "***").replace(EMAIL_PATTERN, "***@***");
+}
+
 export function requestObservabilityMiddleware(
   req: Request,
   res: Response,
   next: NextFunction
 ): void {
-  const normalizedRoute = req.path;
+  const normalizedRoute = maskSensitive(req.path);
   const startedAt = process.hrtime.bigint();
 
   res.setHeader("X-Observability-Route", normalizedRoute);
