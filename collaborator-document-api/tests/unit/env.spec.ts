@@ -9,8 +9,8 @@ const validEnv = {
   LOG_LEVEL: "debug"
 };
 
-describe("FND-ENV", () => {
-  it("FND-ENV-001 validates a complete environment", () => {
+describe("Environment configuration", () => {
+  it("validates a complete environment", () => {
     expect(loadEnv(validEnv)).toEqual({
       nodeEnv: "test",
       port: 3000,
@@ -22,12 +22,12 @@ describe("FND-ENV", () => {
     });
   });
 
-  it("FND-ENV-002 reports every missing required value without exposing values", () => {
+  it("reports every missing required value without exposing values", () => {
     expect(() => loadEnv({})).toThrow(EnvironmentValidationError);
     expect(() => loadEnv({})).toThrow(/NODE_ENV.*PORT.*MONGODB_URI.*LOG_LEVEL/);
   });
 
-  it("FND-ENV-003 rejects invalid enums, port and non-replica URI", () => {
+  it("rejects invalid enums, port and non-replica URI", () => {
     expect(() =>
       loadEnv({
         ...validEnv,
@@ -39,7 +39,7 @@ describe("FND-ENV", () => {
     ).toThrow(/NODE_ENV.*PORT.*LOG_LEVEL.*replicaSet/);
   });
 
-  it("FND-ENV-004 accepts SRV and rejects malformed MongoDB addresses", () => {
+  it("accepts SRV and rejects malformed MongoDB addresses", () => {
     expect(
       loadEnv({...validEnv, MONGODB_URI: "mongodb+srv://cluster.example.com/test"}).mongodbUri
     ).toContain("mongodb+srv");

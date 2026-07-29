@@ -7,8 +7,8 @@ import {FixedClock} from "../helpers/clock.js";
 import {simulatedFailure} from "../helpers/failures.js";
 import {fixture, sequenceFixture} from "../helpers/fixtures.js";
 
-describe("FND-SHARED", () => {
-  it("FND-SHARED-001 represents domain and application failures without throwing", () => {
+describe("Shared foundation helpers", () => {
+  it("represents domain and application failures without throwing", () => {
     const domain = new DomainFailure("COL_INVALID_CPF", "CPF inválido");
     const application = new ApplicationFailure("PERSISTENCE_UNAVAILABLE", "Banco indisponível");
 
@@ -24,14 +24,14 @@ describe("FND-SHARED", () => {
     });
   });
 
-  it("FND-SHARED-002 exposes Result helpers based on neverthrow", () => {
+  it("exposes Result helpers based on neverthrow", () => {
     expect(success({id: "collaborator-1"})).toMatchObject({value: {id: "collaborator-1"}});
     expect(failure(new DomainFailure("COL_INVALID_NAME", "Nome inválido"))).toMatchObject({
       error: expect.objectContaining({code: "COL_INVALID_NAME"})
     });
   });
 
-  it("FND-SHARED-003 provides deterministic fixtures, clock and simulated failures", () => {
+  it("provides deterministic fixtures, clock and simulated failures", () => {
     const instant = new Date("2026-07-28T12:00:00.000Z");
     const clock = new FixedClock(instant);
 

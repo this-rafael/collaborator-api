@@ -8,7 +8,7 @@ import {MongoIndexManager} from "../../src/shared/infrastructure/persistence/mon
 import {MongoTransactionManager} from "../../src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.js";
 import {resetDatabase} from "../helpers/database.js";
 
-describe("FND-MONGO", () => {
+describe("MongoDB integration", () => {
   const mongoUri = inject("mongoUri");
 
   beforeAll(
@@ -27,7 +27,7 @@ describe("FND-MONGO", () => {
     await resetDatabase(db);
   });
 
-  it("FND-MONGO-001 connects and commits a transaction", async () => {
+  it("connects and commits a transaction", async () => {
     const transaction = PlatformTest.get<MongoTransactionManager>(MongoTransactionManager);
     const db = PlatformTest.get<MongooseService>(MongooseService).get()?.db;
     await transaction.execute(async (session) => {
@@ -36,7 +36,7 @@ describe("FND-MONGO", () => {
     expect(await db!.collection("foundation").countDocuments()).toBe(1);
   });
 
-  it("FND-MONGO-002 aborts all writes when work fails", async () => {
+  it("aborts all writes when work fails", async () => {
     const transaction = PlatformTest.get<MongoTransactionManager>(MongoTransactionManager);
     const db = PlatformTest.get<MongooseService>(MongooseService).get()?.db;
     await expect(
@@ -48,7 +48,7 @@ describe("FND-MONGO", () => {
     expect(await db!.collection("foundation").countDocuments()).toBe(0);
   });
 
-  it("FND-MONGO-003 creates and verifies indexes", async () => {
+  it("creates and verifies indexes", async () => {
     const indexes = PlatformTest.get<MongoIndexManager>(MongoIndexManager);
     await indexes.ensure("foundation", [
       {key: {email: 1}, name: "foundation_email_unique", unique: true}
@@ -58,7 +58,7 @@ describe("FND-MONGO", () => {
     );
   });
 
-  it("FND-MONGO-004 starts and stops the real application lifecycle", async () => {
+  it("starts and stops the real application lifecycle", async () => {
     const platform = await startApplication({
       nodeEnv: "test",
       port: 3101,

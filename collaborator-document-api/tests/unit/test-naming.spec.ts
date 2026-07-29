@@ -11,7 +11,9 @@ type ScannedSuite = (typeof scannedSuites)[number];
 const callPattern =
   /\b(?:it|test|describe|it\.only|test\.only|describe\.only|it\.skip|test\.skip|describe\.skip)\s*(?:\.\s*each\s*\(\s*\[[\s\S]*?\]\s*\))?\s*\(\s*(["'`])([^"'`]*?)\1/g;
 
-const labelPattern = /\bDISC\b(?:[-_:\s]\d+|[-_:\s]+[A-Za-z0-9]+)?/;
+/** Scenario/module labels such as DISC-001, COL-CREATE-001, HEALTH-LIVE-001, FND-HTTP. */
+const labelPattern =
+  /\b(?:FND|DISC|COL|TYPE|LINK|VER|QUERY|STAT|SUB|HEALTH|CURSOR|TX)(?:-[A-Z][A-Z0-9]*)*(?:-\d{3})?\b/;
 
 const findSpecFiles = (suite: ScannedSuite): string[] => {
   const suiteDir = join(testsRoot, suite);
@@ -74,7 +76,7 @@ const relativePath = (file: string): string => file.split(`${testsRoot}/`).pop()
 
 describe("Test naming convention", () => {
   for (const suite of scannedSuites) {
-    it(`rejects DISC-* labels in ${suite} suite titles`, () => {
+    it(`rejects scenario and module labels in ${suite} suite titles`, () => {
       const specFiles = findSpecFiles(suite);
       const violations: Violation[] = [];
       for (const file of specFiles) {
@@ -87,7 +89,7 @@ describe("Test naming convention", () => {
       }
       if (violations.length > 0) {
         throw new Error(
-          `Found ${violations.length} DISC-* label(s) in ${suite} suite:\n${formatViolations(violations)}`
+          `Found ${violations.length} forbidden label(s) in ${suite} suite:\n${formatViolations(violations)}`
         );
       }
       expect(specFiles.length).toBeGreaterThanOrEqual(0);
