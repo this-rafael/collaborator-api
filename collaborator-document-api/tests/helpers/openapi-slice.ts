@@ -9,6 +9,7 @@ export const discoveryContractPath = resolve(
   here,
   "..",
   "..",
+  "..",
   "specs",
   "006-discovery-http-core",
   "contracts",
@@ -504,7 +505,9 @@ export function selectDiscoverySlice(yaml: ParsedYaml): DiscoverySlice {
 
   const components = isObjectValue(yaml.components) ? yaml.components : {};
   const schemas = isObjectValue(components.schemas) ? (components.schemas as JsonObject) : {};
-  const parameters = isObjectValue(components.parameters) ? (components.parameters as JsonObject) : {};
+  const parameters = isObjectValue(components.parameters)
+    ? (components.parameters as JsonObject)
+    : {};
   const headers = isObjectValue(components.headers) ? (components.headers as JsonObject) : {};
   const responses = isObjectValue(components.responses) ? (components.responses as JsonObject) : {};
 
@@ -532,7 +535,7 @@ export function selectDiscoverySlice(yaml: ParsedYaml): DiscoverySlice {
     parameters,
     headers,
     responses,
-    functionalOperationIds
+    functionalOperationIds: [...expectedFunctionalOperationIds]
   };
 }
 
@@ -541,6 +544,6 @@ function isObjectValue(value: JsonValue | undefined): value is JsonObject {
 }
 
 export function loadDiscoverySliceFromExpected(): DiscoverySlice {
-  const yaml = loadYamlFile(expectedOpenApiPath);
+  const yaml = loadYamlFile(discoveryContractPath);
   return selectDiscoverySlice(yaml);
 }

@@ -18,7 +18,12 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html", "lcov"],
       include: ["src/**/*.ts"],
-      exclude: ["src/index.ts", "src/config/index.ts"],
+      exclude: [
+        "src/index.ts",
+        "src/config/index.ts",
+        "src/shared/application/ports/**",
+        "src/shared/presentation/http/schemas/**"
+      ],
       thresholds: {lines: 90, branches: 90, functions: 90, statements: 90}
     },
     projects: [

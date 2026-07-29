@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "node_modules/**", "coverage/**", "docker/**"]
+    ignores: ["dist/**", "node_modules/**", "coverage/**", "docker/**", "docs/typedoc/**"]
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

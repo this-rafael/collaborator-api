@@ -83,5 +83,46 @@ services:
     profiles:
       - full
 
+  sonarqube:
+    image: docker.io/library/sonarqube:community
+    container_name: collaborator-document-sonarqube
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'curl -sf http://localhost:9000/api/system/status | grep -q ''"status":"UP"'''
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    profiles:
+      - quality
+
+  sonar-scanner:
+    image: docker.io/sonarsource/sonar-scanner-cli
+    container_name: collaborator-document-sonar-scanner
+    depends_on:
+      sonarqube:
+        condition: service_healthy
+    environment:
+      SONAR_HOST_URL: http://sonarqube:9000
+      SONAR_TOKEN: ${SONAR_TOKEN:-}
+    volumes:
+      - .:/usr/src:Z
+    working_dir: /usr/src
+    profiles:
+      - quality
+    restart: "no"
+
 volumes:
   mongodb_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
