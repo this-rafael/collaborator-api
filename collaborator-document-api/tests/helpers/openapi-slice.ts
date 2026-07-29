@@ -205,7 +205,7 @@ class YamlContext {
         break;
       }
       this.consume();
-      const remainder = stripComment(stripped).slice(1).trimStart();
+      const remainder = stripComment(stripped).trimStart().slice(1).trimStart();
       if (remainder === "") {
         const child = this.parseBlock(indent + 2);
         result.push(child ?? null);
@@ -546,4 +546,52 @@ function isObjectValue(value: JsonValue | undefined): value is JsonObject {
 export function loadDiscoverySliceFromExpected(): DiscoverySlice {
   const yaml = loadYamlFile(discoveryContractPath);
   return selectDiscoverySlice(yaml);
+}
+
+export const healthContractPath = resolve(
+  repoRoot,
+  "specs",
+  "007-operational-health-checks",
+  "contracts",
+  "health.openapi.yaml"
+);
+
+export interface HealthSlice {
+  openapi: string;
+  live: JsonObject;
+  ready: JsonObject;
+  schemas: JsonObject;
+}
+
+export function selectHealthSlice(yaml: ParsedYaml): HealthSlice {
+  if (!isObjectValue(yaml)) {
+    throw new Error("Expected OpenAPI document must be a YAML mapping");
+  }
+  const openapi = typeof yaml.openapi === "string" ? yaml.openapi : "";
+  const paths = isObjectValue(yaml.paths) ? yaml.paths : {};
+
+  const livePath = isObjectValue(paths["/health/live"]) ? paths["/health/live"] : undefined;
+  const live = isObjectValue(livePath?.get) ? (livePath?.get as JsonObject) : undefined;
+  if (!live) {
+    throw new Error("Expected GET /health/live operation is missing in the contract");
+  }
+
+  const readyPath = isObjectValue(paths["/health/ready"]) ? paths["/health/ready"] : undefined;
+  const ready = isObjectValue(readyPath?.get) ? (readyPath?.get as JsonObject) : undefined;
+  if (!ready) {
+    throw new Error("Expected GET /health/ready operation is missing in the contract");
+  }
+
+  const components = isObjectValue(yaml.components) ? yaml.components : {};
+  const schemas = isObjectValue(components.schemas) ? (components.schemas as JsonObject) : {};
+
+  return {openapi, live, ready, schemas};
+}
+
+export function loadHealthSliceFromExpected(): HealthSlice {
+  return selectHealthSlice(loadYamlFile(expectedOpenApiPath));
+}
+
+export function loadHealthSliceFromContract(): HealthSlice {
+  return selectHealthSlice(loadYamlFile(healthContractPath));
 }
