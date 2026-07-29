@@ -1,12 +1,11 @@
-import {afterAll, beforeAll, describe, expect, it} from "vitest";
+import {describe, expect, it} from "vitest";
 import {PlatformTest} from "@tsed/platform-http/testing";
 import supertest from "supertest";
 
-import {Server} from "../../src/Server.js";
+import {bootstrapHttpMongo} from "../helpers/http-mongo.js";
 
 describe("Request observability", () => {
-  beforeAll(PlatformTest.bootstrap(Server));
-  afterAll(PlatformTest.reset);
+  bootstrapHttpMongo();
 
   it("generates a non-empty trace id for the discovery request when none is provided", async () => {
     const response = await supertest(PlatformTest.callback()).get("/api/v1");

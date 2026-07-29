@@ -4,6 +4,12 @@ import type {Response} from "express";
 
 import {ProblemDetailsMapper} from "../errors/problem-details.mapper.js";
 
+/**
+ * Filtro global de erros não capturados.
+ *
+ * Captura exceções não tratadas e retorna uma resposta
+ * Problem Details 500 com trace ID gerado no momento.
+ */
 export class GlobalErrorFilter {
   private mapper = new ProblemDetailsMapper();
 
@@ -23,6 +29,10 @@ function normalizeInstance(path: string | undefined): string {
   return path?.split("?")[0] || "/unknown";
 }
 
+/**
+ * Middleware Express que delega o tratamento de erros não
+ * capturados ao `GlobalErrorFilter`.
+ */
 export function globalErrorMiddleware(
   error: unknown,
   req: unknown,

@@ -14,6 +14,7 @@ export default defineConfig({
     })
   ],
   test: {
+    fileParallelism: false,
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov"],
@@ -22,13 +23,24 @@ export default defineConfig({
         "src/index.ts",
         "src/config/index.ts",
         "src/shared/application/ports/**",
-        "src/shared/presentation/http/schemas/**"
+        "src/shared/presentation/http/schemas/**",
+        "src/modules/collaborators/application/ports/**",
+        "src/modules/collaborators/presentation/dto/**"
       ],
-      thresholds: {lines: 90, branches: 90, functions: 90, statements: 90}
+      thresholds: {lines: 95, branches: 95, functions: 95, statements: 95}
     },
     projects: [
       {extends: true, test: {name: "unit", include: ["tests/unit/**/*.spec.ts"]}},
-      {extends: true, test: {name: "http", include: ["tests/http/**/*.spec.ts"]}},
+      {
+        extends: true,
+        test: {
+          name: "http",
+          include: ["tests/http/**/*.spec.ts"],
+          globalSetup: ["tests/helpers/mongo-container.global.ts"],
+          testTimeout: 30_000,
+          hookTimeout: 120_000
+        }
+      },
       {extends: true, test: {name: "contract", include: ["tests/contract/**/*.spec.ts"]}},
       {
         extends: true,

@@ -1,5 +1,14 @@
 import type {SwaggerSettings} from "@tsed/swagger";
 
+/**
+ * Configuração do Swagger/OpenAPI do Ts.ED.
+ *
+ * Define título, versão, descrição, esquemas reutilizáveis
+ * (HalLink), cabeçalhos (ETag, RetryAfter) e resposta de
+ * NotModified. O padrão `operationIdPattern: "%m"` gera
+ * IDs de operação baseados no nome do método do
+ * controlador.
+ */
 export const openApiSettings: SwaggerSettings = {
   path: "/",
   fileName: "openapi.json",

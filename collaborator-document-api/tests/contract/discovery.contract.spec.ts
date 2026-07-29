@@ -4,6 +4,7 @@ import supertest from "supertest";
 
 import {Server} from "../../src/Server.js";
 import {
+  expectedFunctionalOperationIds,
   loadDiscoverySliceFromExpected,
   type JsonObject,
   type JsonValue
@@ -37,7 +38,7 @@ describe("Published OpenAPI matches the discoverApi slice", () => {
   beforeAll(PlatformTest.bootstrap(Server));
   afterAll(PlatformTest.reset);
 
-  it("publishes a single functional operation named discoverApi on /api/v1", async () => {
+  it("publishes discoverApi on /api/v1 among the known public functional operations", async () => {
     const published = await fetchPublishedOpenApi();
     if (!isObject(published)) {
       throw new Error("Published OpenAPI document must be a mapping");
@@ -66,7 +67,7 @@ describe("Published OpenAPI matches the discoverApi slice", () => {
         }
       }
     }
-    expect(functionalOperationIds).toEqual(["discoverApi"]);
+    expect(functionalOperationIds).toEqual([...expectedFunctionalOperationIds]);
   });
 
   it("matches the design slice for path, method, headers, schemas and responses", async () => {
@@ -218,9 +219,8 @@ describe("Published OpenAPI matches the discoverApi slice", () => {
     }
   });
 
-  it("binds the five discovery scenarios to the public rules and rejects extra public rules", async () => {
+  it("binds discovery and collaborator public rules and rejects extra public rules", async () => {
     const expected = loadDiscoverySliceFromExpected();
-    const expectedFunctionalIds = new Set(expected.functionalOperationIds);
     const published = await fetchPublishedOpenApi();
     if (!isObject(published) || !isObject(published.paths)) {
       throw new Error("Published OpenAPI must declare paths");
@@ -240,7 +240,7 @@ describe("Published OpenAPI matches the discoverApi slice", () => {
         }
       }
     }
-    expect(publishedFunctionalIds).toEqual([...expectedFunctionalIds]);
+    expect(publishedFunctionalIds).toEqual([...expected.functionalOperationIds]);
 
     const problemDetails =
       isObject(published.components) && isObject(published.components.schemas)

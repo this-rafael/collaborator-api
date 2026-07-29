@@ -104,4 +104,25 @@ describe("Problem Details mapper", () => {
     expect(serialized).not.toContain("mongodb");
     expect(problem.traceId).toBe(fixedTraceId);
   });
+
+  it("keeps an unknown domain failure code", () => {
+    const mapper = new ProblemDetailsMapper();
+    const failure = new DomainFailure("UNKNOWN_DOMAIN_CODE", "detalhe privado");
+    const {problem} = mapper.fromFailure(failure, {instance: "/api/v1", traceId: fixedTraceId});
+
+    expect(problem.status).toBe(500);
+    expect(problem.code).toBe("UNKNOWN_DOMAIN_CODE");
+    expect(problem.title).toBe(problemDetailsFixture().title);
+  });
+
+  it("defaults application failures without a code to INTERNAL_SERVER_ERROR", () => {
+    const mapper = new ProblemDetailsMapper();
+    const {problem} = mapper.fromFailure(
+      {kind: "application", message: "sem código"},
+      {instance: "/api/v1", traceId: fixedTraceId}
+    );
+
+    expect(problem.status).toBe(500);
+    expect(problem.code).toBe("INTERNAL_SERVER_ERROR");
+  });
 });

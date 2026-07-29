@@ -25,6 +25,12 @@ const discoveryLinks = {
   "submission-events": {href: "/api/v1/submission-events{?cursor,limit}", templated: true}
 };
 
+/**
+ * Caso de uso de descoberta dos recursos da API.
+ *
+ * Consulta a disponibilidade do MongoDB e retorna os links
+ * HAL de todos os recursos disponíveis.
+ */
 export class DiscoverApiQuery {
   constructor(private readonly availability: DiscoveryAvailability) {}
 

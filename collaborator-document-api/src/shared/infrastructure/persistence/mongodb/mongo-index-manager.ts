@@ -2,6 +2,13 @@ import {Injectable} from "@tsed/di";
 import {MongooseService} from "@tsed/mongoose";
 import type {IndexDescription, IndexDescriptionInfo} from "mongodb";
 
+/**
+ * Serviço gerenciador de índices MongoDB.
+ *
+ * Oferece métodos para criar e listar índices em coleções
+ * específicas. Utiliza o MongooseService do Ts.ED para
+ * obter a conexão ativa.
+ */
 @Injectable()
 export class MongoIndexManager {
   constructor(private readonly mongooseService: MongooseService) {}
