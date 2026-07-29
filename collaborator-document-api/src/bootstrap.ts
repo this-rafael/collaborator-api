@@ -4,7 +4,10 @@ import {PlatformExpress} from "@tsed/platform-express";
 import type {AppEnv} from "./config/env.js";
 import {Server} from "./Server.js";
 
-export function serverSettings(env: AppEnv) {
+type BootstrapEnv = Pick<AppEnv, "nodeEnv" | "port" | "mongodbUri" | "logLevel"> &
+  Partial<Pick<AppEnv, "cors" | "rateLimit" | "openapi">>;
+
+export function serverSettings(env: BootstrapEnv) {
   return {
     httpPort: env.port,
     logger: {level: env.logLevel},
@@ -18,7 +21,7 @@ export function serverSettings(env: AppEnv) {
   };
 }
 
-export async function startApplication(env: AppEnv) {
+export async function startApplication(env: BootstrapEnv) {
   const platform = await PlatformExpress.bootstrap(Server, serverSettings(env));
   await platform.listen();
   $log.info({event: "SERVER_STARTED", port: env.port});

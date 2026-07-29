@@ -31,7 +31,9 @@ export class ManualClock implements Clock {
 export const fixedTraceId = "01J3Y2QHB8FV4RGY7Y1QXNT2D4";
 export const alternateTraceId = "01J3Y2QHB8FV4RGY7Y1QXNT2D5";
 
-export const buildRequestContextFixture = (overrides: Partial<RequestContextFixture> = {}): RequestContextFixture => ({
+export const buildRequestContextFixture = (
+  overrides: Partial<RequestContextFixture> = {}
+): RequestContextFixture => ({
   traceId: fixedTraceId,
   operationId: "discoverApi",
   method: "GET",

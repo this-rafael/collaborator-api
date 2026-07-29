@@ -1,4 +1,4 @@
-import {afterAll, beforeAll, describe, expect, it} from "vitest";
+import {afterAll, afterEach, beforeAll, describe, expect, it} from "vitest";
 import {PlatformTest} from "@tsed/platform-http/testing";
 import supertest from "supertest";
 
@@ -16,14 +16,28 @@ import {
 interface ApiRootResponse {
   name: string;
   version: string;
-  _links: Record<string, {href: string; templated?: boolean; method?: string; type?: string; title?: string}>;
+  _links: Record<
+    string,
+    {href: string; templated?: boolean; method?: string; type?: string; title?: string}
+  >;
 }
 
 const etagPattern = /^W\/"sha256:[a-f0-9]{64}"$/;
 
 describe("Discovery slice", () => {
-  beforeAll(PlatformTest.bootstrap(Server));
-  afterAll(PlatformTest.reset);
+  beforeAll(async () => {
+    process.env.NODE_ENV = "test";
+    process.env.RATE_LIMIT_GET = "4";
+    await PlatformTest.bootstrap(Server)();
+  });
+  afterEach(() => {
+    delete process.env.DISCOVERY_TEST_FAILURE;
+  });
+  afterAll(async () => {
+    await PlatformTest.reset();
+    delete process.env.NODE_ENV;
+    delete process.env.RATE_LIMIT_GET;
+  });
 
   it("returns 200 with HAL media type, semantic body and weak ETag", async () => {
     const response = await supertest(PlatformTest.callback())
@@ -84,9 +98,7 @@ describe("Discovery slice", () => {
   });
 
   it("returns 429 with RATE_LIMIT_EXCEEDED, full Problem Details and Retry-After", async () => {
-    const response = await supertest(PlatformTest.callback())
-      .get("/api/v1")
-      .expect(429);
+    const response = await supertest(PlatformTest.callback()).get("/api/v1").expect(429);
 
     expect(response.headers["content-type"]).toContain("application/problem+json");
     expect(response.headers["retry-after"]).toBeDefined();
@@ -109,9 +121,8 @@ describe("Discovery slice", () => {
   });
 
   it("returns 500 sanitized with INTERNAL_SERVER_ERROR and traceId, no implementation details", async () => {
-    const response = await supertest(PlatformTest.callback())
-      .get("/api/v1")
-      .expect(500);
+    process.env.DISCOVERY_TEST_FAILURE = "internal";
+    const response = await supertest(PlatformTest.callback()).get("/api/v1").expect(500);
 
     expect(response.headers["content-type"]).toContain("application/problem+json");
 
@@ -131,9 +142,8 @@ describe("Discovery slice", () => {
   });
 
   it("returns 503 sanitized with SERVICE_UNAVAILABLE and traceId, no internal details", async () => {
-    const response = await supertest(PlatformTest.callback())
-      .get("/api/v1")
-      .expect(503);
+    process.env.DISCOVERY_TEST_FAILURE = "unavailable";
+    const response = await supertest(PlatformTest.callback()).get("/api/v1").expect(503);
 
     expect(response.headers["content-type"]).toContain("application/problem+json");
 

@@ -1,4 +1,5 @@
 allowBuilds:
+  "@scarf/scarf": true
   "@swc/core": true
   cpu-features: true
   esbuild: true
