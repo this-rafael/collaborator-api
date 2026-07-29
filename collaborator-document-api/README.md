@@ -42,11 +42,14 @@ docker compose --profile full up --build
 pnpm dev
 ```
 
-Health check:
+Health checks operacionais (fora de `/api/v1`):
 
 ```bash
-curl http://localhost:3000/health/live
+curl -i http://localhost:3000/health/live   # 200 application/json { "status": "ok" }, sem HAL/ETag/rate limit
+curl -i http://localhost:3000/health/ready  # 200 quando o MongoDB está disponível; 503 application/problem+json quando indisponível
 ```
+
+`GET /health/live` atesta apenas o processo e não consulta o MongoDB. `GET /health/ready` verifica a conexão MongoDB via `MongoReadinessCheck`; em indisponibilidade responde `503` com Problem Details sanitizado (`code: SERVICE_UNAVAILABLE`, `instance: /health/ready`, `traceId`), sem expor URI, credenciais, query, mensagem do driver ou stack. Nenhuma das rotas de health usa HAL, ETag ou rate limit.
 
 Discovery e contrato HTTP:
 
@@ -55,7 +58,7 @@ curl -i -H 'Accept: application/hal+json' http://localhost:3000/api/v1
 curl http://localhost:3000/openapi.json
 ```
 
-`GET /api/v1` publica a representação HAL de descoberta, ETag semântico e Problem Details para falhas. O OpenAPI é gerado pelos decorators Ts.ED e contém `discoverApi` e a rota não funcional `GET /health/live`; health não recebe HAL, ETag ou rate limit da descoberta.
+`GET /api/v1` publica a representação HAL de descoberta, ETag semântico e Problem Details para falhas. O OpenAPI é gerado pelos decorators Ts.ED e contém `discoverApi`, `getLiveness` e `getReadiness`; as rotas de health não recebem HAL, ETag ou rate limit da descoberta.
 
 O rate limit inicial é local à instância: `RATE_LIMIT_GET` consultas por `RATE_LIMIT_WINDOW_MS` milissegundos por IP e operação. Em implantação com múltiplas réplicas, os contadores não são compartilhados.
 
