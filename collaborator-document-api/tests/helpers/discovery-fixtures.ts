@@ -35,7 +35,10 @@ export const discoveryLinksFixture: Record<string, HalLink> = {
     templated: true
   },
   completeness: {href: "/api/v1/statistics/completeness"},
-  "pending-document-types": {href: "/api/v1/statistics/pending-document-types{?cursor,limit}", templated: true},
+  "pending-document-types": {
+    href: "/api/v1/statistics/pending-document-types{?cursor,limit}",
+    templated: true
+  },
   "latest-submissions": {href: "/api/v1/submissions/latest{?cursor,limit}", templated: true},
   "submission-events": {href: "/api/v1/submission-events{?cursor,limit}", templated: true}
 };
@@ -85,7 +88,9 @@ export const problemDetailsFixture = (overrides: Partial<ProblemDetails> = {}): 
   ...overrides
 });
 
-export const problemDetailsRateLimitFixture = (overrides: Partial<ProblemDetails> = {}): ProblemDetails =>
+export const problemDetailsRateLimitFixture = (
+  overrides: Partial<ProblemDetails> = {}
+): ProblemDetails =>
   problemDetailsFixture({
     type: "https://api.example.com/problems/rate-limit-exceeded",
     title: "Limite de requisições excedido",

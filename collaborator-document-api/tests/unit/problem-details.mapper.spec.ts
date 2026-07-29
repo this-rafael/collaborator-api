@@ -13,8 +13,14 @@ import {fixedTraceId} from "../helpers/discovery-runtime.js";
 describe("Problem Details mapper", () => {
   it("maps a rate limit failure to 429 with RATE_LIMIT_EXCEEDED and Retry-After >= 1", () => {
     const mapper = new ProblemDetailsMapper();
-    const failure = new ApplicationFailure("RATE_LIMIT_EXCEEDED", "Limite excedido para discoverApi");
-    const {problem, retryAfter} = mapper.fromFailure(failure, {instance: "/api/v1", traceId: fixedTraceId});
+    const failure = new ApplicationFailure(
+      "RATE_LIMIT_EXCEEDED",
+      "Limite excedido para discoverApi"
+    );
+    const {problem, retryAfter} = mapper.fromFailure(failure, {
+      instance: "/api/v1",
+      traceId: fixedTraceId
+    });
 
     expect(problem.status).toBe(429);
     expect(problem.code).toBe("RATE_LIMIT_EXCEEDED");
@@ -88,7 +94,10 @@ describe("Problem Details mapper", () => {
 
   it("ignores any pre-existing traceId inside the failure message", () => {
     const mapper = new ProblemDetailsMapper();
-    const failure = new ApplicationFailure("SOMETHING_UNEXPECTED", "01J3Y2QHB8FV4RGY7Y1QXNT2D4 mongodb stack");
+    const failure = new ApplicationFailure(
+      "SOMETHING_UNEXPECTED",
+      "01J3Y2QHB8FV4RGY7Y1QXNT2D4 mongodb stack"
+    );
     const {problem} = mapper.fromFailure(failure, {instance: "/api/v1", traceId: fixedTraceId});
 
     const serialized = JSON.stringify(problem);

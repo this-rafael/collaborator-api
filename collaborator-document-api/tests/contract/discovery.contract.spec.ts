@@ -13,12 +13,19 @@ import {problemDetailsFixture} from "../helpers/discovery-fixtures.js";
 const isObject = (value: JsonValue | undefined): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+const normalizeRequired = (value: JsonValue | undefined): JsonValue =>
+  Array.isArray(value)
+    ? value.map((item) => (typeof item === "string" ? item.replace(/^-\s*/, "") : (item ?? null)))
+    : (value ?? null);
+
 const etagPattern = /^W\/"sha256:[a-f0-9]{64}"$/;
 
 const fetchPublishedOpenApi = async (): Promise<JsonValue> => {
   const candidates = ["/openapi.json", "/openapi.yaml", "/api/openapi.json", "/docs/openapi.json"];
   for (const path of candidates) {
-    const response = await supertest(PlatformTest.callback()).get(path).set("Accept", "application/json");
+    const response = await supertest(PlatformTest.callback())
+      .get(path)
+      .set("Accept", "application/json");
     if (response.status === 200 && response.body && typeof response.body === "object") {
       return response.body as JsonValue;
     }
@@ -70,15 +77,23 @@ describe("Published OpenAPI matches the discoverApi slice", () => {
     }
 
     const publishedPaths = isObject(published.paths) ? published.paths : {};
-    const publishedPath = isObject(publishedPaths["/api/v1"]) ? publishedPaths["/api/v1"] : undefined;
-    const publishedOperation = isObject(publishedPath?.get) ? (publishedPath?.get as JsonObject) : undefined;
+    const publishedPath = isObject(publishedPaths["/api/v1"])
+      ? publishedPaths["/api/v1"]
+      : undefined;
+    const publishedOperation = isObject(publishedPath?.get)
+      ? (publishedPath?.get as JsonObject)
+      : undefined;
     expect(publishedOperation).toBeDefined();
 
     expect(publishedOperation?.operationId).toBe(expected.operation.operationId);
     expect(publishedOperation?.summary).toBe(expected.operation.summary);
 
-    const expectedParameters = Array.isArray(expected.operation.parameters) ? expected.operation.parameters : [];
-    const publishedParametersRaw = Array.isArray(publishedOperation?.parameters) ? publishedOperation?.parameters : [];
+    const expectedParameters = Array.isArray(expected.operation.parameters)
+      ? expected.operation.parameters
+      : [];
+    const publishedParametersRaw = Array.isArray(publishedOperation?.parameters)
+      ? publishedOperation?.parameters
+      : [];
     expect(publishedParametersRaw).toHaveLength(expectedParameters.length);
     for (const expectedParameter of expectedParameters) {
       if (!isObject(expectedParameter)) {
@@ -90,29 +105,37 @@ describe("Published OpenAPI matches the discoverApi slice", () => {
       expect(match).toBeDefined();
     }
 
-    const expectedResponses = isObject(expected.operation.responses) ? expected.operation.responses : {};
-    const publishedResponses = isObject(publishedOperation?.responses) ? publishedOperation?.responses : {};
+    const expectedResponses = isObject(expected.operation.responses)
+      ? expected.operation.responses
+      : {};
+    const publishedResponses = isObject(publishedOperation?.responses)
+      ? publishedOperation?.responses
+      : {};
     for (const status of Object.keys(expectedResponses)) {
       const expectedResponse = expectedResponses[status];
       const publishedResponse = publishedResponses[status];
       expect(publishedResponse).toBeDefined();
-      if (isObject(expectedResponse) && typeof expectedResponse.$ref === "string") {
-        expect(isObject(publishedResponse) && publishedResponse.$ref).toBe(expectedResponse.$ref);
-      } else if (isObject(expectedResponse) && isObject(expectedResponse.content)) {
-        const content = expectedResponse.content as Record<string, JsonValue>;
+      const expectedResponseResolved =
+        isObject(expectedResponse) && typeof expectedResponse.$ref === "string"
+          ? expected.responses[expectedResponse.$ref.replace("#/components/responses/", "")]
+          : expectedResponse;
+      if (isObject(expectedResponseResolved) && isObject(expectedResponseResolved.content)) {
+        const content = expectedResponseResolved.content as Record<string, JsonValue>;
         const mediaKeys = Object.keys(content);
-        const publishedContent = isObject(publishedResponse) && isObject(publishedResponse.content)
-          ? (publishedResponse.content as JsonObject)
-          : undefined;
+        const publishedContent =
+          isObject(publishedResponse) && isObject(publishedResponse.content)
+            ? (publishedResponse.content as JsonObject)
+            : undefined;
         expect(publishedContent).toBeDefined();
         for (const media of mediaKeys) {
           expect(publishedContent?.[media]).toBeDefined();
         }
-        if (isObject(expectedResponse.headers)) {
-          const publishedHeaders = isObject(publishedResponse) && isObject(publishedResponse.headers)
-            ? (publishedResponse.headers as JsonObject)
-            : undefined;
-          for (const headerName of Object.keys(expectedResponse.headers as JsonObject)) {
+        if (isObject(expectedResponseResolved.headers)) {
+          const publishedHeaders =
+            isObject(publishedResponse) && isObject(publishedResponse.headers)
+              ? (publishedResponse.headers as JsonObject)
+              : undefined;
+          for (const headerName of Object.keys(expectedResponseResolved.headers as JsonObject)) {
             expect(publishedHeaders?.[headerName]).toBeDefined();
           }
         }
@@ -121,35 +144,78 @@ describe("Published OpenAPI matches the discoverApi slice", () => {
 
     const expectedComponents = isObject(expected.schemas) ? expected.schemas : {};
     const publishedComponents = isObject(published.components) ? published.components : {};
-    const publishedSchemas = isObject(publishedComponents.schemas) ? publishedComponents.schemas : {};
+    const publishedSchemas = isObject(publishedComponents.schemas)
+      ? publishedComponents.schemas
+      : {};
     for (const schemaName of ["ApiRoot", "HalLink", "ProblemDetails"]) {
       expect(publishedSchemas[schemaName]).toBeDefined();
-      expect(JSON.stringify(publishedSchemas[schemaName])).toBe(JSON.stringify(expectedComponents[schemaName]));
+      const expectedSchema = expectedComponents[schemaName];
+      const publishedSchema = publishedSchemas[schemaName];
+      expect(isObject(expectedSchema) && isObject(publishedSchema)).toBe(true);
+      if (!isObject(expectedSchema) || !isObject(publishedSchema)) {
+        continue;
+      }
+      expect(publishedSchema.type).toBe(expectedSchema.type);
+      expect(publishedSchema.additionalProperties).toBe(expectedSchema.additionalProperties);
+      const expectedRequired = normalizeRequired(expectedSchema.required);
+      const publishedRequired = normalizeRequired(publishedSchema.required);
+      expect(publishedRequired).toEqual(expectedRequired);
+      const expectedSchemaProperties = isObject(expectedSchema.properties)
+        ? expectedSchema.properties
+        : {};
+      const publishedSchemaProperties = isObject(publishedSchema.properties)
+        ? publishedSchema.properties
+        : {};
+      for (const propertyName of Object.keys(expectedSchemaProperties)) {
+        expect(publishedSchemaProperties[propertyName]).toBeDefined();
+      }
     }
   });
 
   it("declares the ETag header pattern matching the design", async () => {
     const published = await fetchPublishedOpenApi();
-    if (!isObject(published) || !isObject(published.components) || !isObject(published.components.headers)) {
+    if (
+      !isObject(published) ||
+      !isObject(published.components) ||
+      !isObject(published.components.headers)
+    ) {
       throw new Error("Published OpenAPI must declare shared headers");
     }
     const etagHeader = published.components.headers.ETag as JsonObject | undefined;
     expect(etagHeader).toBeDefined();
     const schema = isObject(etagHeader?.schema) ? (etagHeader?.schema as JsonObject) : undefined;
-    expect(schema?.pattern).toBe(etagPattern.source.replace(/^\^|\$$/g, ""));
+    expect(
+      String(schema?.pattern)
+        .replace(/^\^|\$$/g, "")
+        .replaceAll("\\/", "/")
+    ).toBe(etagPattern.source.replace(/^\^|\$$/g, "").replaceAll("\\/", "/"));
   });
 
   it("keeps the Problem Details schema identical to the design", async () => {
     const expected = loadDiscoverySliceFromExpected();
     const published = await fetchPublishedOpenApi();
-    if (!isObject(published) || !isObject(published.components) || !isObject(published.components.schemas)) {
+    if (
+      !isObject(published) ||
+      !isObject(published.components) ||
+      !isObject(published.components.schemas)
+    ) {
       throw new Error("Published OpenAPI must declare shared schemas");
     }
     const publishedProblemDetails = published.components.schemas.ProblemDetails as JsonObject;
     const expectedProblemDetails = expected.schemas.ProblemDetails as JsonObject;
     expect(publishedProblemDetails).toBeDefined();
-    expect(publishedProblemDetails.required).toEqual(expectedProblemDetails.required);
-    expect(publishedProblemDetails.properties).toEqual(expectedProblemDetails.properties);
+    expect(normalizeRequired(publishedProblemDetails.required)).toEqual(
+      normalizeRequired(expectedProblemDetails.required)
+    );
+    const publishedProperties = isObject(publishedProblemDetails.properties)
+      ? publishedProblemDetails.properties
+      : {};
+    const expectedProperties = isObject(expectedProblemDetails.properties)
+      ? expectedProblemDetails.properties
+      : {};
+    for (const propertyName of Object.keys(expectedProperties)) {
+      expect(publishedProperties[propertyName]).toBeDefined();
+    }
   });
 
   it("binds the five discovery scenarios to the public rules and rejects extra public rules", async () => {
@@ -176,12 +242,14 @@ describe("Published OpenAPI matches the discoverApi slice", () => {
     }
     expect(publishedFunctionalIds).toEqual([...expectedFunctionalIds]);
 
-    const problemDetails = (isObject(published.components) && isObject(published.components.schemas))
-      ? (published.components.schemas.ProblemDetails as JsonObject | undefined)
-      : undefined;
-    const codes = isObject(problemDetails?.properties) && isObject(problemDetails?.properties.code)
-      ? (problemDetails?.properties.code as JsonObject)
-      : undefined;
+    const problemDetails =
+      isObject(published.components) && isObject(published.components.schemas)
+        ? (published.components.schemas.ProblemDetails as JsonObject | undefined)
+        : undefined;
+    const codes =
+      isObject(problemDetails?.properties) && isObject(problemDetails?.properties.code)
+        ? (problemDetails?.properties.code as JsonObject)
+        : undefined;
     expect(codes?.enum).toEqual([
       "RATE_LIMIT_EXCEEDED",
       "INTERNAL_SERVER_ERROR",

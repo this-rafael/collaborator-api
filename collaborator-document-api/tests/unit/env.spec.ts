@@ -15,7 +15,10 @@ describe("FND-ENV", () => {
       nodeEnv: "test",
       port: 3000,
       mongodbUri: validEnv.MONGODB_URI,
-      logLevel: "debug"
+      logLevel: "debug",
+      cors: {allowlist: []},
+      rateLimit: {limit: 60, windowMs: 60000},
+      openapi: {path: "/openapi.json", specVersion: "3.1.0"}
     });
   });
 
@@ -42,6 +45,15 @@ describe("FND-ENV", () => {
     ).toContain("mongodb+srv");
     expect(() => loadEnv({...validEnv, MONGODB_URI: "not a uri"})).toThrow(
       "MONGODB_URI must be a valid URI"
+    );
+  });
+
+  it("rejects invalid rate limit configuration", () => {
+    expect(() => loadEnv({...validEnv, RATE_LIMIT_GET: "not-a-number"})).toThrow(
+      "RATE_LIMIT_GET must be a non-negative integer"
+    );
+    expect(() => loadEnv({...validEnv, RATE_LIMIT_WINDOW_MS: "999"})).toThrow(
+      "RATE_LIMIT_WINDOW_MS must be at least 1000"
     );
   });
 });

@@ -4,11 +4,28 @@ export const logLevels = ["debug", "info", "warn", "error", "off"] as const;
 export type NodeEnvironment = (typeof nodeEnvironments)[number];
 export type LogLevel = (typeof logLevels)[number];
 
+export type RateLimitConfig = Readonly<{
+  limit: number;
+  windowMs: number;
+}>;
+
+export type CorsConfig = Readonly<{
+  allowlist: readonly string[];
+}>;
+
+export type OpenApiConfig = Readonly<{
+  path: string;
+  specVersion: string;
+}>;
+
 export type AppEnv = Readonly<{
   nodeEnv: NodeEnvironment;
   port: number;
   mongodbUri: string;
   logLevel: LogLevel;
+  cors: CorsConfig;
+  rateLimit: RateLimitConfig;
+  openapi: OpenApiConfig;
 }>;
 
 export class EnvironmentValidationError extends Error {
@@ -25,6 +42,11 @@ function required(source: NodeJS.ProcessEnv, name: string, issues: string[]): st
     return undefined;
   }
   return value;
+}
+
+function optional(source: NodeJS.ProcessEnv, name: string, defaultValue: string): string {
+  const value = source[name]?.trim();
+  return value || defaultValue;
 }
 
 function isOneOf<T extends readonly string[]>(value: string, values: T): value is T[number] {
@@ -68,6 +90,28 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     }
   }
 
+  const rawCorsAllowlist = optional(source, "CORS_ALLOWLIST", "");
+  const corsAllowlist = rawCorsAllowlist
+    ? rawCorsAllowlist
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
+
+  const rawRateLimit = optional(source, "RATE_LIMIT_GET", "60");
+  const rateLimitNumber = Number(rawRateLimit);
+  if (!Number.isInteger(rateLimitNumber) || rateLimitNumber < 0) {
+    issues.push("RATE_LIMIT_GET must be a non-negative integer");
+  }
+
+  const rawRateWindow = optional(source, "RATE_LIMIT_WINDOW_MS", "60000");
+  const rateWindowNumber = Number(rawRateWindow);
+  if (!Number.isInteger(rateWindowNumber) || rateWindowNumber < 1000) {
+    issues.push("RATE_LIMIT_WINDOW_MS must be at least 1000");
+  }
+
+  const rawOpenApiPath = optional(source, "OPENAPI_PATH", "/openapi.json");
+
   if (issues.length > 0) {
     throw new EnvironmentValidationError(issues);
   }
@@ -76,6 +120,17 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     nodeEnv: rawNodeEnv as NodeEnvironment,
     port,
     mongodbUri: mongodbUri!,
-    logLevel: rawLogLevel as LogLevel
+    logLevel: rawLogLevel as LogLevel,
+    cors: {
+      allowlist: corsAllowlist
+    },
+    rateLimit: {
+      limit: rateLimitNumber,
+      windowMs: rateWindowNumber
+    },
+    openapi: {
+      path: rawOpenApiPath,
+      specVersion: "3.1.0"
+    }
   };
 }

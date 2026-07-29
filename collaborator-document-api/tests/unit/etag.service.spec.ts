@@ -21,7 +21,7 @@ const expectedEtagFor = (payload: unknown): string => {
 };
 
 describe("ETag service", () => {
-  it("emits a weak ETag in the W/\"sha256:<64 hex>\" format", () => {
+  it('emits a weak ETag in the W/"sha256:<64 hex>" format', () => {
     const service = new EtagService();
     const etag = service.compute(apiRootFixture);
     expect(etag).toMatch(/^W\/"sha256:[a-f0-9]{64}"$/);
