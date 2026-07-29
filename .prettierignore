@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+coverage/
+docs/typedoc/
+.ua/
+.understand/
+.git/
+pnpm-lock.yaml

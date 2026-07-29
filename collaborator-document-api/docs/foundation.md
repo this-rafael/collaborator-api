@@ -9,7 +9,11 @@ Copie `.env.example` para `.env` e informe `NODE_ENV`, `PORT`, `MONGODB_URI` e `
 - `pnpm verify`: validação completa, incluindo cobertura de 90% e smoke com MongoDB real.
 - `pnpm test:integration`: integração serial contra um replica set iniciado por Testcontainers.
 - `pnpm test:smoke`: build compilado, HTTP e desligamento por `SIGTERM`.
+- `pnpm docs:api`: gera documentação TypeDoc em `docs/typedoc/`.
+- `pnpm sonar:up`: sobe SonarQube no Compose profile `quality` (UI em `http://localhost:9000`).
+- `pnpm sonar:scan`: cobertura LCOV + wait + scanner one-shot (requer `SONAR_TOKEN` no `.env`).
 - `docker compose up -d mongodb mongodb-init`: MongoDB local para desenvolvimento.
+- `docker compose --profile quality up -d sonarqube`: equivalente a `pnpm sonar:up`.
 
 Em Docker, Testcontainers usa a configuração padrão. Em Podman rootless, exporte `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock`; a suíte desabilita Ryuk somente nesse modo e encerra o container explicitamente.
 

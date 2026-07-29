@@ -1,17 +1,27 @@
 # Active config for git hooks (repository root).
 # Runs when files under collaborator-document-api/ are staged.
 pre-commit:
-  parallel: true
-  commands:
-    typecheck:
+  jobs:
+    - name: format
       root: collaborator-document-api
-      glob: "*.{ts,tsx,js,mjs,cjs}"
-      run: pnpm typecheck
-    lint:
-      root: collaborator-document-api
-      glob: "*.{ts,tsx,js,mjs,cjs}"
-      run: pnpm lint
-    test:
-      root: collaborator-document-api
-      glob: "*.{ts,tsx,js,mjs,cjs}"
-      run: pnpm test:unit
+      glob: "*.{ts,tsx,js,mjs,cjs,json,yml,yaml,md}"
+      run: pnpm exec prettier --write {staged_files}
+      stage_fixed: true
+    - group:
+        parallel: true
+        jobs:
+          - name: typecheck
+            root: collaborator-document-api
+            glob: "*.{ts,tsx,js,mjs,cjs}"
+            exclude: '(^|/)tests/'
+            run: pnpm typecheck
+          - name: lint
+            root: collaborator-document-api
+            glob: "*.{ts,tsx,js,mjs,cjs}"
+            exclude: '(^|/)tests/'
+            run: pnpm lint
+          - name: test
+            root: collaborator-document-api
+            glob: "*.{ts,tsx,js,mjs,cjs}"
+            exclude: '(^|/)tests/'
+            run: pnpm test:unit
