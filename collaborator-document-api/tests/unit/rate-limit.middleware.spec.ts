@@ -121,4 +121,18 @@ describe("Rate limit middleware", () => {
     expect(retryAfter).toBeGreaterThanOrEqual(40);
     expect(retryAfter).toBeLessThanOrEqual(41);
   });
+
+  it("keys the counter with unknown when the request has no ip", async () => {
+    const clock = new ManualClock(new Date("2026-07-28T12:00:00.000Z"));
+    const middleware = new RateLimitMiddleware({limit: 1, windowMs: 60_000, clock});
+    const request = {
+      method: "GET",
+      path: "/api/v1",
+      headers: {"x-request-id": fixedTraceId},
+      query: {} as Record<string, string>
+    };
+
+    expect(await middleware.handle(request, buildResponse().res)).toBe(true);
+    expect(await middleware.handle(request, buildResponse().res)).toBe(false);
+  });
 });

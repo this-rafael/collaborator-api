@@ -46,4 +46,17 @@ describe("GlobalErrorFilter", () => {
     expect(state.status).toBe(500);
     expect(state.type).toBe("application/problem+json");
   });
+
+  it("maps a JSON parser failure to the published 400 problem", () => {
+    const {response, state} = buildResponse("/api/v1/collaborators");
+    new GlobalErrorFilter().catch({type: "entity.parse.failed"}, {response} as never);
+
+    expect(state.status).toBe(400);
+    expect(state.type).toBe("application/problem+json");
+    expect(state.body).toMatchObject({
+      status: 400,
+      code: "MALFORMED_JSON",
+      instance: "/api/v1/collaborators"
+    });
+  });
 });

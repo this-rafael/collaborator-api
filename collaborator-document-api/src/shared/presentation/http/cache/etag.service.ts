@@ -9,6 +9,11 @@ const TRACE_KEYS = new Set([
   "headers"
 ]);
 
+/**
+ * Serializa um valor para JSON canônico, ignorando chaves
+ * de trace (`traceId`, `generatedAt`, etc.) para produzir
+ * ETags consistentes.
+ */
 function canonicalize(value: unknown): string {
   if (value === null || typeof value !== "object") {
     return JSON.stringify(value);
@@ -22,6 +27,13 @@ function canonicalize(value: unknown): string {
   return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalize((value as Record<string, unknown>)[k])}`).join(",")}}`;
 }
 
+/**
+ * Serviço de geração e comparação de ETags fracas.
+ *
+ * Gera ETags no formato `W/"sha256:<hex>"` a partir de
+ * hashing SHA-256 do payload canônico (excluindo campos
+ * de trace).
+ */
 export class EtagService {
   compute(payload: unknown): string {
     const hash = createHash("sha256").update(canonicalize(payload)).digest("hex");

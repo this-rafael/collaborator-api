@@ -20,6 +20,18 @@ type RateLimitResponse = {
   json(payload: unknown): unknown;
 };
 
+/**
+ * Middleware de rate limit baseado em janela fixa em
+ * memória.
+ *
+ * Limita requisições por IP + operationId dentro de uma
+ * janela configurável. Quando o limite é excedido,
+ * retorna 429 com Problem Details e cabeçalho
+ * `Retry-After`.
+ *
+ * @remarks A store é volátil (em memória); não persiste
+ *   entre reinicializações.
+ */
 export class RateLimitMiddleware {
   private store = new Map<string, RateLimitEntry>();
   private mapper = new ProblemDetailsMapper();

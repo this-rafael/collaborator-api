@@ -22,6 +22,14 @@ const discoveryLinks: Record<string, HalLink> = {
   "submission-events": {href: "/api/v1/submission-events{?cursor,limit}", templated: true}
 };
 
+/**
+ * Apresenta o resultado do discovery no formato
+ * HAL+JSON, populando os `_links` com todos os recursos
+ * disponíveis da API.
+ *
+ * @param root - Dados base do discovery (nome, versão).
+ * @returns Objeto ApiRoot com `_links` populados.
+ */
 export function apiRootPresenter(root: ApiRoot): ApiRoot {
   return {
     name: root.name,

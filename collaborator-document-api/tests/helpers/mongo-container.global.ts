@@ -8,6 +8,26 @@ declare module "vitest" {
   }
 }
 
+const STOP_TIMEOUT_MS = 60_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
 export async function setup(project: TestProject) {
   const podmanSocket = process.env.XDG_RUNTIME_DIR
     ? join(process.env.XDG_RUNTIME_DIR, "podman", "podman.sock")
@@ -19,6 +39,7 @@ export async function setup(project: TestProject) {
     }
   }
 
+  console.info("[mongo-container] starting MongoDBContainer mongo:7.0.37");
   const {MongoDBContainer} = await import("@testcontainers/mongodb");
   const container = await new MongoDBContainer("mongo:7.0.37").start();
   const uri = new URL(container.getConnectionString());
@@ -26,8 +47,14 @@ export async function setup(project: TestProject) {
   uri.searchParams.set("replicaSet", "rs0");
   uri.searchParams.set("directConnection", "true");
   project.provide("mongoUri", uri.toString());
+  console.info("[mongo-container] ready", uri.toString().replace(/\/\/.*@/, "//"));
 
   return async () => {
-    await container.stop();
+    console.info("[mongo-container] stopping container");
+    try {
+      await withTimeout(container.stop(), STOP_TIMEOUT_MS, "MongoDBContainer.stop()");
+    } finally {
+      console.info("[mongo-container] stop finished");
+    }
   };
 }

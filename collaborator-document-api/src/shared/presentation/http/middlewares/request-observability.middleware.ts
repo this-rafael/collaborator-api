@@ -4,10 +4,24 @@ import {$log} from "@tsed/logger";
 const CPF_PATTERN = /\d{3}\.?\d{3}\.?\d{3}-?\d{2}/g;
 const EMAIL_PATTERN = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
 
+/**
+ * Remove dados sensíveis (CPF, email) de uma string,
+ * substituindo-os por `***`.
+ *
+ * @param value - String original.
+ * @returns String com dados mascarados.
+ */
 export function maskSensitive(value: string): string {
   return value.replace(CPF_PATTERN, "***").replace(EMAIL_PATTERN, "***@***");
 }
 
+/**
+ * Middleware Express de observabilidade.
+ *
+ * Adiciona o header `X-Observability-Route` (com dados
+ * sensíveis mascarados) e loga métricas de duração,
+ * status e resultado ao finalizar a resposta.
+ */
 export function requestObservabilityMiddleware(
   req: Request,
   res: Response,

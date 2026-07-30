@@ -1,8 +1,7 @@
-import {afterAll, afterEach, beforeAll, describe, expect, it} from "vitest";
+import {afterAll, afterEach, describe, expect, it} from "vitest";
 import {PlatformTest} from "@tsed/platform-http/testing";
 import supertest from "supertest";
 
-import {Server} from "../../src/Server.js";
 import {
   apiRootAltVersionFixture,
   apiRootFixture,
@@ -12,6 +11,7 @@ import {
   requiredDiscoveryRelations,
   templatedDiscoveryRelations
 } from "../helpers/discovery-fixtures.js";
+import {bootstrapHttpMongo} from "../helpers/http-mongo.js";
 
 interface ApiRootResponse {
   name: string;
@@ -25,18 +25,20 @@ interface ApiRootResponse {
 const etagPattern = /^W\/"sha256:[a-f0-9]{64}"$/;
 
 describe("Discovery slice", () => {
-  beforeAll(async () => {
-    process.env.NODE_ENV = "test";
-    process.env.RATE_LIMIT_GET = "4";
-    await PlatformTest.bootstrap(Server)();
+  bootstrapHttpMongo({
+    beforeBootstrap: () => {
+      process.env.NODE_ENV = "test";
+      process.env.RATE_LIMIT_GET = "4";
+      process.env.RATE_LIMIT_WINDOW_MS = "60000";
+    }
   });
   afterEach(() => {
     delete process.env.DISCOVERY_TEST_FAILURE;
   });
-  afterAll(async () => {
-    await PlatformTest.reset();
+  afterAll(() => {
     delete process.env.NODE_ENV;
     delete process.env.RATE_LIMIT_GET;
+    delete process.env.RATE_LIMIT_WINDOW_MS;
   });
 
   it("returns 200 with HAL media type, semantic body and weak ETag", async () => {

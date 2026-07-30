@@ -11,12 +11,23 @@ import {ProblemDetails} from "../shared/presentation/http/schemas/problem-detail
 import {ProblemDetailsMapper} from "../shared/presentation/http/errors/problem-details.mapper.js";
 import {getRequestTraceId} from "../shared/presentation/http/middlewares/request-id.middleware.js";
 
+/**
+ * Controlador REST de health-check da aplicação.
+ *
+ * Expõe `GET /health/live` (liveness do processo, sem
+ * dependências externas) e `GET /health/ready` (readiness,
+ * verifica conexão MongoDB).
+ */
 @Controller("/health")
 @Tags("Health")
 export class HealthController {
   private readonly livenessQuery = new GetLivenessQuery();
-  private readonly readinessQuery = new GetReadinessQuery(new MongoReadinessCheck());
+  private readonly readinessQuery: GetReadinessQuery;
   private readonly mapper = new ProblemDetailsMapper();
+
+  constructor(readinessCheck: MongoReadinessCheck) {
+    this.readinessQuery = new GetReadinessQuery(readinessCheck);
+  }
 
   @Get("/live")
   @OperationId("getLiveness")
@@ -26,6 +37,13 @@ export class HealthController {
   )
   @ContentType("application/json")
   @(Returns(200, HealthStatus).ContentType("application/json").Description("Processo operacional."))
+  /**
+   * Verifica apenas se o processo está operacional (liveness).
+   * Não consulta MongoDB. Sempre retorna 200 com
+   * `{"status":"ok"}`.
+   *
+   * @param res - Objeto response Express.
+   */
   live(@Res() res: Response): void {
     const body = this.livenessQuery.execute();
     res.status(200).type("application/json").end(JSON.stringify(body));
@@ -44,6 +62,13 @@ export class HealthController {
   @(Returns(503, ProblemDetails)
     .ContentType("application/problem+json")
     .Description("Dependência necessária temporariamente indisponível."))
+  /**
+   * Verifica se a aplicação está apta a receber tráfego
+   * (readiness). Testa a conexão MongoDB e retorna 200
+   * ou 503 com Problem Details.
+   *
+   * @param res - Objeto response Express.
+   */
   async ready(@Res() res: Response): Promise<void> {
     const traceId = getRequestTraceId(res.req!);
 

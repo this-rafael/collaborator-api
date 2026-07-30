@@ -4,11 +4,14 @@ import supertest from "supertest";
 
 import {Server} from "../../src/Server.js";
 import {
+  expectedFunctionalOperationIds,
+  loadCreateCollaboratorSliceFromExpected,
   loadDiscoverySliceFromExpected,
   type JsonObject,
   type JsonValue
 } from "../helpers/openapi-slice.js";
 import {problemDetailsFixture} from "../helpers/discovery-fixtures.js";
+import {contractServerSettings} from "./collaborators-contract.helpers.js";
 
 const isObject = (value: JsonValue | undefined): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -34,10 +37,10 @@ const fetchPublishedOpenApi = async (): Promise<JsonValue> => {
 };
 
 describe("Published OpenAPI matches the discoverApi slice", () => {
-  beforeAll(PlatformTest.bootstrap(Server));
+  beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);
 
-  it("publishes a single functional operation named discoverApi on /api/v1", async () => {
+  it("publishes discoverApi on /api/v1 among the known public functional operations", async () => {
     const published = await fetchPublishedOpenApi();
     if (!isObject(published)) {
       throw new Error("Published OpenAPI document must be a mapping");
@@ -66,7 +69,7 @@ describe("Published OpenAPI matches the discoverApi slice", () => {
         }
       }
     }
-    expect(functionalOperationIds).toEqual(["discoverApi"]);
+    expect(functionalOperationIds).toEqual([...expectedFunctionalOperationIds]);
   });
 
   it("matches the design slice for path, method, headers, schemas and responses", async () => {
@@ -218,9 +221,8 @@ describe("Published OpenAPI matches the discoverApi slice", () => {
     }
   });
 
-  it("binds the five discovery scenarios to the public rules and rejects extra public rules", async () => {
+  it("binds discovery and collaborator public rules and rejects extra public rules", async () => {
     const expected = loadDiscoverySliceFromExpected();
-    const expectedFunctionalIds = new Set(expected.functionalOperationIds);
     const published = await fetchPublishedOpenApi();
     if (!isObject(published) || !isObject(published.paths)) {
       throw new Error("Published OpenAPI must declare paths");
@@ -240,7 +242,7 @@ describe("Published OpenAPI matches the discoverApi slice", () => {
         }
       }
     }
-    expect(publishedFunctionalIds).toEqual([...expectedFunctionalIds]);
+    expect(publishedFunctionalIds).toEqual([...expected.functionalOperationIds]);
 
     const problemDetails =
       isObject(published.components) && isObject(published.components.schemas)
@@ -250,11 +252,17 @@ describe("Published OpenAPI matches the discoverApi slice", () => {
       isObject(problemDetails?.properties) && isObject(problemDetails?.properties.code)
         ? (problemDetails?.properties.code as JsonObject)
         : undefined;
-    expect(codes?.enum).toEqual([
-      "RATE_LIMIT_EXCEEDED",
-      "INTERNAL_SERVER_ERROR",
-      "SERVICE_UNAVAILABLE"
-    ]);
+    const expectedProblemDetails = loadCreateCollaboratorSliceFromExpected().schemas
+      .ProblemDetails as JsonObject;
+    const expectedCodes = isObject(expectedProblemDetails?.properties)
+      ? (expectedProblemDetails.properties.code as JsonObject | undefined)
+      : undefined;
+    const expectedEnum = Array.isArray(expectedCodes?.enum)
+      ? expectedCodes.enum.map((code) =>
+          typeof code === "string" ? code.replace(/^-\s*/, "") : code
+        )
+      : expectedCodes?.enum;
+    expect(codes?.enum).toEqual(expectedEnum);
     expect(problemDetailsFixture().status).toBeGreaterThanOrEqual(400);
   });
 });

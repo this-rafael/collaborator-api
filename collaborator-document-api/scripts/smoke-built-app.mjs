@@ -40,6 +40,7 @@ const child = spawn(process.execPath, ["dist/index.js"], {
     NODE_ENV: "test",
     PORT: String(port),
     MONGODB_URI: uri.toString(),
+    CURSOR_HMAC_SECRET: "smoke-test-cursor-secret-must-be-at-least-32-bytes",
     LOG_LEVEL: "error"
   },
   stdio: "ignore"

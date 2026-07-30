@@ -1,3 +1,9 @@
+/**
+ * Módulo de configuração da aplicação.
+ *
+ * Re-exporta as funções e tipos de carregamento de
+ * variáveis de ambiente e configuração OpenAPI.
+ */
 export {
   loadEnv,
   type AppEnv,
