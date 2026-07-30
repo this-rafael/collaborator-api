@@ -3,7 +3,6 @@ import {describe, expect, it} from "vitest";
 import {DocumentTypeRepositoryStub} from "../../helpers/document-type-runtime.js";
 
 describe("Listing document types through the application query", () => {
-  // TYPE-LIST-001, TYPE-LIST-002
   it("returns primitive active document type outputs", async () => {
     const {ListDocumentTypesUseCase} =
       await import("../../../src/modules/document-types/application/use-cases/list-document-types.use-case.js");
@@ -23,7 +22,6 @@ describe("Listing document types through the application query", () => {
     }
   });
 
-  // TYPE-LIST-016
   it("preserves repository availability failures", async () => {
     const {ListDocumentTypesUseCase} =
       await import("../../../src/modules/document-types/application/use-cases/list-document-types.use-case.js");
@@ -35,7 +33,6 @@ describe("Listing document types through the application query", () => {
     if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");
   });
 
-  // TYPE-LIST-005, TYPE-LIST-009…012
   it("rejects invalid filters and limits before querying persistence", async () => {
     const {ListDocumentTypesUseCase} =
       await import("../../../src/modules/document-types/application/use-cases/list-document-types.use-case.js");

@@ -8,7 +8,6 @@ import {bootstrapHttpMongo, httpDatabase} from "../helpers/http-mongo.js";
 
 const documentTypeId = "66a64ab05bd7213b90d9b010";
 
-// TYPE-DELETE-001…008
 describe("Deleting a document type", () => {
   bootstrapHttpMongo();
 
@@ -30,12 +29,11 @@ describe("Deleting a document type", () => {
     await httpDatabase()
       .collection("collaborator_documents")
       .insertMany([
-        linkedDocument("66a64ab05bd7213b90d9c001", "PENDING"),
-        linkedDocument("66a64ab05bd7213b90d9c002", "SUBMITTED")
+        linkedDocument("66a64ab05bd7213b90d9c001", "PENDING", "66a64ab05bd7213b90d9b001"),
+        linkedDocument("66a64ab05bd7213b90d9c002", "SUBMITTED", "66a64ab05bd7213b90d9b002")
       ]);
   });
 
-  // TYPE-DELETE-001
   it("soft deletes the type and all active linked documents without a body", async () => {
     const response = await supertest(PlatformTest.callback())
       .delete(`/api/v1/document-types/${documentTypeId}`)
@@ -61,7 +59,6 @@ describe("Deleting a document type", () => {
     ]);
   });
 
-  // TYPE-DELETE-003
   it("keeps repeated deletion idempotent without overwriting cascade timestamps", async () => {
     await supertest(PlatformTest.callback())
       .delete(`/api/v1/document-types/${documentTypeId}`)
@@ -90,7 +87,6 @@ describe("Deleting a document type", () => {
     );
   });
 
-  // TYPE-DELETE-004, TYPE-DELETE-005
   it("rejects malformed and unknown document type identifiers", async () => {
     const invalid = await supertest(PlatformTest.callback())
       .delete("/api/v1/document-types/nope")
@@ -106,7 +102,6 @@ describe("Deleting a document type", () => {
     expect(missing.body.code).toBe("DOCUMENT_TYPE_NOT_FOUND");
   });
 
-  // TYPE-DELETE-002, TYPE-DELETE-006, TYPE-DELETE-007, TYPE-DELETE-008
   it("publishes atomic rollback, rate-limit, internal, and dependency failures", async () => {
     const {loadDeleteDocumentTypeSliceFromExpected} = await import("../helpers/openapi-slice.js");
     expect(
@@ -115,13 +110,18 @@ describe("Deleting a document type", () => {
   });
 });
 
-function linkedDocument(id: string, status: "PENDING" | "SUBMITTED") {
+function linkedDocument(
+  id: string,
+  status: "PENDING" | "SUBMITTED",
+  collaboratorId = "66a64ab05bd7213b90d9b001"
+) {
   return {
     _id: new ObjectId(id),
-    collaboratorId: "66a64ab05bd7213b90d9b001",
+    collaboratorId,
     documentTypeId,
     status,
     deletedAt: null,
+    unlinkedAt: null,
     versions: [{version: 1, payload: "preserved"}]
   };
 }

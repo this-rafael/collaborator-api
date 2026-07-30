@@ -10,7 +10,6 @@ const activeId = "66a64ab05bd7213b90d9b010";
 const deletedId = "66a64ab05bd7213b90d9b011";
 const conflictingId = "66a64ab05bd7213b90d9b012";
 
-// TYPE-PATCH-001…018
 describe("Updating a document type", () => {
   bootstrapHttpMongo();
 
@@ -26,7 +25,6 @@ describe("Updating a document type", () => {
       ]);
   });
 
-  // TYPE-PATCH-001…004
   it.each([
     [
       {name: "Atestado Ocupacional"},
@@ -49,7 +47,6 @@ describe("Updating a document type", () => {
     expect(response.headers.etag).toMatch(/^W\/"sha256:[a-f0-9]{64}"$/);
   });
 
-  // TYPE-PATCH-005
   it("reuses a code held only by a deleted document type", async () => {
     const response = await supertest(PlatformTest.callback())
       .patch(`/api/v1/document-types/${activeId}`)
@@ -58,7 +55,6 @@ describe("Updating a document type", () => {
     expect(response.body.code).toBe("HISTORICAL");
   });
 
-  // TYPE-PATCH-006…010
   it.each([
     ["an empty patch", {}, undefined],
     ["an additional property", {unexpected: true}, "unexpected"],
@@ -89,7 +85,6 @@ describe("Updating a document type", () => {
     ).toBe("ASO");
   });
 
-  // TYPE-PATCH-011…015
   it("maps identifier, media, state, and uniqueness failures", async () => {
     const invalid = await supertest(PlatformTest.callback())
       .patch("/api/v1/document-types/nope")
@@ -122,7 +117,6 @@ describe("Updating a document type", () => {
     expect(deleted.body.code).toBe("DOCUMENT_TYPE_DELETED");
   });
 
-  // TYPE-PATCH-016, TYPE-PATCH-017, TYPE-PATCH-018
   it("publishes rate-limit, sanitized internal, and dependency failures", async () => {
     const {loadUpdateDocumentTypeSliceFromExpected} = await import("../helpers/openapi-slice.js");
     expect(

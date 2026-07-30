@@ -124,8 +124,7 @@ export class ApiRootController {
 
       res.setHeader("ETag", etag);
       res.type("application/hal+json").status(200).json(body);
-    } catch (error) {
-      void error;
+    } catch {
       this.writeProblem(res, "INTERNAL_SERVER_ERROR", traceId);
     }
   }

@@ -11,7 +11,6 @@ import {MongoTransactionTestHarness} from "../helpers/mongo-transaction-test-har
 
 const documentTypeId = "66a64ab05bd7213b90d9b010";
 
-// TYPE-DELETE-001, TYPE-DELETE-002, TYPE-DELETE-003
 describe("Deleting document types transactionally", () => {
   bootstrapHttpMongo();
   beforeEach(async () => resetDatabase(httpDatabase()));
@@ -82,7 +81,6 @@ describe("Deleting document types transactionally", () => {
   });
 });
 
-// TX-001, TX-002, TX-003
 describe("Retrying document type delete transactions", () => {
   it("retries all work after a transient transaction failure", async () => {
     const injected = new MongoTransactionTestHarness();
@@ -172,18 +170,19 @@ async function seedDocumentTypeAndLinks(): Promise<void> {
   await db
     .collection("collaborator_documents")
     .insertMany([
-      link("66a64ab05bd7213b90d9c001", "PENDING"),
-      link("66a64ab05bd7213b90d9c002", "SUBMITTED")
+      link("66a64ab05bd7213b90d9c001", "PENDING", "66a64ab05bd7213b90d9b001"),
+      link("66a64ab05bd7213b90d9c002", "SUBMITTED", "66a64ab05bd7213b90d9b002")
     ]);
 }
 
-function link(id: string, status: "PENDING" | "SUBMITTED") {
+function link(id: string, status: "PENDING" | "SUBMITTED", collaboratorId: string) {
   return {
     _id: new ObjectId(id),
-    collaboratorId: "66a64ab05bd7213b90d9b001",
+    collaboratorId,
     documentTypeId,
     status,
     deletedAt: null,
+    unlinkedAt: null,
     versions: [{version: 1, payload: "preserved"}]
   };
 }

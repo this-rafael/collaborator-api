@@ -30,6 +30,7 @@ const unavailable = (): DocumentTypeFailure =>
     "Document type persistence is unavailable."
   );
 
+/** Implementação Mongo do repositório de tipos de documento. */
 @Injectable()
 export class MongoDocumentTypeRepository implements DocumentTypeRepository {
   constructor(private readonly mongoose: MongooseService) {}

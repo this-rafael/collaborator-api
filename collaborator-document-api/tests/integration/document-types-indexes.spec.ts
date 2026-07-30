@@ -5,7 +5,6 @@ import {PlatformTest} from "@tsed/platform-http/testing";
 import {resetDatabase} from "../helpers/database.js";
 import {bootstrapHttpMongo, httpDatabase} from "../helpers/http-mongo.js";
 
-// TYPE-CREATE-004, TYPE-CREATE-022
 describe("Document type persistence indexes", () => {
   bootstrapHttpMongo();
   beforeEach(async () => resetDatabase(httpDatabase()));

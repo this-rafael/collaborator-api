@@ -10,12 +10,10 @@ import {
 import {resetDatabase} from "../helpers/database.js";
 import {bootstrapHttpMongo, httpDatabase} from "../helpers/http-mongo.js";
 
-// TYPE-CREATE-001…025
 describe("Creating document types", () => {
   bootstrapHttpMongo();
   beforeEach(async () => resetDatabase(httpDatabase()));
 
-  // TYPE-CREATE-001
   it("creates an active document type with HAL headers and mutation links", async () => {
     const response = await supertest(PlatformTest.callback())
       .post("/api/v1/document-types")
@@ -40,7 +38,6 @@ describe("Creating document types", () => {
     expect(response.body.updatedAt).toBeDefined();
   });
 
-  // TYPE-CREATE-002, TYPE-CREATE-003
   it.each([
     ["an omitted description", {name: "Carteira de Trabalho", code: "CTPS"}, null],
     ["a null description", validDocumentTypeBody({code: "ASO_NULL", description: null}), null]
@@ -52,7 +49,6 @@ describe("Creating document types", () => {
     expect(response.body.description).toBe(expected);
   });
 
-  // TYPE-CREATE-004
   it("reuses a code held only by deleted document types without altering history", async () => {
     const deletedAt = new Date("2026-07-30T13:00:00.000Z");
     const historicalId = new ObjectId("66a64ab05bd7213b90d9b011");
@@ -76,7 +72,6 @@ describe("Creating document types", () => {
     ).toEqual(deletedAt);
   });
 
-  // TYPE-CREATE-005…019
   it.each([
     ["missing name", invalidDocumentTypeBodies.missingName, "name"],
     ["missing code", invalidDocumentTypeBodies.missingCode, "code"],
@@ -104,7 +99,6 @@ describe("Creating document types", () => {
     );
   });
 
-  // TYPE-CREATE-018
   it.each([
     validDocumentTypeBody({code: "AB", description: "a".repeat(1000)}),
     validDocumentTypeBody({code: `A${"B".repeat(63)}`, description: null})
@@ -112,7 +106,6 @@ describe("Creating document types", () => {
     await supertest(PlatformTest.callback()).post("/api/v1/document-types").send(body).expect(201);
   });
 
-  // TYPE-CREATE-020, TYPE-CREATE-021
   it("maps malformed JSON and unsupported media types to published problems", async () => {
     const malformed = await supertest(PlatformTest.callback())
       .post("/api/v1/document-types")
@@ -129,7 +122,6 @@ describe("Creating document types", () => {
     expectProblem(unsupported, "UNSUPPORTED_MEDIA_TYPE");
   });
 
-  // TYPE-CREATE-022
   it("maps an active code collision to the stable conflict problem", async () => {
     await supertest(PlatformTest.callback())
       .post("/api/v1/document-types")
@@ -147,7 +139,6 @@ describe("Creating document types", () => {
     );
   });
 
-  // TYPE-CREATE-023, TYPE-CREATE-024, TYPE-CREATE-025
   it("publishes rate-limit, sanitized internal, and dependency failures", async () => {
     const expected = await import("../helpers/openapi-slice.js");
     const responses = expected.loadCreateDocumentTypeSliceFromExpected().operation.responses;

@@ -13,7 +13,6 @@ import {
   responseSchemaReference
 } from "./collaborators-contract.helpers.js";
 
-// TYPE-LIST-001…017
 describe("Published list document types contract", () => {
   beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);

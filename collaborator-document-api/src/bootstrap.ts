@@ -23,7 +23,11 @@ const defaultRateLimit = {readLimit: 60, writeLimit: 20, windowMs: 60_000} as co
 export function serverSettings(env: BootstrapEnv) {
   const rateLimit =
     env.nodeEnv === "test"
-      ? {readLimit: 10_000, writeLimit: 10_000, windowMs: 60_000}
+      ? {
+          readLimit: Number(process.env.RATE_LIMIT_GET ?? "10000"),
+          writeLimit: Number(process.env.RATE_LIMIT_WRITE ?? "10000"),
+          windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS ?? "60000")
+        }
       : (env.rateLimit ?? defaultRateLimit);
   return {
     httpPort: env.port,
@@ -34,6 +38,11 @@ export function serverSettings(env: BootstrapEnv) {
       provisionIndexes: true
     },
     documentTypes: {
+      cursorHmacSecret: env.cursorHmacSecret ?? testCursorHmacSecret,
+      rateLimit,
+      provisionIndexes: true
+    },
+    collaboratorDocuments: {
       cursorHmacSecret: env.cursorHmacSecret ?? testCursorHmacSecret,
       rateLimit,
       provisionIndexes: true

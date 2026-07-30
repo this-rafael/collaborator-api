@@ -8,7 +8,6 @@ import {bootstrapHttpMongo, httpDatabase} from "../helpers/http-mongo.js";
 
 const id = "66a64ab05bd7213b90d9b001";
 
-// COL-DELETE-001…008
 describe("Deleting a collaborator", () => {
   bootstrapHttpMongo();
 

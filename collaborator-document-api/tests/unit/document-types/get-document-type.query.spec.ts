@@ -3,7 +3,6 @@ import {describe, expect, it} from "vitest";
 import {DocumentTypeRepositoryStub} from "../../helpers/document-type-runtime.js";
 
 describe("Getting a document type through the application query", () => {
-  // TYPE-GET-001, TYPE-GET-002
   it("returns a primitive representation for existing active or historical types", async () => {
     const {GetDocumentTypeUseCase} =
       await import("../../../src/modules/document-types/application/use-cases/get-document-type.use-case.js");
@@ -20,7 +19,6 @@ describe("Getting a document type through the application query", () => {
     if (historical.isOk()) expect(historical.value.deletedAt).not.toBeNull();
   });
 
-  // TYPE-GET-005
   it("returns the stable not-found failure", async () => {
     const {GetDocumentTypeUseCase} =
       await import("../../../src/modules/document-types/application/use-cases/get-document-type.use-case.js");
@@ -32,7 +30,6 @@ describe("Getting a document type through the application query", () => {
     if (result.isErr()) expect(result.error.code).toBe("DOCUMENT_TYPE_NOT_FOUND");
   });
 
-  // TYPE-GET-008
   it("preserves an unavailable persistence failure", async () => {
     const {GetDocumentTypeUseCase} =
       await import("../../../src/modules/document-types/application/use-cases/get-document-type.use-case.js");

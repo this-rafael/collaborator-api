@@ -1,7 +1,6 @@
 import {describe, expect, it} from "vitest";
 
 describe("Document type value objects", () => {
-  // TYPE-CREATE-001, TYPE-CREATE-018
   it("accepts normalized names and canonical code boundaries", async () => {
     const {DocumentTypeName} =
       await import("../../../src/modules/document-types/domain/value-objects/document-type-name.js");
@@ -15,14 +14,12 @@ describe("Document type value objects", () => {
     expect(DocumentTypeCode.create(`A${"B".repeat(63)}`).isOk()).toBe(true);
   });
 
-  // TYPE-CREATE-007, TYPE-CREATE-008, TYPE-CREATE-009
   it.each(["", "a".repeat(201), 12, null])("rejects invalid document type names", async (value) => {
     const {DocumentTypeName} =
       await import("../../../src/modules/document-types/domain/value-objects/document-type-name.js");
     expect(DocumentTypeName.create(value).isErr()).toBe(true);
   });
 
-  // TYPE-CREATE-010…015
   it.each(["A", `A${"B".repeat(64)}`, "1ASO", "aso", "ASO TEST", "ASO-TEST", 42, null])(
     "rejects invalid document type codes",
     async (value) => {
@@ -32,7 +29,6 @@ describe("Document type value objects", () => {
     }
   );
 
-  // TYPE-CREATE-016, TYPE-CREATE-017
   it.each(["a".repeat(1001), 42, false, [], {}])(
     "rejects invalid document type descriptions through the aggregate",
     async (description) => {

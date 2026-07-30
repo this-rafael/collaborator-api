@@ -14,7 +14,6 @@ import {
   responseSchemaReference
 } from "./collaborators-contract.helpers.js";
 
-// TYPE-CREATE-001…025
 describe("Published create document type contract", () => {
   beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);

@@ -7,7 +7,6 @@ import {documentTypePageFixtures} from "../helpers/document-type-fixtures.js";
 import {resetDatabase} from "../helpers/database.js";
 import {bootstrapHttpMongo, httpDatabase} from "../helpers/http-mongo.js";
 
-// TYPE-LIST-001…017
 describe("Listing document types", () => {
   bootstrapHttpMongo();
 
@@ -22,7 +21,6 @@ describe("Listing document types", () => {
       ]);
   });
 
-  // TYPE-LIST-001
   it("returns only active document types as a HAL collection", async () => {
     const response = await supertest(PlatformTest.callback())
       .get("/api/v1/document-types")
@@ -35,7 +33,6 @@ describe("Listing document types", () => {
     ).not.toContain("OLD");
   });
 
-  // TYPE-LIST-002
   it("returns an empty HAL collection when no active type matches", async () => {
     const response = await supertest(PlatformTest.callback())
       .get("/api/v1/document-types?code=UNKNOWN")
@@ -44,7 +41,6 @@ describe("Listing document types", () => {
     expect(response.body._embedded.documentTypes).toEqual([]);
   });
 
-  // TYPE-LIST-003, TYPE-LIST-004
   it("normalizes partial name filters and applies exact uppercase code filters", async () => {
     await supertest(PlatformTest.callback())
       .get("/api/v1/document-types?name=ocupacional")
@@ -60,7 +56,6 @@ describe("Listing document types", () => {
       .expect(({body}) => expect(body._embedded.documentTypes[0].code).toBe("ASO"));
   });
 
-  // TYPE-LIST-005, TYPE-LIST-009…012
   it.each([
     ["?code=aso", "code"],
     ["?code=A", "code"],
@@ -79,7 +74,6 @@ describe("Listing document types", () => {
     );
   });
 
-  // TYPE-LIST-006, TYPE-LIST-007
   it("applies the default page and accepts minimum and maximum limits", async () => {
     await resetDatabase(httpDatabase());
     await httpDatabase()
@@ -98,7 +92,6 @@ describe("Listing document types", () => {
       .expect(({body}) => expect(body.count).toBe(100));
   });
 
-  // TYPE-LIST-008
   it("continues an opaque keyset page without duplicate or omitted items", async () => {
     const first = await supertest(PlatformTest.callback())
       .get("/api/v1/document-types?limit=1")
@@ -111,7 +104,6 @@ describe("Listing document types", () => {
     );
   });
 
-  // TYPE-LIST-013
   it("returns a bodyless cache hit for an unchanged collection", async () => {
     const first = await supertest(PlatformTest.callback())
       .get("/api/v1/document-types")
@@ -123,7 +115,6 @@ describe("Listing document types", () => {
     expect(cached.text).toBe("");
   });
 
-  // TYPE-LIST-017
   it("rejects a tampered cursor without returning a partial page", async () => {
     const first = await supertest(PlatformTest.callback())
       .get("/api/v1/document-types?limit=1")
@@ -138,7 +129,6 @@ describe("Listing document types", () => {
     expect(response.body._embedded).toBeUndefined();
   });
 
-  // TYPE-LIST-014, TYPE-LIST-015, TYPE-LIST-016
   it("publishes rate-limit, sanitized internal, and dependency failures", async () => {
     const {loadListDocumentTypesSliceFromExpected} = await import("../helpers/openapi-slice.js");
     expect(

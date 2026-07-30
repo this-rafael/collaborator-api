@@ -5,7 +5,6 @@ import {PlatformTest} from "@tsed/platform-http/testing";
 import {resetDatabase} from "../helpers/database.js";
 import {bootstrapHttpMongo, httpDatabase} from "../helpers/http-mongo.js";
 
-// TYPE-LIST-006, TYPE-LIST-007, TYPE-LIST-008
 describe("Document type keyset indexes", () => {
   bootstrapHttpMongo();
   beforeEach(async () => resetDatabase(httpDatabase()));

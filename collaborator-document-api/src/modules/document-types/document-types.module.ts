@@ -8,6 +8,7 @@ import {DocumentTypeIndexProvisioner} from "./infrastructure/persistence/mongodb
 import {MongoDocumentTypeRepository} from "./infrastructure/persistence/mongodb/document-type.mongo-repository.js";
 import {DocumentTypesRuntime} from "./document-types.runtime.js";
 
+/** Módulo Ts.ED que registra as dependências do domínio document-types. */
 @Module({
   imports: [
     DocumentTypesRuntime,

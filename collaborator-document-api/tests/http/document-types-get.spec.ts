@@ -9,7 +9,6 @@ import {bootstrapHttpMongo, httpDatabase} from "../helpers/http-mongo.js";
 const activeId = "66a64ab05bd7213b90d9b010";
 const deletedId = "66a64ab05bd7213b90d9b011";
 
-// TYPE-GET-001…008
 describe("Getting a document type", () => {
   bootstrapHttpMongo();
 
@@ -24,7 +23,6 @@ describe("Getting a document type", () => {
       ]);
   });
 
-  // TYPE-GET-001
   it("returns an active document type with mutation links and an ETag", async () => {
     const response = await supertest(PlatformTest.callback())
       .get(`/api/v1/document-types/${activeId}`)
@@ -39,7 +37,6 @@ describe("Getting a document type", () => {
     expect(response.headers.etag).toMatch(/^W\/"sha256:[a-f0-9]{64}"$/);
   });
 
-  // TYPE-GET-002
   it("returns a deleted document type as immutable history", async () => {
     const response = await supertest(PlatformTest.callback())
       .get(`/api/v1/document-types/${deletedId}`)
@@ -49,7 +46,6 @@ describe("Getting a document type", () => {
     expect(response.body._links.delete).toBeUndefined();
   });
 
-  // TYPE-GET-003, TYPE-GET-005
   it("rejects malformed identifiers and maps unknown identifiers to not found", async () => {
     const invalid = await supertest(PlatformTest.callback())
       .get("/api/v1/document-types/nope")
@@ -65,7 +61,6 @@ describe("Getting a document type", () => {
     expect(missing.body.code).toBe("DOCUMENT_TYPE_NOT_FOUND");
   });
 
-  // TYPE-GET-004
   it("returns a bodyless cache hit for an unchanged representation", async () => {
     const first = await supertest(PlatformTest.callback())
       .get(`/api/v1/document-types/${activeId}`)
@@ -77,7 +72,6 @@ describe("Getting a document type", () => {
     expect(cached.text).toBe("");
   });
 
-  // TYPE-GET-006, TYPE-GET-007, TYPE-GET-008
   it("publishes rate-limit, sanitized internal, and dependency failures", async () => {
     const {loadGetDocumentTypeSliceFromExpected} = await import("../helpers/openapi-slice.js");
     expect(

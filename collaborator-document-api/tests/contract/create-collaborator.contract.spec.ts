@@ -14,7 +14,6 @@ import {
   responseSchemaReference
 } from "./collaborators-contract.helpers.js";
 
-// COL-CREATE-001…025
 describe("Published create collaborator contract", () => {
   beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);

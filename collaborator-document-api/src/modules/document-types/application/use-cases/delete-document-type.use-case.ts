@@ -13,6 +13,7 @@ import type {DocumentTypeRepository} from "../../domain/repositories/document-ty
 import type {DocumentTypeIdInput} from "../contracts/document-type-input.js";
 import type {CollaboratorDocumentsByTypePort} from "../ports/collaborator-documents-by-type.port.js";
 
+/** Caso de uso para exclusão lógica de um tipo de documento e seus vínculos. */
 export class DeleteDocumentTypeUseCase {
   constructor(
     private readonly repository: Pick<DocumentTypeRepository, "findById" | "softDeleteActive">,

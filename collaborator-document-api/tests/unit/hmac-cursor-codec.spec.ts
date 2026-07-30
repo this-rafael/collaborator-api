@@ -2,7 +2,6 @@ import {describe, expect, it} from "vitest";
 
 import {cursorClock, cursorSecret} from "../helpers/cursor-runtime.js";
 
-// COL-LIST-009…020, CURSOR-001, CURSOR-002
 describe("Signing list cursors", () => {
   it("signs verifies and rejects altered cursors using constant-time validation", async () => {
     const {HmacCursorCodec} =

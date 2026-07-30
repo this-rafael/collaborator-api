@@ -85,4 +85,82 @@ describe("MongoCollaboratorDocumentRepository", () => {
     expect(result.isErr()).toBe(true);
     if (result.isErr()) expect(result.error.code).toBe("INTERNAL_SERVER_ERROR");
   });
+
+  it("returns SERVICE_UNAVAILABLE when CRUD helpers lack an active connection", async () => {
+    const repository = new MongoCollaboratorDocumentRepository({
+      get: () => undefined
+    } as MongooseService);
+    const document = (
+      await import("../../src/modules/collaborator-documents/domain/aggregates/collaborator-document.js")
+    ).CollaboratorDocument.createPendingCycle(
+      {
+        id: "66a64ab05bd7213b90d9c001",
+        collaboratorId,
+        documentTypeId: "66a64ab05bd7213b90d9b010"
+      },
+      deletedAt
+    )._unsafeUnwrap();
+
+    const results = await Promise.all([
+      repository.create(document),
+      repository.findById("66a64ab05bd7213b90d9c001"),
+      repository.list({filters: {lifecycle: "active"}, limit: 20}),
+      repository.unlinkActive("66a64ab05bd7213b90d9c001", deletedAt, deletedAt)
+    ]);
+
+    for (const result of results) {
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");
+    }
+  });
+
+  it("treats invalid identifiers as not-found for get and unlink", async () => {
+    const repository = new MongoCollaboratorDocumentRepository({
+      get: () => ({
+        readyState: 1,
+        models: {
+          CollaboratorDocument: {
+            findById: () => ({lean: async () => null}),
+            findOneAndUpdate: async () => null
+          }
+        }
+      })
+    } as unknown as MongooseService);
+
+    const find = await repository.findById("not-an-object-id");
+    const unlink = await repository.unlinkActive("not-an-object-id", deletedAt, deletedAt);
+
+    expect(find.isErr()).toBe(true);
+    if (find.isErr()) expect(find.error.code).toBe("COLLABORATOR_DOCUMENT_NOT_FOUND");
+    expect(unlink.isErr()).toBe(true);
+    if (unlink.isErr()) expect(unlink.error.code).toBe("COLLABORATOR_DOCUMENT_NOT_FOUND");
+  });
+
+  it("rejects invalid afterId values during list", async () => {
+    const repository = new MongoCollaboratorDocumentRepository({
+      get: () => ({
+        readyState: 1,
+        models: {
+          CollaboratorDocument: {
+            find: () => ({
+              sort: () => ({
+                limit: () => ({
+                  lean: async () => []
+                })
+              })
+            })
+          }
+        }
+      })
+    } as unknown as MongooseService);
+
+    const result = await repository.list({
+      filters: {lifecycle: "active"},
+      afterId: "bad-cursor",
+      limit: 20
+    });
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("INVALID_QUERY_PARAMETER");
+  });
 });

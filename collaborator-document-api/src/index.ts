@@ -35,9 +35,7 @@ export async function main(): Promise<number> {
 }
 
 const entrypoint = process.argv[1] ? pathToFileURL(process.argv[1]).href : undefined;
-/* v8 ignore next 5 -- the compiled entrypoint is validated by test:smoke. */
+/* v8 ignore next 3 -- the compiled entrypoint is validated by test:smoke. */
 if (entrypoint === import.meta.url) {
-  void main().then((exitCode) => {
-    process.exitCode = exitCode;
-  });
+  process.exitCode = await main();
 }
