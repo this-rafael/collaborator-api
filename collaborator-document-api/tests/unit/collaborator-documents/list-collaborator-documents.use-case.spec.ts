@@ -7,7 +7,7 @@ import {
 } from "../../helpers/collaborator-document-fixtures.js";
 
 const listUseCaseModule =
-  "../../src/modules/collaborator-documents/application/use-cases/list-collaborator-documents.use-case.js";
+  "../../../src/modules/collaborator-documents/application/use-cases/list-collaborator-documents.use-case.js";
 
 describe("ListCollaboratorDocumentsUseCase", () => {
   it("applies active lifecycle by default and returns a modeled page", async () => {
@@ -72,5 +72,19 @@ describe("ListCollaboratorDocumentsUseCase", () => {
         limit: 2
       })
     );
+  });
+
+  it("rejects invalid filters before calling persistence", async () => {
+    const module = await import(listUseCaseModule);
+    const repository = {list: vi.fn()};
+
+    const result = await new module.ListCollaboratorDocumentsUseCase(repository).execute({
+      filters: {collaboratorId: "bad", status: "NOPE", lifecycle: "weird"},
+      limit: 20
+    });
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("INVALID_QUERY_PARAMETER");
+    expect(repository.list).not.toHaveBeenCalled();
   });
 });

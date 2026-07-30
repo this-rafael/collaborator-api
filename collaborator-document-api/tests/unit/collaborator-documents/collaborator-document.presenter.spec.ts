@@ -8,7 +8,7 @@ import {
 } from "../../helpers/collaborator-document-fixtures.js";
 
 const presenterModule =
-  "../../src/modules/collaborator-documents/presentation/http/presenters/collaborator-document.presenter.js";
+  "../../../src/modules/collaborator-documents/presentation/http/presenters/collaborator-document.presenter.js";
 
 describe("collaboratorDocumentPresenter", () => {
   it("publishes submit and unlink actions for an active PENDING link", async () => {

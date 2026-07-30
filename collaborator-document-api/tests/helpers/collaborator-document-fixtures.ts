@@ -150,12 +150,12 @@ export const collaboratorDocumentPageFixtures = (
     const id = (BigInt("0x66a64ab05bd7213b90d9d000") + BigInt(index + 1))
       .toString(16)
       .padStart(24, "0");
-    const fixture = index % 2 === 0 ? linkPendingFixture() : linkSubmittedFixture();
-    return {
-      ...fixture,
+    const documentTypeId = (BigInt("0x66a64ab05bd7213b90d9e000") + BigInt(index + 1))
+      .toString(16)
+      .padStart(24, "0");
+    return linkPendingFixture({
       id,
-      collaboratorId: index % 3 === 0 ? "66a64ab05bd7213b90d9b001" : "66a64ab05bd7213b90d9b002",
-      documentTypeId: index % 2 === 0 ? "66a64ab05bd7213b90d9b010" : "66a64ab05bd7213b90d9b011",
+      documentTypeId,
       ...overrides
-    };
+    });
   });

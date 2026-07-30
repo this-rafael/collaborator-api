@@ -4,7 +4,7 @@ import {describe, expect, it, vi} from "vitest";
 import {CollaboratorDocumentUnlinkRepositoryStub} from "../../helpers/collaborator-document-runtime.js";
 
 const unlinkUseCaseModule =
-  "../../src/modules/collaborator-documents/application/use-cases/unlink-collaborator-document.use-case.js";
+  "../../../src/modules/collaborator-documents/application/use-cases/unlink-collaborator-document.use-case.js";
 
 const id = "66a64ab05bd7213b90d9b001";
 const now = new Date("2026-07-30T15:00:00.000Z");
@@ -61,5 +61,20 @@ describe("UnlinkCollaboratorDocumentUseCase", () => {
 
     expect(result.isErr()).toBe(true);
     if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");
+  });
+
+  it("maps clock failures as internal errors", async () => {
+    const module = await import(unlinkUseCaseModule);
+    const result = await new module.UnlinkCollaboratorDocumentUseCase(
+      CollaboratorDocumentUnlinkRepositoryStub.unavailable(),
+      {
+        now: () => {
+          throw new Error("clock failed");
+        }
+      }
+    ).execute({id});
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("INTERNAL_SERVER_ERROR");
   });
 });

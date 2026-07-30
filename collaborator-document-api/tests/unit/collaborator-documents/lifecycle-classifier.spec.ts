@@ -7,7 +7,7 @@ import {
 } from "../../helpers/collaborator-document-fixtures.js";
 
 const listUseCaseModule =
-  "../../src/modules/collaborator-documents/application/use-cases/list-collaborator-documents.use-case.js";
+  "../../../src/modules/collaborator-documents/application/use-cases/list-collaborator-documents.use-case.js";
 
 describe("Collaborator document lifecycle classification", () => {
   it.each([

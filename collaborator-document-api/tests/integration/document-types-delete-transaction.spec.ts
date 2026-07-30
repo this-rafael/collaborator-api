@@ -170,18 +170,19 @@ async function seedDocumentTypeAndLinks(): Promise<void> {
   await db
     .collection("collaborator_documents")
     .insertMany([
-      link("66a64ab05bd7213b90d9c001", "PENDING"),
-      link("66a64ab05bd7213b90d9c002", "SUBMITTED")
+      link("66a64ab05bd7213b90d9c001", "PENDING", "66a64ab05bd7213b90d9b001"),
+      link("66a64ab05bd7213b90d9c002", "SUBMITTED", "66a64ab05bd7213b90d9b002")
     ]);
 }
 
-function link(id: string, status: "PENDING" | "SUBMITTED") {
+function link(id: string, status: "PENDING" | "SUBMITTED", collaboratorId: string) {
   return {
     _id: new ObjectId(id),
-    collaboratorId: "66a64ab05bd7213b90d9b001",
+    collaboratorId,
     documentTypeId,
     status,
     deletedAt: null,
+    unlinkedAt: null,
     versions: [{version: 1, payload: "preserved"}]
   };
 }

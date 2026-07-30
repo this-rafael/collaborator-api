@@ -13,6 +13,7 @@ import {
 } from "../helpers/collaborator-document-fixtures.js";
 import {resetDatabase} from "../helpers/database.js";
 import {bootstrapHttpMongo, httpDatabase} from "../helpers/http-mongo.js";
+import {CollaboratorDocumentsRuntime} from "../../src/modules/collaborator-documents/collaborator-documents.runtime.js";
 
 const pendingId = "66a64ab05bd7213b90d9c001";
 const submittedId = "66a64ab05bd7213b90d9c002";
@@ -34,11 +35,17 @@ describe("Unlinking a collaborator document", () => {
       .insertMany(
         [
           linkPendingFixture({id: pendingId}),
-          linkSubmittedFixture({id: submittedId}),
+          linkSubmittedFixture({
+            id: submittedId,
+            documentTypeId: "66a64ab05bd7213b90d9b011"
+          }),
           linkUnlinkedFixture({id: unlinkedId}),
-          linkDeletedFixture({id: deletedId})
+          linkDeletedFixture({id: deletedId, documentTypeId: "66a64ab05bd7213b90d9b012"})
         ].map(toMongoRow)
       );
+    PlatformTest.get<CollaboratorDocumentsRuntime>(
+      CollaboratorDocumentsRuntime
+    ).resetRateLimiters();
   });
 
   afterAll(() => {

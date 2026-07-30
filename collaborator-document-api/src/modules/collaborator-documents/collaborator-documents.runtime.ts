@@ -1,32 +1,96 @@
-import {Injectable} from "@tsed/di";
-import {err, type Result} from "neverthrow";
+import {Constant, Injectable} from "@tsed/di";
 
-import type {TransactionContext} from "../../shared/application/ports/transaction-manager.js";
+import {
+  createCollaboratorDocumentsApplication,
+  type CollaboratorDocumentsApplication
+} from "./application/collaborator-documents.application.js";
 import type {
   CollaboratorDocumentsFailure,
   SoftDeleteCollaboratorDocumentsInput
 } from "./application/contracts/soft-delete-collaborator-documents.input.js";
 import {collaboratorDocumentsFailure} from "./application/contracts/soft-delete-collaborator-documents.input.js";
-import {SoftDeleteCollaboratorDocumentsUseCase} from "./application/use-cases/soft-delete-collaborator-documents.use-case.js";
+import {
+  CollaboratorStatusReaderAdapter,
+  DocumentTypeStatusReaderAdapter
+} from "./infrastructure/adapters/parent-status.readers.js";
 import {MongoCollaboratorDocumentRepository} from "./infrastructure/persistence/mongodb/collaborator-document.mongo-repository.js";
+import {MongoObjectIdGenerator} from "../../shared/infrastructure/persistence/mongodb/mongo-object-id-generator.js";
+import {HmacCursorCodec} from "../../shared/infrastructure/security/hmac-cursor-codec.js";
+import {SystemClock} from "../../shared/infrastructure/time/system-clock.js";
+import type {TransactionContext} from "../../shared/application/ports/transaction-manager.js";
+import {RateLimitMiddleware} from "../../shared/presentation/http/middlewares/rate-limit.middleware.js";
+import {err, type Result} from "neverthrow";
+
+/** Configuração HTTP do módulo de vínculos documentais. */
+export type CollaboratorDocumentsHttpSettings = Readonly<{
+  cursorHmacSecret: string;
+  rateLimit: Readonly<{readLimit: number; writeLimit: number; windowMs: number}>;
+}>;
+
+const defaultSettings: CollaboratorDocumentsHttpSettings = {
+  cursorHmacSecret: "test-only-cursor-secret-must-be-at-least-32-bytes",
+  rateLimit: {readLimit: 60, writeLimit: 20, windowMs: 60_000}
+};
 
 /**
  * Superfície pública do módulo collaborator-documents para composições entre
- * módulos. O repositório Mongo permanece encapsulado no módulo proprietário.
+ * módulos e composition root HTTP.
  */
 @Injectable()
 export class CollaboratorDocumentsRuntime {
-  private readonly softDelete: SoftDeleteCollaboratorDocumentsUseCase;
+  @Constant<CollaboratorDocumentsHttpSettings>("collaboratorDocuments", defaultSettings)
+  private readonly settings!: CollaboratorDocumentsHttpSettings;
 
-  constructor(private readonly repository: MongoCollaboratorDocumentRepository) {
-    this.softDelete = new SoftDeleteCollaboratorDocumentsUseCase(repository);
+  readonly application: CollaboratorDocumentsApplication;
+  private readonly rateLimiters = new Map<string, RateLimitMiddleware>();
+  private cursorCodecInstance?: HmacCursorCodec;
+
+  constructor(
+    private readonly repository: MongoCollaboratorDocumentRepository,
+    collaborators: CollaboratorStatusReaderAdapter,
+    documentTypes: DocumentTypeStatusReaderAdapter,
+    private readonly clock: SystemClock,
+    ids: MongoObjectIdGenerator
+  ) {
+    this.application = createCollaboratorDocumentsApplication({
+      repository,
+      collaborators,
+      documentTypes,
+      clock: this.clock,
+      ids
+    });
+  }
+
+  get cursorCodec(): HmacCursorCodec {
+    this.cursorCodecInstance ??= new HmacCursorCodec(this.settings.cursorHmacSecret, this.clock);
+    return this.cursorCodecInstance;
+  }
+
+  rateLimiter(operationId: string, kind: "read" | "write"): RateLimitMiddleware {
+    const existing = this.rateLimiters.get(operationId);
+    if (existing) return existing;
+
+    const limiter = new RateLimitMiddleware({
+      limit:
+        kind === "read" ? this.settings.rateLimit.readLimit : this.settings.rateLimit.writeLimit,
+      windowMs: this.settings.rateLimit.windowMs,
+      operationId,
+      clock: this.clock
+    });
+    this.rateLimiters.set(operationId, limiter);
+    return limiter;
+  }
+
+  /** Limpa contadores em memória — usado pelos testes HTTP entre casos. */
+  resetRateLimiters(): void {
+    for (const limiter of this.rateLimiters.values()) limiter.reset();
   }
 
   async execute(
     input: SoftDeleteCollaboratorDocumentsInput,
     context: TransactionContext
   ): Promise<Result<void, CollaboratorDocumentsFailure>> {
-    return this.softDelete.execute(input, context);
+    return this.application.softDelete.execute(input, context);
   }
 
   async executeByDocumentType(

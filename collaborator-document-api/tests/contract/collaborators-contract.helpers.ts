@@ -4,7 +4,8 @@ import supertest from "supertest";
 /** Contratos publicam OpenAPI sem depender de uma instância MongoDB real. */
 export const contractServerSettings = {
   collaborators: {provisionIndexes: false},
-  documentTypes: {provisionIndexes: false}
+  documentTypes: {provisionIndexes: false},
+  collaboratorDocuments: {provisionIndexes: false}
 };
 
 export const publishedOperation = async (

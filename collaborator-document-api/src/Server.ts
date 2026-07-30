@@ -11,6 +11,9 @@ import {ApiRootController} from "./controllers/api-root.controller.js";
 import {CollaboratorsModule} from "./modules/collaborators/collaborators.module.js";
 import {CollaboratorIndexProvisioner} from "./modules/collaborators/infrastructure/persistence/mongodb/collaborator.indexes.js";
 import {CollaboratorsController} from "./modules/collaborators/presentation/http/controllers/collaborators.controller.js";
+import {CollaboratorDocumentsModule} from "./modules/collaborator-documents/collaborator-documents.module.js";
+import {CollaboratorDocumentIndexProvisioner} from "./modules/collaborator-documents/infrastructure/persistence/mongodb/collaborator-document.indexes.js";
+import {CollaboratorDocumentsController} from "./modules/collaborator-documents/presentation/http/controllers/collaborator-documents.controller.js";
 import {DocumentTypesModule} from "./modules/document-types/document-types.module.js";
 import {DocumentTypeIndexProvisioner} from "./modules/document-types/infrastructure/persistence/mongodb/document-type.indexes.js";
 import {DocumentTypesController} from "./modules/document-types/presentation/http/controllers/document-types.controller.js";
@@ -54,9 +57,20 @@ const corsMiddleware = cors({
   swagger: [openApiSettings],
   acceptMimes: ["application/json", "application/hal+json", "application/problem+json"],
   mount: {
-    "/": [HealthController, ApiRootController, CollaboratorsController, DocumentTypesController]
+    "/": [
+      HealthController,
+      ApiRootController,
+      CollaboratorsController,
+      DocumentTypesController,
+      CollaboratorDocumentsController
+    ]
   },
-  imports: [CollaboratorsModule, DocumentTypesModule, MongoReadinessCheck],
+  imports: [
+    CollaboratorsModule,
+    DocumentTypesModule,
+    CollaboratorDocumentsModule,
+    MongoReadinessCheck
+  ],
   middlewares: [
     helmet(),
     corsMiddleware,
@@ -75,9 +89,13 @@ export class Server {
   @Constant<boolean>("documentTypes.provisionIndexes", true)
   private readonly provisionDocumentTypeIndexes!: boolean;
 
+  @Constant<boolean>("collaboratorDocuments.provisionIndexes", true)
+  private readonly provisionCollaboratorDocumentIndexes!: boolean;
+
   constructor(
     private readonly collaboratorIndexes: CollaboratorIndexProvisioner,
-    private readonly documentTypeIndexes: DocumentTypeIndexProvisioner
+    private readonly documentTypeIndexes: DocumentTypeIndexProvisioner,
+    private readonly collaboratorDocumentIndexes: CollaboratorDocumentIndexProvisioner
   ) {}
 
   /**
@@ -97,6 +115,12 @@ export class Server {
       const result = await this.documentTypeIndexes.ensure();
       if (result.isErr()) {
         throw new Error(`DOCUMENT_TYPE_INDEX_PROVISIONING_FAILED:${result.error.code}`);
+      }
+    }
+    if (this.provisionCollaboratorDocumentIndexes) {
+      const result = await this.collaboratorDocumentIndexes.ensure();
+      if (result.isErr()) {
+        throw new Error(`COLLABORATOR_DOCUMENT_INDEX_PROVISIONING_FAILED:${result.error.code}`);
       }
     }
   }

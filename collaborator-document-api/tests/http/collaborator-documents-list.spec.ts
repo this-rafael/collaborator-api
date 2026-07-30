@@ -15,6 +15,7 @@ import {
 } from "../helpers/collaborator-document-fixtures.js";
 import {resetDatabase} from "../helpers/database.js";
 import {bootstrapHttpMongo, httpDatabase} from "../helpers/http-mongo.js";
+import {CollaboratorDocumentsRuntime} from "../../src/modules/collaborator-documents/collaborator-documents.runtime.js";
 
 const collaboratorOne = "66a64ab05bd7213b90d9b001";
 const collaboratorTwo = "66a64ab05bd7213b90d9b002";
@@ -24,7 +25,7 @@ const typeTwo = "66a64ab05bd7213b90d9b011";
 describe("Listing collaborator documents", () => {
   bootstrapHttpMongo({
     beforeBootstrap: () => {
-      process.env.RATE_LIMIT_GET = "1";
+      process.env.RATE_LIMIT_GET = "100";
       process.env.RATE_LIMIT_WINDOW_MS = "60000";
     }
   });
@@ -32,6 +33,9 @@ describe("Listing collaborator documents", () => {
   beforeEach(async () => {
     await resetDatabase(httpDatabase());
     await seedBaseLinks();
+    PlatformTest.get<CollaboratorDocumentsRuntime>(
+      CollaboratorDocumentsRuntime
+    ).resetRateLimiters();
   });
 
   afterAll(() => {
@@ -248,8 +252,11 @@ describe("Listing collaborator documents", () => {
   });
 
   it("returns 429 with Retry-After when the GET operation limit is exceeded", async () => {
-    await list().expect(200);
-    const response = await list().expect(429);
+    const ip = "198.51.100.19";
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      await list({}, ip);
+    }
+    const response = await list({}, ip).expect(429);
 
     expect(response.headers["content-type"]).toContain("application/problem+json");
     expect(Number.parseInt(response.headers["retry-after"] as string, 10)).toBeGreaterThanOrEqual(
@@ -283,8 +290,11 @@ describe("Listing collaborator documents", () => {
   });
 });
 
-function list(query: Record<string, string | number> = {}) {
-  return supertest(PlatformTest.callback()).get("/api/v1/collaborator-documents").query(query);
+function list(query: Record<string, string | number> = {}, ip?: string) {
+  const request = supertest(PlatformTest.callback())
+    .get("/api/v1/collaborator-documents")
+    .query(query);
+  return ip ? request.set("X-Forwarded-For", ip) : request;
 }
 
 type CollectionItem = {

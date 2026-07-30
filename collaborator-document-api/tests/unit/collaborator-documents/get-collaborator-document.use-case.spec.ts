@@ -4,7 +4,7 @@ import {linkPendingFixture} from "../../helpers/collaborator-document-fixtures.j
 import {CollaboratorDocumentGetRepositoryStub} from "../../helpers/collaborator-document-runtime.js";
 
 const getUseCaseModule =
-  "../../src/modules/collaborator-documents/application/use-cases/get-collaborator-document.use-case.js";
+  "../../../src/modules/collaborator-documents/application/use-cases/get-collaborator-document.use-case.js";
 
 describe("GetCollaboratorDocumentUseCase", () => {
   it("returns an active PENDING link by id", async () => {
