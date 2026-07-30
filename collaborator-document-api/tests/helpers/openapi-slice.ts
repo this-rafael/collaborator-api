@@ -602,3 +602,18 @@ export const loadUpdateCollaboratorSliceFromExpected = (): OperationSlice =>
 
 export const loadDeleteCollaboratorSliceFromExpected = (): OperationSlice =>
   loadOperationSliceFromExpected("/api/v1/collaborators/{id}", "delete");
+
+export const loadCreateDocumentTypeSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/document-types", "post");
+
+export const loadListDocumentTypesSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/document-types", "get");
+
+export const loadGetDocumentTypeSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/document-types/{id}", "get");
+
+export const loadUpdateDocumentTypeSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/document-types/{id}", "patch");
+
+export const loadDeleteDocumentTypeSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/document-types/{id}", "delete");
