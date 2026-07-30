@@ -123,4 +123,33 @@ describe("Updating a document type through the application command", () => {
     if (result.isErr()) expect(result.error.code).toBe("DOCUMENT_TYPE_DELETED");
     expect(persisted).toBe(false);
   });
+
+  it("does not persist when the clock is unavailable", async () => {
+    const {DocumentType} =
+      await import("../../../src/modules/document-types/domain/entities/document-type.js");
+    const {UpdateDocumentTypeUseCase} =
+      await import("../../../src/modules/document-types/application/use-cases/update-document-type.use-case.js");
+    const existing = DocumentType.create(
+      {id, name: "Atestado", code: "ASO", description: null},
+      new Date("2026-07-30T12:00:00.000Z")
+    )._unsafeUnwrap();
+    let persisted = false;
+    const repository = {
+      findById: () => okAsync(existing),
+      updateActive: () => {
+        persisted = true;
+        return okAsync(existing);
+      }
+    };
+
+    const result = await new UpdateDocumentTypeUseCase(repository as never, {
+      now: () => {
+        throw new Error("clock unavailable");
+      }
+    }).execute({id, patch: {name: "Novo nome"}});
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("INTERNAL_SERVER_ERROR");
+    expect(persisted).toBe(false);
+  });
 });

@@ -38,6 +38,22 @@ describe("Deleting document types transactionally", () => {
     expect(links.every(({versions}) => versions[0].payload === "preserved")).toBe(true);
   });
 
+  it("does not write the cascade again after an idempotent delete", async () => {
+    await seedDocumentTypeAndLinks();
+    const application = await deleteApplication();
+    expect((await application.execute({id: documentTypeId})).isOk()).toBe(true);
+    const first = await httpDatabase()
+      .collection("collaborator_documents")
+      .find({documentTypeId})
+      .toArray();
+    expect((await application.execute({id: documentTypeId})).isOk()).toBe(true);
+    const repeated = await httpDatabase()
+      .collection("collaborator_documents")
+      .find({documentTypeId})
+      .toArray();
+    expect(repeated.map(({deletedAt}) => deletedAt)).toEqual(first.map(({deletedAt}) => deletedAt));
+  });
+
   it("rolls back the type update when the document cascade fails", async () => {
     const db = httpDatabase();
     await db
@@ -57,22 +73,12 @@ describe("Deleting document types transactionally", () => {
     const links = await db.collection("collaborator_documents").find({documentTypeId}).toArray();
     expect(type?.deletedAt).toBeNull();
     expect(links.every(({deletedAt}) => deletedAt === null)).toBe(true);
-  });
 
-  it("does not write the cascade again after an idempotent delete", async () => {
-    await seedDocumentTypeAndLinks();
-    const application = await deleteApplication();
-    expect((await application.execute({id: documentTypeId})).isOk()).toBe(true);
-    const first = await httpDatabase()
+    await db
       .collection("collaborator_documents")
-      .find({documentTypeId})
-      .toArray();
-    expect((await application.execute({id: documentTypeId})).isOk()).toBe(true);
-    const repeated = await httpDatabase()
-      .collection("collaborator_documents")
-      .find({documentTypeId})
-      .toArray();
-    expect(repeated.map(({deletedAt}) => deletedAt)).toEqual(first.map(({deletedAt}) => deletedAt));
+      .drop()
+      .catch(() => undefined);
+    await db.createCollection("collaborator_documents");
   });
 });
 

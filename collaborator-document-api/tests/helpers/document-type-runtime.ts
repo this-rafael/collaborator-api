@@ -1,68 +1,45 @@
 import {errAsync, okAsync, type ResultAsync} from "neverthrow";
 
-export interface DocumentTypeRuntimeEntity {
-  id: string;
-  name: string;
-  code: string;
-  description: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt: Date | null;
-}
+import {DocumentType} from "../../src/modules/document-types/domain/entities/document-type.js";
+import type {
+  DocumentTypeListPage,
+  DocumentTypeRepository
+} from "../../src/modules/document-types/domain/repositories/document-type.repository.js";
+import type {DocumentTypeFailure} from "../../src/modules/document-types/domain/errors/document-type.failure.js";
 
-export interface DocumentTypeRuntimePage {
-  items: DocumentTypeRuntimeEntity[];
-  hasNext: boolean;
-}
+export type DocumentTypeRuntimeFailure = DocumentTypeFailure;
 
-export type DocumentTypeRuntimeFailure =
-  | {
-      kind: "application";
-      code:
-        | "DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE"
-        | "DOCUMENT_TYPE_NOT_FOUND"
-        | "DOCUMENT_TYPE_DELETED"
-        | "SERVICE_UNAVAILABLE"
-        | "INTERNAL_SERVER_ERROR";
-      message: string;
-    }
-  | {kind: "domain"; code: "VALIDATION_ERROR"; message: string};
+const fixedDocumentType = (): DocumentType =>
+  DocumentType.create(
+    {
+      id: "66a64ab05bd7213b90d9b010",
+      name: "Atestado de Saúde Ocupacional",
+      code: "ASO",
+      description: "Atestado ocupacional vigente"
+    },
+    new Date("2026-07-30T12:00:00.000Z")
+  )._unsafeUnwrap();
 
-const activeEntity = (): DocumentTypeRuntimeEntity => ({
-  id: "66a64ab05bd7213b90d9b010",
-  name: "Atestado de Saúde Ocupacional",
-  code: "ASO",
-  description: "Atestado ocupacional vigente",
-  createdAt: new Date("2026-07-30T12:00:00.000Z"),
-  updatedAt: new Date("2026-07-30T12:00:00.000Z"),
-  deletedAt: null
-});
-
-export class DocumentTypeRepositoryStub {
+export class DocumentTypeRepositoryStub implements DocumentTypeRepository {
   constructor(
-    private readonly result: ResultAsync<
-      DocumentTypeRuntimeEntity,
-      DocumentTypeRuntimeFailure
-    > = okAsync(activeEntity())
+    private readonly result: ResultAsync<DocumentType, DocumentTypeRuntimeFailure> = okAsync(
+      fixedDocumentType()
+    )
   ) {}
 
-  create(
-    entity?: DocumentTypeRuntimeEntity
-  ): ResultAsync<DocumentTypeRuntimeEntity, DocumentTypeRuntimeFailure> {
-    return entity ? okAsync(entity) : this.result;
-  }
-
-  findById(): ResultAsync<DocumentTypeRuntimeEntity, DocumentTypeRuntimeFailure> {
+  create(): ResultAsync<DocumentType, DocumentTypeRuntimeFailure> {
     return this.result;
   }
 
-  updateActive(
-    entity?: DocumentTypeRuntimeEntity
-  ): ResultAsync<DocumentTypeRuntimeEntity, DocumentTypeRuntimeFailure> {
-    return entity ? okAsync(entity) : this.result;
+  findById(): ResultAsync<DocumentType, DocumentTypeRuntimeFailure> {
+    return this.result;
   }
 
-  listActive(): ResultAsync<DocumentTypeRuntimePage, DocumentTypeRuntimeFailure> {
+  updateActive(): ResultAsync<DocumentType, DocumentTypeRuntimeFailure> {
+    return this.result;
+  }
+
+  listActive(): ResultAsync<DocumentTypeListPage, DocumentTypeRuntimeFailure> {
     return this.result.map((value) => ({
       items: value.deletedAt === null ? [value] : [],
       hasNext: false
@@ -70,15 +47,15 @@ export class DocumentTypeRepositoryStub {
   }
 
   softDeleteActive(): ResultAsync<boolean, DocumentTypeRuntimeFailure> {
-    return this.result.map((value) => value.deletedAt === null);
+    return okAsync(true);
   }
 
-  static duplicateCode(): DocumentTypeRepositoryStub {
+  static unavailable(): DocumentTypeRepositoryStub {
     return new DocumentTypeRepositoryStub(
       errAsync({
         kind: "application",
-        code: "DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE",
-        message: "An active document type already uses this code."
+        code: "SERVICE_UNAVAILABLE",
+        message: "Document type persistence is unavailable."
       })
     );
   }
@@ -93,19 +70,19 @@ export class DocumentTypeRepositoryStub {
     );
   }
 
-  static unavailable(): DocumentTypeRepositoryStub {
+  static duplicateCode(): DocumentTypeRepositoryStub {
     return new DocumentTypeRepositoryStub(
       errAsync({
         kind: "application",
-        code: "SERVICE_UNAVAILABLE",
-        message: "Document type persistence is unavailable."
+        code: "DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE",
+        message: "An active document type already uses this code."
       })
     );
   }
 
   static deleted(): DocumentTypeRepositoryStub {
     return new DocumentTypeRepositoryStub(
-      okAsync({...activeEntity(), deletedAt: new Date("2026-07-30T13:00:00.000Z")})
+      okAsync(fixedDocumentType().softDelete(new Date("2026-07-30T13:00:00.000Z"))._unsafeUnwrap())
     );
   }
 }

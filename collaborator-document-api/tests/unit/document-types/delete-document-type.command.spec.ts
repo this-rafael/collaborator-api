@@ -131,8 +131,19 @@ describe("Deleting a document type through the application command", () => {
 
   // TYPE-DELETE-008, TX-003
   it("preserves transaction service unavailability", async () => {
+    const {DocumentType} =
+      await import("../../../src/modules/document-types/domain/entities/document-type.js");
     const {DeleteDocumentTypeUseCase} =
       await import("../../../src/modules/document-types/application/use-cases/delete-document-type.use-case.js");
+    const active = DocumentType.create(
+      {id, name: "Atestado", code: "ASO", description: null},
+      new Date("2026-07-30T12:00:00.000Z")
+    )._unsafeUnwrap();
+    const repository = {
+      findById: () => okAsync(active),
+      softDeleteActive: () => okAsync(true)
+    };
+    const documents = {execute: () => okAsync(undefined)};
     const transactions = {
       execute: () =>
         errAsync({
@@ -142,12 +153,58 @@ describe("Deleting a document type through the application command", () => {
         })
     };
     const result = await new DeleteDocumentTypeUseCase(
-      {} as never,
-      {} as never,
+      repository as never,
+      documents as never,
       transactions as never,
       clock
     ).execute({id});
     expect(result.isErr()).toBe(true);
     if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");
+  });
+
+  it("does not start deletion when the clock is unavailable", async () => {
+    const {DocumentType} =
+      await import("../../../src/modules/document-types/domain/entities/document-type.js");
+    const {DeleteDocumentTypeUseCase} =
+      await import("../../../src/modules/document-types/application/use-cases/delete-document-type.use-case.js");
+    const active = DocumentType.create(
+      {id, name: "Atestado", code: "ASO", description: null},
+      new Date("2026-07-30T12:00:00.000Z")
+    )._unsafeUnwrap();
+    let transactionStarted = false;
+    const repository = {
+      findById: () => okAsync(active),
+      softDeleteActive: () => okAsync(true)
+    };
+    const documents = {execute: () => okAsync(undefined)};
+    const transactions = {
+      execute: () => {
+        transactionStarted = true;
+        return okAsync(undefined);
+      }
+    };
+
+    const result = await new DeleteDocumentTypeUseCase(
+      repository as never,
+      documents as never,
+      transactions as never,
+      {
+        now: () => {
+          throw new Error("clock unavailable");
+        }
+      }
+    ).execute({id});
+    const invalidNow = await new DeleteDocumentTypeUseCase(
+      repository as never,
+      documents as never,
+      transactions as never,
+      {now: () => new Date("invalid")}
+    ).execute({id});
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("INTERNAL_SERVER_ERROR");
+    expect(invalidNow.isErr()).toBe(true);
+    if (invalidNow.isErr()) expect(invalidNow.error.code).toBe("VALIDATION_ERROR");
+    expect(transactionStarted).toBe(false);
   });
 });

@@ -21,11 +21,19 @@ const defaultRateLimit = {readLimit: 60, writeLimit: 20, windowMs: 60_000} as co
  *   `mongoose` consumidas pelo bootstrap do Ts.ED.
  */
 export function serverSettings(env: BootstrapEnv) {
-  const rateLimit = env.rateLimit ?? defaultRateLimit;
+  const rateLimit =
+    env.nodeEnv === "test"
+      ? {readLimit: 10_000, writeLimit: 10_000, windowMs: 60_000}
+      : (env.rateLimit ?? defaultRateLimit);
   return {
     httpPort: env.port,
     logger: {level: env.logLevel},
     collaborators: {
+      cursorHmacSecret: env.cursorHmacSecret ?? testCursorHmacSecret,
+      rateLimit,
+      provisionIndexes: true
+    },
+    documentTypes: {
       cursorHmacSecret: env.cursorHmacSecret ?? testCursorHmacSecret,
       rateLimit,
       provisionIndexes: true

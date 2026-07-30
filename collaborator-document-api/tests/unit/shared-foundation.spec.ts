@@ -33,6 +33,8 @@ describe("Shared foundation helpers", () => {
     expect(isApplicationFailure(application)).toBe(true);
     expect(isDomainFailure(application)).toBe(false);
     expect(isApplicationFailure(domain)).toBe(false);
+    expect(isDomainFailure(null)).toBe(false);
+    expect(isApplicationFailure(null)).toBe(false);
   });
 
   it("exposes Result helpers based on neverthrow", () => {
