@@ -18,6 +18,7 @@ import type {
   DocumentTypeRepository
 } from "../../domain/repositories/document-type.repository.js";
 
+/** Normaliza filtros de listagem removendo acentos e padronizando o nome. */
 export function normalizeDocumentTypeFilters(
   input: DocumentTypeListFiltersInput
 ): Result<DocumentTypeListFilters, DocumentTypeFailure> {
@@ -56,6 +57,7 @@ export function normalizeDocumentTypeFilters(
   });
 }
 
+/** Caso de uso para listagem paginada de tipos de documento ativos. */
 export class ListDocumentTypesUseCase {
   constructor(private readonly repository: Pick<DocumentTypeRepository, "listActive">) {}
 

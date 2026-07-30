@@ -11,6 +11,7 @@ export type CollaboratorMongoDocument = {
   deletedAt: Date | null;
 };
 
+/** Esquema Mongoose para a coleção de colaboradores. */
 export const collaboratorMongoSchema = new Schema<CollaboratorMongoDocument>(
   {
     name: {type: String, required: true},

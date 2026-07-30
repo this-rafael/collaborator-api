@@ -11,7 +11,7 @@ import {ProblemDetailsMapper} from "../errors/problem-details.mapper.js";
  * Problem Details 500 com trace ID gerado no momento.
  */
 export class GlobalErrorFilter {
-  private mapper = new ProblemDetailsMapper();
+  private readonly mapper = new ProblemDetailsMapper();
 
   catch(error: unknown, ctx: {response: Response}): void {
     const res = ctx.response;
@@ -45,10 +45,9 @@ function normalizeInstance(path: string | undefined): string {
  */
 export function globalErrorMiddleware(
   error: unknown,
-  req: unknown,
+  _req: unknown,
   res: Response,
   _next: unknown
 ): void {
   new GlobalErrorFilter().catch(error, {response: res});
-  void req;
 }

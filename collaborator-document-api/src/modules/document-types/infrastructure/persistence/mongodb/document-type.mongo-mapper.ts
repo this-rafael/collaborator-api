@@ -10,11 +10,14 @@ import {DocumentTypeCode} from "../../../domain/value-objects/document-type-code
 import {DocumentTypeName} from "../../../domain/value-objects/document-type-name.js";
 import type {DocumentTypeMongoDocument} from "./document-type.mongo-document.js";
 
+/** Formato de escrita de tipo de documento no MongoDB. */
 export type DocumentTypeMongoWrite = DocumentTypeMongoDocument & Readonly<{_id: Types.ObjectId}>;
 
+/** Formato de leitura de tipo de documento no MongoDB. */
 export type DocumentTypeMongoRead = Partial<DocumentTypeMongoDocument> &
   Readonly<{_id?: {toString(): string}; id?: string}>;
 
+/** Normaliza o nome para indexação: remove acentos, colapsa espaços, minúsculas pt-BR. */
 export const normalizeDocumentTypeName = (value: string): string =>
   value
     .normalize("NFD")
@@ -23,6 +26,7 @@ export const normalizeDocumentTypeName = (value: string): string =>
     .trim()
     .toLocaleLowerCase("pt-BR");
 
+/** Converte o agregado de domínio para documento Mongo de escrita. */
 export const documentTypeToMongoDocument = (
   documentType: DocumentType
 ): Result<DocumentTypeMongoWrite, DocumentTypeFailure> => {
@@ -48,6 +52,7 @@ export const documentTypeToMongoDocument = (
   });
 };
 
+/** Reconstrói o agregado de domínio a partir de um documento Mongo lido. */
 export const documentTypeFromMongoDocument = (
   value: DocumentTypeMongoRead
 ): Result<DocumentType, DocumentTypeFailure> => {

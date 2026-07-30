@@ -17,12 +17,12 @@ describe("Normalizing document type list filters", () => {
   });
 
   // TYPE-LIST-005
-  it.each(["aso", "A", "1ASO", "ASO-TEST", 42])(
+  it.each(["aso", "A", "1ASO", "ASO-TEST", 42 as unknown])(
     "returns a modeled query failure for invalid code filters",
     async (code) => {
       const {normalizeDocumentTypeFilters} =
         await import("../../../src/modules/document-types/application/use-cases/list-document-types.use-case.js");
-      const result = normalizeDocumentTypeFilters({code});
+      const result = normalizeDocumentTypeFilters({code: code as string});
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {

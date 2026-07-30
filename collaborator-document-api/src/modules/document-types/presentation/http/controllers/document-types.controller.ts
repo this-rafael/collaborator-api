@@ -16,6 +16,7 @@ import {
   Tags
 } from "@tsed/schema";
 import type {Request, Response} from "express";
+import {err, ok, type Result} from "neverthrow";
 
 import {normalizeDocumentTypeFilters} from "../../../application/use-cases/list-document-types.use-case.js";
 import {DocumentTypesRuntime} from "../../../document-types.runtime.js";
@@ -41,6 +42,7 @@ type HttpFailure = Readonly<{
 
 const objectIdPattern = /^[a-f\d]{24}$/i;
 
+/** Controlador REST para operações CRUD de tipos de documento. */
 @Controller("/api/v1/document-types")
 @Tags("Document Types")
 export class DocumentTypesController {
@@ -125,33 +127,15 @@ export class DocumentTypesController {
     if (!(await this.runtime.rateLimiter("listDocumentTypes", "read").handle(res.req!, res)))
       return;
 
-    const limit = rawLimit === undefined || rawLimit === "" ? 20 : Number(rawLimit);
-    const cursor = rawCursor === undefined ? undefined : queryValue(rawCursor);
-    const filters = {name: queryValue(name), code: queryValue(code)};
-    if (
-      !Number.isInteger(limit) ||
-      limit < 1 ||
-      limit > 100 ||
-      (rawCursor !== undefined && !cursor)
-    ) {
-      return this.writeProblem(
-        res,
-        invalidQueryFailure(rawCursor !== undefined && !cursor ? "cursor" : "limit"),
-        traceId
-      );
-    }
+    const parsed = parseDocumentTypeListQuery(rawLimit, rawCursor, name, code);
+    if (parsed.isErr()) return this.writeProblem(res, parsed.error, traceId);
 
+    const {limit, cursor, filters} = parsed.value;
     const normalizedFilters = normalizeDocumentTypeFilters(filters);
     if (normalizedFilters.isErr()) {
       return this.writeProblem(
         res,
-        {
-          ...normalizedFilters.error,
-          errors:
-            normalizedFilters.error.kind === "application" && normalizedFilters.error.errors
-              ? normalizedFilters.error.errors
-              : invalidQueryFailure(filters.code !== undefined ? "code" : "name").errors
-        },
+        resolveFilterFailure(normalizedFilters.error, filters),
         traceId
       );
     }
@@ -446,4 +430,41 @@ function errorsFor(code: string, failure: HttpFailure): readonly FieldError[] | 
 
 function fieldError(field: string, code: string, message: string): FieldError {
   return {field, code, message};
+}
+
+type ParsedDocumentTypeListQuery = {
+  limit: number;
+  cursor: string | undefined;
+  filters: {name: string | undefined; code: string | undefined};
+};
+
+function parseDocumentTypeListQuery(
+  rawLimit: string | undefined,
+  rawCursor: string | undefined,
+  name: string | undefined,
+  code: string | undefined
+): Result<ParsedDocumentTypeListQuery, HttpFailure> {
+  const limit = rawLimit === undefined || rawLimit === "" ? 20 : Number(rawLimit);
+  const cursor = rawCursor === undefined ? undefined : queryValue(rawCursor);
+  const filters = {name: queryValue(name), code: queryValue(code)};
+
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return err(invalidQueryFailure("limit"));
+  }
+  if (rawCursor !== undefined && !cursor) {
+    return err(invalidQueryFailure("cursor"));
+  }
+
+  return ok({limit, cursor, filters});
+}
+
+function resolveFilterFailure(
+  filterError: HttpFailure & {kind: string; errors?: readonly FieldError[]},
+  filters: {name: string | undefined; code: string | undefined}
+): HttpFailure {
+  if (filterError.kind === "application" && filterError.errors) {
+    return {...filterError, errors: filterError.errors};
+  }
+  const field = filters.code !== undefined ? "code" : "name";
+  return {...filterError, errors: invalidQueryFailure(field).errors};
 }

@@ -622,3 +622,6 @@ export const loadUpdateDocumentTypeSliceFromExpected = (): OperationSlice =>
 
 export const loadDeleteDocumentTypeSliceFromExpected = (): OperationSlice =>
   loadOperationSliceFromExpected("/api/v1/document-types/{id}", "delete");
+
+export const loadCreateCollaboratorDocumentSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborator-documents", "post");

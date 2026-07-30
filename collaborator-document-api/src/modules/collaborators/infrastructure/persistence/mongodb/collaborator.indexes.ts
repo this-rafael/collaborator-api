@@ -42,7 +42,7 @@ export class CollaboratorIndexProvisioner {
   private async ensureSafely(): Promise<Result<readonly string[], CollaboratorFailure>> {
     try {
       const connection = this.mongoose.get();
-      if (!connection || connection.readyState !== 1) {
+      if (connection?.readyState !== 1) {
         return err(
           collaboratorApplicationFailure(
             "SERVICE_UNAVAILABLE",

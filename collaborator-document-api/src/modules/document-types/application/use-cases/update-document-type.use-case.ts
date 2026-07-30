@@ -9,6 +9,7 @@ import type {UpdateDocumentTypeInput} from "../contracts/document-type-input.js"
 import {documentTypeToOutput, type DocumentTypeOutput} from "../contracts/document-type-output.js";
 import type {DocumentTypeRepository} from "../../domain/repositories/document-type.repository.js";
 
+/** Caso de uso para atualização de um tipo de documento ativo. */
 export class UpdateDocumentTypeUseCase {
   constructor(
     private readonly repository: Pick<DocumentTypeRepository, "findById" | "updateActive">,

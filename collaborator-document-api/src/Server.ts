@@ -20,14 +20,16 @@ import {requestIdMiddleware} from "./shared/presentation/http/middlewares/reques
 import {requestObservabilityMiddleware} from "./shared/presentation/http/middlewares/request-observability.middleware.js";
 import {openApiSettings} from "./config/openapi.js";
 
-const corsAllowlist = (process.env.CORS_ALLOWLIST ?? "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const corsAllowlist = new Set(
+  (process.env.CORS_ALLOWLIST ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
 
 const corsMiddleware = cors({
   origin(origin, callback) {
-    if (!origin || corsAllowlist.includes(origin)) {
+    if (!origin || corsAllowlist.has(origin)) {
       callback(null, origin ?? false);
       return;
     }

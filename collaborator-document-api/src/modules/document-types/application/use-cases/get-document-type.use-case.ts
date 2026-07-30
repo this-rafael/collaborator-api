@@ -5,6 +5,7 @@ import type {DocumentTypeIdInput} from "../contracts/document-type-input.js";
 import {documentTypeToOutput, type DocumentTypeOutput} from "../contracts/document-type-output.js";
 import type {DocumentTypeRepository} from "../../domain/repositories/document-type.repository.js";
 
+/** Caso de uso para consulta de um tipo de documento por identificador. */
 export class GetDocumentTypeUseCase {
   constructor(private readonly repository: Pick<DocumentTypeRepository, "findById">) {}
 

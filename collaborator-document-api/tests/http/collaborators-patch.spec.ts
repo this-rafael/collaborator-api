@@ -67,22 +67,29 @@ describe("Updating a collaborator", () => {
   });
 
   it("maps id, media type, not found and deleted state", async () => {
-    await supertest(PlatformTest.callback())
+    const badId = await supertest(PlatformTest.callback())
       .patch("/api/v1/collaborators/nope")
       .send({name: "Ana"})
       .expect(400);
-    await supertest(PlatformTest.callback())
+    expect(badId.body).toBeDefined();
+
+    const badMediaType = await supertest(PlatformTest.callback())
       .patch(`/api/v1/collaborators/${id}`)
       .set("Content-Type", "text/plain")
       .send("text")
       .expect(415);
-    await supertest(PlatformTest.callback())
+    expect(badMediaType.body).toBeDefined();
+
+    const notFound = await supertest(PlatformTest.callback())
       .patch("/api/v1/collaborators/66a64ab05bd7213b90d9b099")
       .send({name: "Ana"})
       .expect(404);
-    await supertest(PlatformTest.callback())
+    expect(notFound.body).toBeDefined();
+
+    const deleted = await supertest(PlatformTest.callback())
       .patch("/api/v1/collaborators/66a64ab05bd7213b90d9b002")
       .send({name: "Ana"})
       .expect(410);
+    expect(deleted.body).toBeDefined();
   });
 });

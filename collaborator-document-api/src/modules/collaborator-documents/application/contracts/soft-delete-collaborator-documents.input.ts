@@ -11,6 +11,7 @@ export type CollaboratorDocumentsFailure = Readonly<{
   message: string;
 }>;
 
+/** Construtor de falha para a cascata de documentos. */
 export const collaboratorDocumentsFailure = (
   code: CollaboratorDocumentsFailure["code"],
   message: string

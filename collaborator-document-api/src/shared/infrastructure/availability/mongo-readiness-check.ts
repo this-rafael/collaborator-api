@@ -27,7 +27,7 @@ export class MongoReadinessCheck implements ReadinessCheck {
 
     try {
       const connection = this.mongooseService.get();
-      if (!connection || connection.readyState !== 1) {
+      if (connection?.readyState !== 1) {
         return false;
       }
       await connection.db?.admin()?.ping();

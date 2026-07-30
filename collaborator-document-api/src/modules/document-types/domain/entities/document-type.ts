@@ -8,6 +8,7 @@ import {
 import {DocumentTypeCode} from "../value-objects/document-type-code.js";
 import {DocumentTypeName} from "../value-objects/document-type-name.js";
 
+/** Estado imutável do agregado de tipo de documento. */
 export type DocumentTypeProps = Readonly<{
   id: string;
   name: DocumentTypeName;
@@ -18,6 +19,7 @@ export type DocumentTypeProps = Readonly<{
   deletedAt: Date | null;
 }>;
 
+/** Dados brutos aceitos para criar um tipo de documento. */
 export type CreateDocumentTypeProps = Readonly<{
   id: unknown;
   name: unknown;
@@ -25,6 +27,7 @@ export type CreateDocumentTypeProps = Readonly<{
   description?: unknown;
 }>;
 
+/** Dados brutos aceitos para atualizar um tipo de documento. */
 export type UpdateDocumentTypeProps = Readonly<{
   name?: unknown;
   code?: unknown;
@@ -63,7 +66,7 @@ export class DocumentType {
     const code = DocumentTypeCode.create(input.code);
     if (code.isErr()) return err(code.error);
     const description = parseDescription(
-      Object.prototype.hasOwnProperty.call(input, "description") ? input.description : undefined,
+      Object.hasOwn(input, "description") ? input.description : undefined,
       true
     );
     if (description.isErr()) return err(description.error);
@@ -153,7 +156,7 @@ export class DocumentType {
     if (code.isErr()) return err(code.error);
 
     let description: Result<string | null, DocumentTypeDomainFailure> = ok(this.state.description);
-    if (Object.prototype.hasOwnProperty.call(patch, "description")) {
+    if (Object.hasOwn(patch, "description")) {
       description = parseDescription(patch.description, false);
     }
     if (description.isErr()) return err(description.error);

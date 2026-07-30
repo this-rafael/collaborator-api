@@ -15,12 +15,14 @@ import {
 
 import {HalLink} from "../../../../../shared/presentation/http/schemas/hal-link.js";
 
+/** Mapa de links HAL para respostas individuais de tipo de documento. */
 @AdditionalProperties({$ref: "#/components/schemas/HalLink"})
 @Name("DocumentTypeHalLinks")
 export class DocumentTypeHalLinks {
   [relation: string]: HalLink;
 }
 
+/** Mapa de links HAL para páginas de coleção de tipos de documento. */
 @AdditionalProperties({$ref: "#/components/schemas/HalLink"})
 @Name("DocumentTypePageLinks")
 export class DocumentTypePageLinks {
@@ -32,6 +34,7 @@ export class DocumentTypePageLinks {
   next?: HalLink;
 }
 
+/** Esquema de resposta para um único tipo de documento em HAL+JSON. */
 @AdditionalProperties(false)
 @Name("DocumentType")
 export class DocumentTypeResponse {
@@ -76,6 +79,7 @@ export class DocumentTypeResponse {
   _links!: DocumentTypeHalLinks;
 }
 
+/** Esquema de itens embutidos na coleção de tipos de documento. */
 @AdditionalProperties(false)
 export class DocumentTypeCollectionEmbedded {
   @Required()
@@ -83,6 +87,7 @@ export class DocumentTypeCollectionEmbedded {
   documentTypes!: DocumentTypeResponse[];
 }
 
+/** Esquema de resposta para coleção paginada de tipos de documento. */
 @AdditionalProperties(false)
 @Name("DocumentTypeCollection")
 export class DocumentTypeCollectionResponse {

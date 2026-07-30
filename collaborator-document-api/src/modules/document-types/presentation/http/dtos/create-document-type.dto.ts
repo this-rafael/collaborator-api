@@ -9,6 +9,7 @@ import {
   Required
 } from "@tsed/schema";
 
+/** Dados de requisição para criar um tipo de documento. */
 @AdditionalProperties(false)
 @Name("DocumentTypeCreateRequest")
 export class CreateDocumentTypeDto {

@@ -9,6 +9,7 @@ import {
   Property
 } from "@tsed/schema";
 
+/** Dados de requisição para atualizar um tipo de documento. */
 @AdditionalProperties(false)
 @MinProperties(1)
 @Name("DocumentTypePatchRequest")

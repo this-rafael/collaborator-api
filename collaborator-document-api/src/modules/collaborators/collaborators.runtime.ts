@@ -12,6 +12,7 @@ import {HmacCursorCodec} from "../../shared/infrastructure/security/hmac-cursor-
 import {SystemClock} from "../../shared/infrastructure/time/system-clock.js";
 import {RateLimitMiddleware} from "../../shared/presentation/http/middlewares/rate-limit.middleware.js";
 
+/** Configuração HTTP do módulo de colaboradores. */
 export type CollaboratorsHttpSettings = Readonly<{
   cursorHmacSecret: string;
   rateLimit: Readonly<{readLimit: number; writeLimit: number; windowMs: number}>;
@@ -55,9 +56,7 @@ export class CollaboratorsRuntime {
   }
 
   get cursorCodec(): HmacCursorCodec {
-    if (!this.cursorCodecInstance) {
-      this.cursorCodecInstance = new HmacCursorCodec(this.settings.cursorHmacSecret, this.clock);
-    }
+    this.cursorCodecInstance ??= new HmacCursorCodec(this.settings.cursorHmacSecret, this.clock);
     return this.cursorCodecInstance;
   }
 

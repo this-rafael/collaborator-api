@@ -1,5 +1,6 @@
 import {Schema, type Connection, type Model} from "mongoose";
 
+/** Documento Mongo persistido pelo módulo document-types. */
 export type DocumentTypeMongoDocument = {
   name: string;
   nameNormalized: string;
@@ -10,6 +11,7 @@ export type DocumentTypeMongoDocument = {
   deletedAt: Date | null;
 };
 
+/** Esquema Mongoose para a coleção de tipos de documento. */
 export const documentTypeMongoSchema = new Schema<DocumentTypeMongoDocument>(
   {
     name: {type: String, required: true},
@@ -23,6 +25,7 @@ export const documentTypeMongoSchema = new Schema<DocumentTypeMongoDocument>(
   {collection: "document_types", timestamps: false}
 );
 
+/** Obtém o model da conexão que foi injetada pela composição da aplicação. */
 export const getDocumentTypeMongoModel = (
   connection: Connection
 ): Model<DocumentTypeMongoDocument> =>

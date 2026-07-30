@@ -2,7 +2,7 @@ import type {Request, Response, NextFunction} from "express";
 import {$log} from "@tsed/logger";
 
 const CPF_PATTERN = /\d{3}\.?\d{3}\.?\d{3}-?\d{2}/g;
-const EMAIL_PATTERN = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
+const EMAIL_PATTERN = /[a-z0-9]+(?:[._%+-][a-z0-9]+)*@[a-z0-9]+(?:[.-][a-z0-9]+)*\.[a-z]{2,}/gi;
 
 /**
  * Remove dados sensíveis (CPF, email) de uma string,
@@ -42,9 +42,15 @@ export function requestObservabilityMiddleware(
       status: res.statusCode,
       durationMs: Math.round(durationMs * 100) / 100,
       operationId,
-      result: res.statusCode >= 500 ? "failure" : res.statusCode >= 400 ? "rejected" : "success"
+      result: getResultLabel(res.statusCode)
     });
   });
 
   next();
+}
+
+function getResultLabel(statusCode: number): string {
+  if (statusCode >= 500) return "failure";
+  if (statusCode >= 400) return "rejected";
+  return "success";
 }

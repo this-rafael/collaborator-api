@@ -9,6 +9,7 @@ import {GetDocumentTypeUseCase} from "./use-cases/get-document-type.use-case.js"
 import {ListDocumentTypesUseCase} from "./use-cases/list-document-types.use-case.js";
 import {UpdateDocumentTypeUseCase} from "./use-cases/update-document-type.use-case.js";
 
+/** Dependências abstratas necessárias para compor o módulo fora da apresentação. */
 export type DocumentTypesApplicationDependencies = Readonly<{
   repository: DocumentTypeRepository;
   documents: CollaboratorDocumentsByTypePort;
@@ -17,6 +18,7 @@ export type DocumentTypesApplicationDependencies = Readonly<{
   ids: IdGenerator;
 }>;
 
+/** Fachada framework-neutral pronta para ser injetada pelo composition root. */
 export type DocumentTypesApplication = Readonly<{
   create: CreateDocumentTypeUseCase;
   get: GetDocumentTypeUseCase;
@@ -25,6 +27,7 @@ export type DocumentTypesApplication = Readonly<{
   delete: DeleteDocumentTypeUseCase;
 }>;
 
+/** Compõe os casos de uso a partir das dependências injetadas. */
 export const createDocumentTypesApplication = (
   dependencies: DocumentTypesApplicationDependencies
 ): DocumentTypesApplication =>

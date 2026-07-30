@@ -33,8 +33,8 @@ type RateLimitResponse = {
  *   entre reinicializações.
  */
 export class RateLimitMiddleware {
-  private store = new Map<string, RateLimitEntry>();
-  private mapper = new ProblemDetailsMapper();
+  private readonly store = new Map<string, RateLimitEntry>();
+  private readonly mapper = new ProblemDetailsMapper();
 
   constructor(
     private readonly config: {

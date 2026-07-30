@@ -86,6 +86,49 @@ function isOneOf<T extends readonly string[]>(value: string, values: T): value i
   return values.includes(value);
 }
 
+function validateMongodbUri(uri: string, issues: string[]): void {
+  try {
+    const parsed = new URL(uri);
+    if (parsed.protocol !== "mongodb:" && parsed.protocol !== "mongodb+srv:") {
+      issues.push("MONGODB_URI must use mongodb or mongodb+srv");
+    }
+    if (parsed.pathname === "/" || parsed.pathname === "") {
+      issues.push("MONGODB_URI must include a database name");
+    }
+    if (parsed.protocol === "mongodb:" && !parsed.searchParams.get("replicaSet")) {
+      issues.push("MONGODB_URI must include replicaSet for mongodb URLs");
+    }
+  } catch {
+    issues.push("MONGODB_URI must be a valid URI");
+  }
+}
+
+function validateRateLimits(
+  source: NodeJS.ProcessEnv,
+  issues: string[]
+): {
+  readLimit: number;
+  writeLimit: number;
+  windowMs: number;
+} {
+  const readLimit = Number(optional(source, "RATE_LIMIT_GET", "60"));
+  if (!Number.isInteger(readLimit) || readLimit < 0) {
+    issues.push("RATE_LIMIT_GET must be a non-negative integer");
+  }
+
+  const writeLimit = Number(optional(source, "RATE_LIMIT_WRITE", "20"));
+  if (!Number.isInteger(writeLimit) || writeLimit < 0) {
+    issues.push("RATE_LIMIT_WRITE must be a non-negative integer");
+  }
+
+  const windowMs = Number(optional(source, "RATE_LIMIT_WINDOW_MS", "60000"));
+  if (!Number.isInteger(windowMs) || windowMs < 1000) {
+    issues.push("RATE_LIMIT_WINDOW_MS must be at least 1000");
+  }
+
+  return {readLimit, writeLimit, windowMs};
+}
+
 /**
  * Lê e valida as variáveis de ambiente, retornando um objeto
  * de configuração tipado (`AppEnv`).
@@ -127,20 +170,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   }
 
   if (mongodbUri) {
-    try {
-      const uri = new URL(mongodbUri);
-      if (uri.protocol !== "mongodb:" && uri.protocol !== "mongodb+srv:") {
-        issues.push("MONGODB_URI must use mongodb or mongodb+srv");
-      }
-      if (uri.pathname === "/" || uri.pathname === "") {
-        issues.push("MONGODB_URI must include a database name");
-      }
-      if (uri.protocol === "mongodb:" && !uri.searchParams.get("replicaSet")) {
-        issues.push("MONGODB_URI must include replicaSet for mongodb URLs");
-      }
-    } catch {
-      issues.push("MONGODB_URI must be a valid URI");
-    }
+    validateMongodbUri(mongodbUri, issues);
   }
 
   if (cursorHmacSecret && Buffer.byteLength(cursorHmacSecret, "utf8") < 32) {
@@ -155,24 +185,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
         .filter(Boolean)
     : [];
 
-  const rawReadRateLimit = optional(source, "RATE_LIMIT_GET", "60");
-  const readLimit = Number(rawReadRateLimit);
-  if (!Number.isInteger(readLimit) || readLimit < 0) {
-    issues.push("RATE_LIMIT_GET must be a non-negative integer");
-  }
-
-  const rawWriteRateLimit = optional(source, "RATE_LIMIT_WRITE", "20");
-  const writeLimit = Number(rawWriteRateLimit);
-  if (!Number.isInteger(writeLimit) || writeLimit < 0) {
-    issues.push("RATE_LIMIT_WRITE must be a non-negative integer");
-  }
-
-  const rawRateWindow = optional(source, "RATE_LIMIT_WINDOW_MS", "60000");
-  const rateWindowNumber = Number(rawRateWindow);
-  if (!Number.isInteger(rateWindowNumber) || rateWindowNumber < 1000) {
-    issues.push("RATE_LIMIT_WINDOW_MS must be at least 1000");
-  }
-
+  const {readLimit, writeLimit, windowMs} = validateRateLimits(source, issues);
   const rawOpenApiPath = optional(source, "OPENAPI_PATH", "/openapi.json");
 
   if (issues.length > 0) {
@@ -191,7 +204,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     rateLimit: {
       readLimit,
       writeLimit,
-      windowMs: rateWindowNumber
+      windowMs
     },
     openapi: {
       path: rawOpenApiPath,
