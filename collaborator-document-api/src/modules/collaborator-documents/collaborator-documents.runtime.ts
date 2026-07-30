@@ -1,5 +1,5 @@
 import {Injectable} from "@tsed/di";
-import {errAsync, type ResultAsync} from "neverthrow";
+import {err, type Result} from "neverthrow";
 
 import type {TransactionContext} from "../../shared/application/ports/transaction-manager.js";
 import type {
@@ -22,19 +22,19 @@ export class CollaboratorDocumentsRuntime {
     this.softDelete = new SoftDeleteCollaboratorDocumentsUseCase(repository);
   }
 
-  execute(
+  async execute(
     input: SoftDeleteCollaboratorDocumentsInput,
     context: TransactionContext
-  ): ResultAsync<void, CollaboratorDocumentsFailure> {
+  ): Promise<Result<void, CollaboratorDocumentsFailure>> {
     return this.softDelete.execute(input, context);
   }
 
-  executeByDocumentType(
+  async executeByDocumentType(
     input: Readonly<{documentTypeId: string; deletedAt: string}>,
     context: TransactionContext
-  ): ResultAsync<void, CollaboratorDocumentsFailure> {
+  ): Promise<Result<void, CollaboratorDocumentsFailure>> {
     if (!input || typeof input.documentTypeId !== "string" || typeof input.deletedAt !== "string") {
-      return errAsync(
+      return err(
         collaboratorDocumentsFailure(
           "INTERNAL_SERVER_ERROR",
           "Invalid collaborator document cascade input."
@@ -43,7 +43,7 @@ export class CollaboratorDocumentsRuntime {
     }
     const deletedAt = new Date(input.deletedAt);
     if (!input.documentTypeId || Number.isNaN(deletedAt.getTime())) {
-      return errAsync(
+      return err(
         collaboratorDocumentsFailure(
           "INTERNAL_SERVER_ERROR",
           "Invalid collaborator document cascade input."

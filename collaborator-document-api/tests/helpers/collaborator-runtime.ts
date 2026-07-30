@@ -1,4 +1,4 @@
-import {errAsync, okAsync, type ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import {Collaborator} from "../../src/modules/collaborators/domain/entities/collaborator.js";
 import type {
@@ -22,63 +22,73 @@ const fixedCollaborator = (): Collaborator =>
 
 export class CollaboratorRepositoryStub implements CollaboratorRepository {
   constructor(
-    private readonly result: ResultAsync<Collaborator, CollaboratorRuntimeFailure> = okAsync(
-      fixedCollaborator()
-    )
+    private readonly result: Promise<
+      Result<Collaborator, CollaboratorRuntimeFailure>
+    > = Promise.resolve(ok(fixedCollaborator()))
   ) {}
 
-  create(): ResultAsync<Collaborator, CollaboratorRuntimeFailure> {
+  async create(): Promise<Result<Collaborator, CollaboratorRuntimeFailure>> {
     return this.result;
   }
 
-  findById(): ResultAsync<Collaborator, CollaboratorRuntimeFailure> {
+  async findById(): Promise<Result<Collaborator, CollaboratorRuntimeFailure>> {
     return this.result;
   }
 
-  updateActive(): ResultAsync<Collaborator, CollaboratorRuntimeFailure> {
+  async updateActive(): Promise<Result<Collaborator, CollaboratorRuntimeFailure>> {
     return this.result;
   }
 
-  listActive(): ResultAsync<CollaboratorListPage, CollaboratorRuntimeFailure> {
-    return this.result.map((value) => ({
-      items: value.deletedAt === null ? [value] : [],
+  async listActive(): Promise<Result<CollaboratorListPage, CollaboratorRuntimeFailure>> {
+    const result = await this.result;
+    if (result.isErr()) return err(result.error);
+    return ok({
+      items: result.value.deletedAt === null ? [result.value] : [],
       hasNext: false
-    }));
+    });
   }
 
-  softDeleteActive(): ResultAsync<boolean, CollaboratorRuntimeFailure> {
-    return okAsync(true);
+  async softDeleteActive(): Promise<Result<boolean, CollaboratorRuntimeFailure>> {
+    return ok(true);
   }
 
   static unavailable(): CollaboratorRepositoryStub {
     return new CollaboratorRepositoryStub(
-      errAsync({
-        kind: "application",
-        code: "SERVICE_UNAVAILABLE",
-        message: "Collaborator persistence is unavailable."
-      })
+      Promise.resolve(
+        err({
+          kind: "application",
+          code: "SERVICE_UNAVAILABLE",
+          message: "Collaborator persistence is unavailable."
+        })
+      )
     );
   }
 
   static notFound(): CollaboratorRepositoryStub {
     return new CollaboratorRepositoryStub(
-      errAsync({kind: "application", code: "COLLABORATOR_NOT_FOUND", message: "Not found."})
+      Promise.resolve(
+        err({kind: "application", code: "COLLABORATOR_NOT_FOUND", message: "Not found."})
+      )
     );
   }
 
   static duplicateCpf(): CollaboratorRepositoryStub {
     return new CollaboratorRepositoryStub(
-      errAsync({kind: "application", code: "DUPLICATE_ACTIVE_CPF", message: "Duplicate CPF."})
+      Promise.resolve(
+        err({kind: "application", code: "DUPLICATE_ACTIVE_CPF", message: "Duplicate CPF."})
+      )
     );
   }
 
   static duplicateEmail(): CollaboratorRepositoryStub {
     return new CollaboratorRepositoryStub(
-      errAsync({
-        kind: "application",
-        code: "DUPLICATE_ACTIVE_EMAIL",
-        message: "Duplicate email."
-      })
+      Promise.resolve(
+        err({
+          kind: "application",
+          code: "DUPLICATE_ACTIVE_EMAIL",
+          message: "Duplicate email."
+        })
+      )
     );
   }
 }

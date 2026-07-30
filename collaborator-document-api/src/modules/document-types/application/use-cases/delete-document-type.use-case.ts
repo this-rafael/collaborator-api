@@ -1,4 +1,4 @@
-import {errAsync, okAsync, type ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import type {Clock} from "../../../../shared/application/ports/clock.js";
 import type {
@@ -21,43 +21,47 @@ export class DeleteDocumentTypeUseCase {
     private readonly clock: Clock
   ) {}
 
-  execute(input: DocumentTypeIdInput): ResultAsync<void, DocumentTypeFailure | TransactionFailure> {
-    return this.repository.findById(input.id).andThen((existing) => {
-      if (existing.deletedAt !== null) return okAsync(undefined);
+  async execute(
+    input: DocumentTypeIdInput
+  ): Promise<Result<void, DocumentTypeFailure | TransactionFailure>> {
+    const found = await this.repository.findById(input.id);
+    if (found.isErr()) return err(found.error);
+    if (found.value.deletedAt !== null) return ok(undefined);
 
-      let now: Date;
-      try {
-        now = this.clock.now();
-      } catch {
-        return errAsync(
-          documentTypeApplicationFailure(
-            "INTERNAL_SERVER_ERROR",
-            "Document type clock is unavailable."
-          )
-        );
-      }
-      const deleted = existing.softDelete(now);
-      if (deleted.isErr()) return errAsync(deleted.error);
-
-      return this.transactions.execute((context) =>
-        this.repository.softDeleteActive(deleted.value, context).andThen((wasDeleted) => {
-          if (!wasDeleted) return okAsync(undefined);
-
-          return this.documents
-            .execute(
-              {
-                documentTypeId: deleted.value.id,
-                deletedAt: deleted.value.deletedAt!.toISOString()
-              },
-              context
-            )
-            .mapErr((failure) => ({
-              kind: "application" as const,
-              code: failure.code,
-              message: failure.message
-            }));
-        })
+    let now: Date;
+    try {
+      now = this.clock.now();
+    } catch {
+      return err(
+        documentTypeApplicationFailure(
+          "INTERNAL_SERVER_ERROR",
+          "Document type clock is unavailable."
+        )
       );
+    }
+    const deleted = found.value.softDelete(now);
+    if (deleted.isErr()) return err(deleted.error);
+
+    return this.transactions.execute(async (context) => {
+      const persisted = await this.repository.softDeleteActive(deleted.value, context);
+      if (persisted.isErr()) return err(persisted.error);
+      if (!persisted.value) return ok(undefined);
+
+      const documents = await this.documents.execute(
+        {
+          documentTypeId: deleted.value.id,
+          deletedAt: deleted.value.deletedAt!.toISOString()
+        },
+        context
+      );
+      if (documents.isErr()) {
+        return err({
+          kind: "application" as const,
+          code: documents.error.code,
+          message: documents.error.message
+        });
+      }
+      return ok(undefined);
     });
   }
 }

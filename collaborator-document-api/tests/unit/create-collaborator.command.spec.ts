@@ -1,4 +1,4 @@
-import {okAsync} from "neverthrow";
+import {ok} from "neverthrow";
 import {describe, expect, it} from "vitest";
 
 import {CollaboratorRepositoryStub} from "../helpers/collaborator-runtime.js";
@@ -46,7 +46,7 @@ describe("CreateCollaboratorUseCase", () => {
     const repository = {
       create: () => {
         called = true;
-        return okAsync(undefined as never);
+        return Promise.resolve(ok(undefined as never));
       }
     };
 
@@ -67,7 +67,7 @@ describe("CreateCollaboratorUseCase", () => {
     const repository = {
       create: () => {
         called = true;
-        return okAsync(undefined as never);
+        return Promise.resolve(ok(undefined as never));
       }
     };
 

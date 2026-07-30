@@ -1,4 +1,4 @@
-import type {ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import type {DocumentTypeFailure} from "../../domain/errors/document-type.failure.js";
 import type {DocumentTypeIdInput} from "../contracts/document-type-input.js";
@@ -8,7 +8,11 @@ import type {DocumentTypeRepository} from "../../domain/repositories/document-ty
 export class GetDocumentTypeUseCase {
   constructor(private readonly repository: Pick<DocumentTypeRepository, "findById">) {}
 
-  execute(input: DocumentTypeIdInput): ResultAsync<DocumentTypeOutput, DocumentTypeFailure> {
-    return this.repository.findById(input.id).map(documentTypeToOutput);
+  async execute(
+    input: DocumentTypeIdInput
+  ): Promise<Result<DocumentTypeOutput, DocumentTypeFailure>> {
+    const found = await this.repository.findById(input.id);
+    if (found.isErr()) return err(found.error);
+    return ok(documentTypeToOutput(found.value));
   }
 }

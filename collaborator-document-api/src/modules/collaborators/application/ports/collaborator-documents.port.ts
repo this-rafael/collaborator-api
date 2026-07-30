@@ -1,4 +1,4 @@
-import type {ResultAsync} from "neverthrow";
+import type {Result} from "neverthrow";
 
 import type {TransactionContext} from "../../../../shared/application/ports/transaction-manager.js";
 import type {
@@ -11,5 +11,5 @@ export interface CollaboratorDocumentsPort {
   execute(
     input: SoftDeleteCollaboratorDocumentsInput,
     context: TransactionContext
-  ): ResultAsync<void, CollaboratorDocumentsFailure>;
+  ): Promise<Result<void, CollaboratorDocumentsFailure>>;
 }

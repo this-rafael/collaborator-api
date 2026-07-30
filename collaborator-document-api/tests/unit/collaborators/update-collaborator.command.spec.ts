@@ -1,4 +1,4 @@
-import {errAsync, okAsync} from "neverthrow";
+import {err, ok} from "neverthrow";
 import {describe, expect, it} from "vitest";
 
 import {Collaborator} from "../../../src/modules/collaborators/domain/entities/collaborator.js";
@@ -16,10 +16,10 @@ describe("UpdateCollaboratorUseCase", () => {
     )._unsafeUnwrap();
     let persisted: Collaborator | undefined;
     const repository = {
-      findById: () => okAsync(existing),
+      findById: () => Promise.resolve(ok(existing)),
       updateActive: (collaborator: Collaborator) => {
         persisted = collaborator;
-        return okAsync(collaborator);
+        return Promise.resolve(ok(collaborator));
       }
     };
 
@@ -45,13 +45,15 @@ describe("UpdateCollaboratorUseCase", () => {
       new Date("2026-07-29T12:00:00.000Z")
     )._unsafeUnwrap();
     const repository = {
-      findById: () => okAsync(existing),
+      findById: () => Promise.resolve(ok(existing)),
       updateActive: () =>
-        errAsync({
-          kind: "application" as const,
-          code: "DUPLICATE_ACTIVE_EMAIL" as const,
-          message: "Duplicate email."
-        })
+        Promise.resolve(
+          err({
+            kind: "application" as const,
+            code: "DUPLICATE_ACTIVE_EMAIL" as const,
+            message: "Duplicate email."
+          })
+        )
     };
 
     const result = await new UpdateCollaboratorUseCase(repository, clock).execute({
@@ -72,10 +74,10 @@ describe("UpdateCollaboratorUseCase", () => {
     )._unsafeUnwrap();
     let persisted = false;
     const repository = {
-      findById: () => okAsync(existing),
+      findById: () => Promise.resolve(ok(existing)),
       updateActive: () => {
         persisted = true;
-        return okAsync(existing);
+        return Promise.resolve(ok(existing));
       }
     };
 
@@ -99,10 +101,10 @@ describe("UpdateCollaboratorUseCase", () => {
     )._unsafeUnwrap();
     let persisted = false;
     const repository = {
-      findById: () => okAsync(existing),
+      findById: () => Promise.resolve(ok(existing)),
       updateActive: () => {
         persisted = true;
-        return okAsync(existing);
+        return Promise.resolve(ok(existing));
       }
     };
 

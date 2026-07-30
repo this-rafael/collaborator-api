@@ -1,4 +1,4 @@
-import {errAsync, type ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import type {Clock} from "../../../../shared/application/ports/clock.js";
 import {
@@ -16,22 +16,28 @@ export class UpdateCollaboratorUseCase {
     private readonly clock: Clock
   ) {}
 
-  execute(input: UpdateCollaboratorInput): ResultAsync<CollaboratorOutput, CollaboratorFailure> {
-    return this.repository.findById(input.id).andThen((existing) => {
-      let now: Date;
-      try {
-        now = this.clock.now();
-      } catch {
-        return errAsync(
-          collaboratorApplicationFailure(
-            "INTERNAL_SERVER_ERROR",
-            "Collaborator clock is unavailable."
-          )
-        );
-      }
-      const updated = existing.update(input.patch, now);
-      if (updated.isErr()) return errAsync(updated.error);
-      return this.repository.updateActive(updated.value).map(collaboratorToOutput);
-    });
+  async execute(
+    input: UpdateCollaboratorInput
+  ): Promise<Result<CollaboratorOutput, CollaboratorFailure>> {
+    const found = await this.repository.findById(input.id);
+    if (found.isErr()) return err(found.error);
+
+    let now: Date;
+    try {
+      now = this.clock.now();
+    } catch {
+      return err(
+        collaboratorApplicationFailure(
+          "INTERNAL_SERVER_ERROR",
+          "Collaborator clock is unavailable."
+        )
+      );
+    }
+    const updated = found.value.update(input.patch, now);
+    if (updated.isErr()) return err(updated.error);
+
+    const persisted = await this.repository.updateActive(updated.value);
+    if (persisted.isErr()) return err(persisted.error);
+    return ok(collaboratorToOutput(persisted.value));
   }
 }

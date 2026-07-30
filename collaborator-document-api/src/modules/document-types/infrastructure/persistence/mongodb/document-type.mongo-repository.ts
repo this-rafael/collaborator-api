@@ -1,6 +1,6 @@
 import {Injectable} from "@tsed/di";
 import {MongooseService} from "@tsed/mongoose";
-import {err, ok, type Result, ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 import {Types, type Connection} from "mongoose";
 
 import type {
@@ -34,31 +34,31 @@ const unavailable = (): DocumentTypeFailure =>
 export class MongoDocumentTypeRepository implements DocumentTypeRepository {
   constructor(private readonly mongoose: MongooseService) {}
 
-  create(documentType: DocumentType): ResultAsync<DocumentType, DocumentTypeFailure> {
-    return fromSafeResult(this.createSafely(documentType));
+  create(documentType: DocumentType): Promise<Result<DocumentType, DocumentTypeFailure>> {
+    return this.createSafely(documentType);
   }
 
-  findById(id: string): ResultAsync<DocumentType, DocumentTypeFailure> {
-    return fromSafeResult(this.findByIdSafely(id));
+  findById(id: string): Promise<Result<DocumentType, DocumentTypeFailure>> {
+    return this.findByIdSafely(id);
   }
 
   listActive(input: {
     filters: {name?: string; code?: string};
     afterId?: string;
     limit: number;
-  }): ResultAsync<DocumentTypeListPage, DocumentTypeFailure> {
-    return fromSafeResult(this.listActiveSafely(input));
+  }): Promise<Result<DocumentTypeListPage, DocumentTypeFailure>> {
+    return this.listActiveSafely(input);
   }
 
-  updateActive(documentType: DocumentType): ResultAsync<DocumentType, DocumentTypeFailure> {
-    return fromSafeResult(this.updateActiveSafely(documentType));
+  updateActive(documentType: DocumentType): Promise<Result<DocumentType, DocumentTypeFailure>> {
+    return this.updateActiveSafely(documentType);
   }
 
   softDeleteActive(
     documentType: DocumentType,
     context: TransactionContext
-  ): ResultAsync<boolean, DocumentTypeFailure> {
-    return fromSafeResult(this.softDeleteActiveSafely(documentType, context));
+  ): Promise<Result<boolean, DocumentTypeFailure>> {
+    return this.softDeleteActiveSafely(documentType, context);
   }
 
   private connection(): Connection | undefined {
@@ -217,9 +217,6 @@ export class MongoDocumentTypeRepository implements DocumentTypeRepository {
     }
   }
 }
-
-const fromSafeResult = <T, E>(promise: Promise<Result<T, E>>): ResultAsync<T, E> =>
-  ResultAsync.fromSafePromise(promise).andThen((result) => result);
 
 function mapMongoFailure(error: unknown): DocumentTypeFailure {
   const key = (error as {keyPattern?: Record<string, number>}).keyPattern;

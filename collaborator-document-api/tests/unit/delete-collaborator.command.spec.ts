@@ -1,4 +1,4 @@
-import {errAsync, okAsync} from "neverthrow";
+import {err, ok} from "neverthrow";
 import {describe, expect, it} from "vitest";
 
 import type {TransactionContext} from "../../src/shared/application/ports/transaction-manager.js";
@@ -18,10 +18,10 @@ describe("DeleteCollaboratorUseCase", () => {
     let transactionContext: TransactionContext | undefined;
     let cascadeInput: {collaboratorId: string; deletedAt: string} | undefined;
     const repository = {
-      findById: () => okAsync(activeCollaborator),
+      findById: () => Promise.resolve(ok(activeCollaborator)),
       softDeleteActive: (_collaborator: Collaborator, context: TransactionContext) => {
         transactionContext = context;
-        return okAsync(true);
+        return Promise.resolve(ok(true));
       }
     };
     const documents = {
@@ -31,11 +31,11 @@ describe("DeleteCollaboratorUseCase", () => {
       ) => {
         cascadeInput = input;
         expect(context).toBe(transactionContext);
-        return okAsync(undefined);
+        return Promise.resolve(ok(undefined));
       }
     };
     const transactions = {
-      execute: (work: (context: TransactionContext) => ReturnType<typeof okAsync>) =>
+      execute: (work: (context: TransactionContext) => Promise<unknown>) =>
         work({} as TransactionContext)
     };
 
@@ -55,17 +55,19 @@ describe("DeleteCollaboratorUseCase", () => {
     const {DeleteCollaboratorUseCase} =
       await import("../../src/modules/collaborators/application/use-cases/delete-collaborator.use-case.js");
     const repository = {
-      findById: () => okAsync(activeCollaborator),
-      softDeleteActive: () => okAsync(true)
+      findById: () => Promise.resolve(ok(activeCollaborator)),
+      softDeleteActive: () => Promise.resolve(ok(true))
     };
-    const documents = {execute: () => okAsync(undefined)};
+    const documents = {execute: () => Promise.resolve(ok(undefined))};
     const transactions = {
       execute: () =>
-        errAsync({
-          kind: "application" as const,
-          code: "SERVICE_UNAVAILABLE" as const,
-          message: "Transaction unavailable."
-        })
+        Promise.resolve(
+          err({
+            kind: "application" as const,
+            code: "SERVICE_UNAVAILABLE" as const,
+            message: "Transaction unavailable."
+          })
+        )
     };
 
     const result = await new DeleteCollaboratorUseCase(
@@ -85,19 +87,19 @@ describe("DeleteCollaboratorUseCase", () => {
     let persisted = false;
     let cascaded = false;
     const repository = {
-      findById: () => okAsync(activeCollaborator),
+      findById: () => Promise.resolve(ok(activeCollaborator)),
       softDeleteActive: () => {
         persisted = true;
-        return okAsync(true);
+        return Promise.resolve(ok(true));
       }
     };
     const documents = {
       execute: () => {
         cascaded = true;
-        return okAsync(undefined);
+        return Promise.resolve(ok(undefined));
       }
     };
-    const transactions = {execute: () => okAsync(undefined)};
+    const transactions = {execute: () => Promise.resolve(ok(undefined))};
 
     const result = await new DeleteCollaboratorUseCase(
       repository,
@@ -121,17 +123,17 @@ describe("DeleteCollaboratorUseCase", () => {
       await import("../../src/modules/collaborators/application/use-cases/delete-collaborator.use-case.js");
     let cascaded = false;
     const repository = {
-      findById: () => okAsync(activeCollaborator),
-      softDeleteActive: () => okAsync(false)
+      findById: () => Promise.resolve(ok(activeCollaborator)),
+      softDeleteActive: () => Promise.resolve(ok(false))
     };
     const documents = {
       execute: () => {
         cascaded = true;
-        return okAsync(undefined);
+        return Promise.resolve(ok(undefined));
       }
     };
     const transactions = {
-      execute: (work: (context: TransactionContext) => ReturnType<typeof okAsync>) =>
+      execute: (work: (context: TransactionContext) => Promise<unknown>) =>
         work({} as TransactionContext)
     };
 
@@ -150,19 +152,21 @@ describe("DeleteCollaboratorUseCase", () => {
     const {DeleteCollaboratorUseCase} =
       await import("../../src/modules/collaborators/application/use-cases/delete-collaborator.use-case.js");
     const repository = {
-      findById: () => okAsync(activeCollaborator),
-      softDeleteActive: () => okAsync(true)
+      findById: () => Promise.resolve(ok(activeCollaborator)),
+      softDeleteActive: () => Promise.resolve(ok(true))
     };
     const documents = {
       execute: () =>
-        errAsync({
-          kind: "application" as const,
-          code: "SERVICE_UNAVAILABLE" as const,
-          message: "Document cascade unavailable."
-        })
+        Promise.resolve(
+          err({
+            kind: "application" as const,
+            code: "SERVICE_UNAVAILABLE" as const,
+            message: "Document cascade unavailable."
+          })
+        )
     };
     const transactions = {
-      execute: (work: (context: TransactionContext) => ReturnType<typeof errAsync>) =>
+      execute: (work: (context: TransactionContext) => Promise<unknown>) =>
         work({} as TransactionContext)
     };
 

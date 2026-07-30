@@ -1,4 +1,4 @@
-import {okAsync} from "neverthrow";
+import {ok} from "neverthrow";
 import {describe, expect, it} from "vitest";
 
 import {DocumentTypeRepositoryStub} from "../../helpers/document-type-runtime.js";
@@ -51,7 +51,7 @@ describe("Creating a document type through the application command", () => {
     const repository = {
       create: () => {
         called = true;
-        return okAsync(undefined as never);
+        return Promise.resolve(ok(undefined as never));
       }
     };
     const result = await new CreateDocumentTypeUseCase(repository as never, clock, ids).execute({

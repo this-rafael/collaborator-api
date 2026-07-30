@@ -1,5 +1,5 @@
 import type {ClientSession, Connection} from "mongoose";
-import {errAsync, okAsync} from "neverthrow";
+import {err, ok} from "neverthrow";
 import {describe, expect, it} from "vitest";
 
 import {
@@ -102,7 +102,7 @@ describe("MongoTransactionManager", () => {
     let receivedSession: ClientSession | undefined;
     const result = await manager.execute((context) => {
       receivedSession = getMongoSession(context);
-      return okAsync("ok");
+      return Promise.resolve(ok("ok"));
     });
 
     expect(result.isOk()).toBe(true);
@@ -123,7 +123,7 @@ describe("MongoTransactionManager", () => {
     const result = await manager.execute(() => {
       attempts += 1;
       if (attempts === 1) throw labeledError("TransientTransactionError");
-      return okAsync("recovered");
+      return Promise.resolve(ok("recovered"));
     });
 
     expect(result.isOk()).toBe(true);
@@ -164,7 +164,7 @@ describe("MongoTransactionManager", () => {
 
     const result = await manager.execute(() => {
       workCalls += 1;
-      return okAsync("committed");
+      return Promise.resolve(ok("committed"));
     });
 
     expect(result.isOk()).toBe(true);
@@ -200,7 +200,7 @@ describe("MongoTransactionManager", () => {
     });
     const manager = createManager(harness.session);
 
-    const result = await manager.execute(() => okAsync("never"));
+    const result = await manager.execute(() => Promise.resolve(ok("never")));
     expect(harness.commitCalls.count).toBe(3);
     expect(manager.mongoTransactionRetriesTotal).toBe(2);
     expect(harness.endCalls.count).toBe(1);
@@ -212,7 +212,7 @@ describe("MongoTransactionManager", () => {
     const harness = createSessionHarness();
     const manager = createManager(harness.session);
     const failure = {kind: "domain" as const, code: "RULE", message: "Regra violada"};
-    const result = await manager.execute(() => errAsync(failure));
+    const result = await manager.execute(() => Promise.resolve(err(failure)));
 
     expect(harness.abortCalls.count).toBe(1);
     expect(harness.endCalls.count).toBe(1);
@@ -223,7 +223,7 @@ describe("MongoTransactionManager", () => {
 
   it("returns SERVICE_UNAVAILABLE when no usable connection exists", async () => {
     const manager = new MongoTransactionManager({get: () => undefined} as never);
-    const result = await manager.execute(() => okAsync("never"));
+    const result = await manager.execute(() => Promise.resolve(ok("never")));
 
     expect(result.isErr()).toBe(true);
     if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");

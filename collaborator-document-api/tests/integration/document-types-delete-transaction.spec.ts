@@ -1,7 +1,7 @@
 import type {ClientSession, Connection} from "mongoose";
 import {beforeEach, describe, expect, it} from "vitest";
 import {ObjectId} from "mongodb";
-import {okAsync} from "neverthrow";
+import {ok} from "neverthrow";
 import {PlatformTest} from "@tsed/platform-http/testing";
 
 import {MongoTransactionManager} from "../../src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.js";
@@ -95,7 +95,7 @@ describe("Retrying document type delete transactions", () => {
       writes += 1;
       const failure = injected.nextFailure();
       if (failure) throw labeledError(failure);
-      return okAsync("deleted");
+      return Promise.resolve(ok("deleted"));
     });
     expect(result.isOk()).toBe(true);
     expect(writes).toBe(2);
@@ -111,7 +111,7 @@ describe("Retrying document type delete transactions", () => {
 
     const result = await manager.execute(() => {
       writes += 1;
-      return okAsync("deleted");
+      return Promise.resolve(ok("deleted"));
     });
     expect(result.isOk()).toBe(true);
     expect(writes).toBe(1);

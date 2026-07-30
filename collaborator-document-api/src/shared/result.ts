@@ -1,10 +1,10 @@
-import {err, ok, type Result, type ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 /**
  * Re-exporta os tipos e helpers do `neverthrow` para
  * conveniência do módulo compartilhado.
  */
-export {err, ok, Result, ResultAsync};
+export {err, ok, Result};
 
 /**
  * Envolve um valor em um `Result` de sucesso (tipo erro =

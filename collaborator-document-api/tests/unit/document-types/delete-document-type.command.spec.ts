@@ -1,4 +1,4 @@
-import {errAsync, okAsync} from "neverthrow";
+import {err, ok} from "neverthrow";
 import {describe, expect, it} from "vitest";
 
 type TestTransactionContext = Readonly<{opaque: true}>;
@@ -22,10 +22,10 @@ describe("Deleting a document type through the application command", () => {
     let cascadeContext: TestTransactionContext | undefined;
     let cascadeInput: {documentTypeId: string; deletedAt: string} | undefined;
     const repository = {
-      findById: () => okAsync(active),
+      findById: () => Promise.resolve(ok(active)),
       softDeleteActive: (_entity: unknown, transaction: TestTransactionContext) => {
         repositoryContext = transaction;
-        return okAsync(true);
+        return Promise.resolve(ok(true));
       }
     };
     const documents = {
@@ -35,12 +35,11 @@ describe("Deleting a document type through the application command", () => {
       ) => {
         cascadeInput = input;
         cascadeContext = transaction;
-        return okAsync(undefined);
+        return Promise.resolve(ok(undefined));
       }
     };
     const transactions = {
-      execute: (work: (transaction: TestTransactionContext) => ReturnType<typeof okAsync>) =>
-        work(context)
+      execute: (work: (transaction: TestTransactionContext) => Promise<unknown>) => work(context)
     };
 
     const result = await new DeleteDocumentTypeUseCase(
@@ -69,19 +68,21 @@ describe("Deleting a document type through the application command", () => {
       new Date("2026-07-30T12:00:00.000Z")
     )._unsafeUnwrap();
     const repository = {
-      findById: () => okAsync(active),
-      softDeleteActive: () => okAsync(true)
+      findById: () => Promise.resolve(ok(active)),
+      softDeleteActive: () => Promise.resolve(ok(true))
     };
     const documents = {
       execute: () =>
-        errAsync({
-          kind: "application" as const,
-          code: "SERVICE_UNAVAILABLE" as const,
-          message: "Document cascade unavailable."
-        })
+        Promise.resolve(
+          err({
+            kind: "application" as const,
+            code: "SERVICE_UNAVAILABLE" as const,
+            message: "Document cascade unavailable."
+          })
+        )
     };
     const transactions = {
-      execute: (work: (transaction: TestTransactionContext) => ReturnType<typeof errAsync>) =>
+      execute: (work: (transaction: TestTransactionContext) => Promise<unknown>) =>
         work({opaque: true})
     };
     const result = await new DeleteDocumentTypeUseCase(
@@ -106,17 +107,17 @@ describe("Deleting a document type through the application command", () => {
     )._unsafeUnwrap();
     let cascaded = false;
     const repository = {
-      findById: () => okAsync(active),
-      softDeleteActive: () => okAsync(false)
+      findById: () => Promise.resolve(ok(active)),
+      softDeleteActive: () => Promise.resolve(ok(false))
     };
     const documents = {
       execute: () => {
         cascaded = true;
-        return okAsync(undefined);
+        return Promise.resolve(ok(undefined));
       }
     };
     const transactions = {
-      execute: (work: (transaction: TestTransactionContext) => ReturnType<typeof okAsync>) =>
+      execute: (work: (transaction: TestTransactionContext) => Promise<unknown>) =>
         work({opaque: true})
     };
     const result = await new DeleteDocumentTypeUseCase(
@@ -140,17 +141,19 @@ describe("Deleting a document type through the application command", () => {
       new Date("2026-07-30T12:00:00.000Z")
     )._unsafeUnwrap();
     const repository = {
-      findById: () => okAsync(active),
-      softDeleteActive: () => okAsync(true)
+      findById: () => Promise.resolve(ok(active)),
+      softDeleteActive: () => Promise.resolve(ok(true))
     };
-    const documents = {execute: () => okAsync(undefined)};
+    const documents = {execute: () => Promise.resolve(ok(undefined))};
     const transactions = {
       execute: () =>
-        errAsync({
-          kind: "application" as const,
-          code: "SERVICE_UNAVAILABLE" as const,
-          message: "Transaction retries exhausted."
-        })
+        Promise.resolve(
+          err({
+            kind: "application" as const,
+            code: "SERVICE_UNAVAILABLE" as const,
+            message: "Transaction retries exhausted."
+          })
+        )
     };
     const result = await new DeleteDocumentTypeUseCase(
       repository as never,
@@ -173,14 +176,14 @@ describe("Deleting a document type through the application command", () => {
     )._unsafeUnwrap();
     let transactionStarted = false;
     const repository = {
-      findById: () => okAsync(active),
-      softDeleteActive: () => okAsync(true)
+      findById: () => Promise.resolve(ok(active)),
+      softDeleteActive: () => Promise.resolve(ok(true))
     };
-    const documents = {execute: () => okAsync(undefined)};
+    const documents = {execute: () => Promise.resolve(ok(undefined))};
     const transactions = {
       execute: () => {
         transactionStarted = true;
-        return okAsync(undefined);
+        return Promise.resolve(ok(undefined));
       }
     };
 

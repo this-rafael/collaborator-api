@@ -1,4 +1,4 @@
-import {errAsync, okAsync, type ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import {DocumentType} from "../../src/modules/document-types/domain/entities/document-type.js";
 import type {
@@ -22,67 +22,77 @@ const fixedDocumentType = (): DocumentType =>
 
 export class DocumentTypeRepositoryStub implements DocumentTypeRepository {
   constructor(
-    private readonly result: ResultAsync<DocumentType, DocumentTypeRuntimeFailure> = okAsync(
-      fixedDocumentType()
-    )
+    private readonly result: Promise<
+      Result<DocumentType, DocumentTypeRuntimeFailure>
+    > = Promise.resolve(ok(fixedDocumentType()))
   ) {}
 
-  create(): ResultAsync<DocumentType, DocumentTypeRuntimeFailure> {
+  async create(): Promise<Result<DocumentType, DocumentTypeRuntimeFailure>> {
     return this.result;
   }
 
-  findById(): ResultAsync<DocumentType, DocumentTypeRuntimeFailure> {
+  async findById(): Promise<Result<DocumentType, DocumentTypeRuntimeFailure>> {
     return this.result;
   }
 
-  updateActive(): ResultAsync<DocumentType, DocumentTypeRuntimeFailure> {
+  async updateActive(): Promise<Result<DocumentType, DocumentTypeRuntimeFailure>> {
     return this.result;
   }
 
-  listActive(): ResultAsync<DocumentTypeListPage, DocumentTypeRuntimeFailure> {
-    return this.result.map((value) => ({
-      items: value.deletedAt === null ? [value] : [],
+  async listActive(): Promise<Result<DocumentTypeListPage, DocumentTypeRuntimeFailure>> {
+    const result = await this.result;
+    if (result.isErr()) return err(result.error);
+    return ok({
+      items: result.value.deletedAt === null ? [result.value] : [],
       hasNext: false
-    }));
+    });
   }
 
-  softDeleteActive(): ResultAsync<boolean, DocumentTypeRuntimeFailure> {
-    return okAsync(true);
+  async softDeleteActive(): Promise<Result<boolean, DocumentTypeRuntimeFailure>> {
+    return ok(true);
   }
 
   static unavailable(): DocumentTypeRepositoryStub {
     return new DocumentTypeRepositoryStub(
-      errAsync({
-        kind: "application",
-        code: "SERVICE_UNAVAILABLE",
-        message: "Document type persistence is unavailable."
-      })
+      Promise.resolve(
+        err({
+          kind: "application",
+          code: "SERVICE_UNAVAILABLE",
+          message: "Document type persistence is unavailable."
+        })
+      )
     );
   }
 
   static notFound(): DocumentTypeRepositoryStub {
     return new DocumentTypeRepositoryStub(
-      errAsync({
-        kind: "application",
-        code: "DOCUMENT_TYPE_NOT_FOUND",
-        message: "Document type was not found."
-      })
+      Promise.resolve(
+        err({
+          kind: "application",
+          code: "DOCUMENT_TYPE_NOT_FOUND",
+          message: "Document type was not found."
+        })
+      )
     );
   }
 
   static duplicateCode(): DocumentTypeRepositoryStub {
     return new DocumentTypeRepositoryStub(
-      errAsync({
-        kind: "application",
-        code: "DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE",
-        message: "An active document type already uses this code."
-      })
+      Promise.resolve(
+        err({
+          kind: "application",
+          code: "DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE",
+          message: "An active document type already uses this code."
+        })
+      )
     );
   }
 
   static deleted(): DocumentTypeRepositoryStub {
     return new DocumentTypeRepositoryStub(
-      okAsync(fixedDocumentType().softDelete(new Date("2026-07-30T13:00:00.000Z"))._unsafeUnwrap())
+      Promise.resolve(
+        ok(fixedDocumentType().softDelete(new Date("2026-07-30T13:00:00.000Z"))._unsafeUnwrap())
+      )
     );
   }
 }

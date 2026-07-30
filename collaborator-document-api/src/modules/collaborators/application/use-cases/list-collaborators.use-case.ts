@@ -1,4 +1,4 @@
-import {err, errAsync, ok, type Result, type ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import {Cpf} from "../../domain/value-objects/cpf.js";
 import {Email} from "../../domain/value-objects/email.js";
@@ -56,9 +56,9 @@ export function normalizeCollaboratorFilters(
 export class ListCollaboratorsUseCase {
   constructor(private readonly repository: Pick<CollaboratorRepository, "listActive">) {}
 
-  execute(
+  async execute(
     input: ListCollaboratorsInput
-  ): ResultAsync<ListCollaboratorsOutput, CollaboratorFailure> {
+  ): Promise<Result<ListCollaboratorsOutput, CollaboratorFailure>> {
     if (
       !input ||
       typeof input !== "object" ||
@@ -66,18 +66,20 @@ export class ListCollaboratorsUseCase {
       input.limit < 1 ||
       input.limit > 100
     ) {
-      return errAsync(
+      return err(
         collaboratorApplicationFailure("INVALID_QUERY_PARAMETER", "limit must be between 1 and 100")
       );
     }
 
     const filters = normalizeCollaboratorFilters(input.filters);
-    if (filters.isErr()) return errAsync(filters.error);
+    if (filters.isErr()) return err(filters.error);
 
-    return this.repository.listActive({...input, filters: filters.value}).map((page) => ({
-      items: page.items.map(collaboratorToOutput),
-      hasNext: page.hasNext,
+    const page = await this.repository.listActive({...input, filters: filters.value});
+    if (page.isErr()) return err(page.error);
+    return ok({
+      items: page.value.items.map(collaboratorToOutput),
+      hasNext: page.value.hasNext,
       filters: filters.value
-    }));
+    });
   }
 }

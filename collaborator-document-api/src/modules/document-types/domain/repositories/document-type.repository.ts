@@ -1,4 +1,4 @@
-import type {ResultAsync} from "neverthrow";
+import type {Result} from "neverthrow";
 
 import type {TransactionContext} from "../../../../shared/domain/transaction-context.js";
 import type {DocumentType} from "../entities/document-type.js";
@@ -12,16 +12,16 @@ export type DocumentTypeListPage = Readonly<{
 }>;
 
 export interface DocumentTypeRepository {
-  create(documentType: DocumentType): ResultAsync<DocumentType, DocumentTypeFailure>;
-  findById(id: string): ResultAsync<DocumentType, DocumentTypeFailure>;
+  create(documentType: DocumentType): Promise<Result<DocumentType, DocumentTypeFailure>>;
+  findById(id: string): Promise<Result<DocumentType, DocumentTypeFailure>>;
   listActive(input: {
     filters: DocumentTypeListFilters;
     afterId?: string;
     limit: number;
-  }): ResultAsync<DocumentTypeListPage, DocumentTypeFailure>;
-  updateActive(documentType: DocumentType): ResultAsync<DocumentType, DocumentTypeFailure>;
+  }): Promise<Result<DocumentTypeListPage, DocumentTypeFailure>>;
+  updateActive(documentType: DocumentType): Promise<Result<DocumentType, DocumentTypeFailure>>;
   softDeleteActive(
     documentType: DocumentType,
     context: TransactionContext
-  ): ResultAsync<boolean, DocumentTypeFailure>;
+  ): Promise<Result<boolean, DocumentTypeFailure>>;
 }

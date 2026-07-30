@@ -1,4 +1,4 @@
-import type {ResultAsync} from "neverthrow";
+import type {Result} from "neverthrow";
 
 import type {TransactionContext} from "../../../../shared/domain/transaction-context.js";
 import type {Collaborator} from "../entities/collaborator.js";
@@ -23,16 +23,16 @@ export type CollaboratorListPage = Readonly<{
  * contexto opaco coordenado pelo caso de uso.
  */
 export interface CollaboratorRepository {
-  create(collaborator: Collaborator): ResultAsync<Collaborator, CollaboratorFailure>;
-  findById(id: string): ResultAsync<Collaborator, CollaboratorFailure>;
+  create(collaborator: Collaborator): Promise<Result<Collaborator, CollaboratorFailure>>;
+  findById(id: string): Promise<Result<Collaborator, CollaboratorFailure>>;
   listActive(input: {
     filters: CollaboratorListFilters;
     afterId?: string;
     limit: number;
-  }): ResultAsync<CollaboratorListPage, CollaboratorFailure>;
-  updateActive(collaborator: Collaborator): ResultAsync<Collaborator, CollaboratorFailure>;
+  }): Promise<Result<CollaboratorListPage, CollaboratorFailure>>;
+  updateActive(collaborator: Collaborator): Promise<Result<Collaborator, CollaboratorFailure>>;
   softDeleteActive(
     collaborator: Collaborator,
     context: TransactionContext
-  ): ResultAsync<boolean, CollaboratorFailure>;
+  ): Promise<Result<boolean, CollaboratorFailure>>;
 }

@@ -1,7 +1,7 @@
 import {Injectable} from "@tsed/di";
 import {MongooseService} from "@tsed/mongoose";
 import type {IndexDescription} from "mongodb";
-import {err, ok, type Result, ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import {
   documentTypeApplicationFailure,
@@ -27,8 +27,8 @@ export const documentTypeIndexes: readonly IndexDescription[] = [
 export class DocumentTypeIndexProvisioner {
   constructor(private readonly mongoose: MongooseService) {}
 
-  ensure(): ResultAsync<readonly string[], DocumentTypeFailure> {
-    return ResultAsync.fromSafePromise(this.ensureSafely()).andThen((result) => result);
+  ensure(): Promise<Result<readonly string[], DocumentTypeFailure>> {
+    return this.ensureSafely();
   }
 
   private async ensureSafely(): Promise<Result<readonly string[], DocumentTypeFailure>> {
@@ -59,5 +59,5 @@ export class DocumentTypeIndexProvisioner {
 
 export const ensureDocumentTypeIndexes = (
   mongoose: MongooseService
-): ResultAsync<readonly string[], DocumentTypeFailure> =>
+): Promise<Result<readonly string[], DocumentTypeFailure>> =>
   new DocumentTypeIndexProvisioner(mongoose).ensure();

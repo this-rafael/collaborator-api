@@ -1,6 +1,6 @@
 import {Injectable} from "@tsed/di";
 import {MongooseService} from "@tsed/mongoose";
-import {err, ok, type Result, ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import type {TransactionContext} from "../../../../../shared/application/ports/transaction-manager.js";
 import {getMongoSession} from "../../../../../shared/infrastructure/persistence/mongodb/mongo-transaction-context.js";
@@ -19,20 +19,16 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
     collaboratorId: string,
     deletedAt: Date,
     context: TransactionContext
-  ): ResultAsync<void, CollaboratorDocumentsFailure> {
-    return ResultAsync.fromSafePromise(
-      this.softDeleteByFieldSafely("collaboratorId", collaboratorId, deletedAt, context)
-    ).andThen((result) => result);
+  ): Promise<Result<void, CollaboratorDocumentsFailure>> {
+    return this.softDeleteByFieldSafely("collaboratorId", collaboratorId, deletedAt, context);
   }
 
   softDeleteActiveByDocumentTypeId(
     documentTypeId: string,
     deletedAt: Date,
     context: TransactionContext
-  ): ResultAsync<void, CollaboratorDocumentsFailure> {
-    return ResultAsync.fromSafePromise(
-      this.softDeleteByFieldSafely("documentTypeId", documentTypeId, deletedAt, context)
-    ).andThen((result) => result);
+  ): Promise<Result<void, CollaboratorDocumentsFailure>> {
+    return this.softDeleteByFieldSafely("documentTypeId", documentTypeId, deletedAt, context);
   }
 
   private async softDeleteByFieldSafely(

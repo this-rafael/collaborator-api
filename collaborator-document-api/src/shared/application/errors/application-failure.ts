@@ -1,7 +1,7 @@
 /**
  * Falha operacional serializável e discriminada.
  *
- * A aplicação a devolve por `Result`/`ResultAsync`, sem lançar erros técnicos
+ * A aplicação a devolve por `Result` / `Promise<Result>`, sem lançar erros técnicos
  * através das fronteiras de caso de uso.
  */
 export type ApplicationFailure<TCode extends string = string> = Readonly<{

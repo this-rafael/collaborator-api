@@ -1,4 +1,4 @@
-import {errAsync, okAsync} from "neverthrow";
+import {err, ok} from "neverthrow";
 import {describe, expect, it} from "vitest";
 
 const id = "66a64ab05bd7213b90d9b010";
@@ -17,10 +17,10 @@ describe("Updating a document type through the application command", () => {
     )._unsafeUnwrap();
     let persisted: unknown;
     const repository = {
-      findById: () => okAsync(existing),
+      findById: () => Promise.resolve(ok(existing)),
       updateActive: (entity: unknown) => {
         persisted = entity;
-        return okAsync(entity);
+        return Promise.resolve(ok(entity));
       }
     };
 
@@ -52,10 +52,10 @@ describe("Updating a document type through the application command", () => {
     )._unsafeUnwrap();
     let persisted = false;
     const repository = {
-      findById: () => okAsync(existing),
+      findById: () => Promise.resolve(ok(existing)),
       updateActive: () => {
         persisted = true;
-        return okAsync(existing);
+        return Promise.resolve(ok(existing));
       }
     };
     const result = await new UpdateDocumentTypeUseCase(repository as never, clock).execute({
@@ -78,13 +78,15 @@ describe("Updating a document type through the application command", () => {
       new Date("2026-07-30T12:00:00.000Z")
     )._unsafeUnwrap();
     const repository = {
-      findById: () => okAsync(existing),
+      findById: () => Promise.resolve(ok(existing)),
       updateActive: () =>
-        errAsync({
-          kind: "application" as const,
-          code: "DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE" as const,
-          message: "Duplicate code."
-        })
+        Promise.resolve(
+          err({
+            kind: "application" as const,
+            code: "DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE" as const,
+            message: "Duplicate code."
+          })
+        )
     };
     const result = await new UpdateDocumentTypeUseCase(repository as never, clock).execute({
       id,
@@ -109,10 +111,10 @@ describe("Updating a document type through the application command", () => {
       ._unsafeUnwrap();
     let persisted = false;
     const repository = {
-      findById: () => okAsync(existing),
+      findById: () => Promise.resolve(ok(existing)),
       updateActive: () => {
         persisted = true;
-        return okAsync(existing);
+        return Promise.resolve(ok(existing));
       }
     };
     const result = await new UpdateDocumentTypeUseCase(repository as never, clock).execute({
@@ -135,10 +137,10 @@ describe("Updating a document type through the application command", () => {
     )._unsafeUnwrap();
     let persisted = false;
     const repository = {
-      findById: () => okAsync(existing),
+      findById: () => Promise.resolve(ok(existing)),
       updateActive: () => {
         persisted = true;
-        return okAsync(existing);
+        return Promise.resolve(ok(existing));
       }
     };
 

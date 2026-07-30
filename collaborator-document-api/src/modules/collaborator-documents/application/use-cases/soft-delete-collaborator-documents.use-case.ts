@@ -1,4 +1,4 @@
-import {errAsync, type ResultAsync} from "neverthrow";
+import {err, type Result} from "neverthrow";
 
 import type {TransactionContext} from "../../../../shared/application/ports/transaction-manager.js";
 import {
@@ -15,12 +15,12 @@ import type {CollaboratorDocumentRepository} from "../ports/collaborator-documen
 export class SoftDeleteCollaboratorDocumentsUseCase {
   constructor(private readonly repository: CollaboratorDocumentRepository) {}
 
-  execute(
+  async execute(
     input: SoftDeleteCollaboratorDocumentsInput,
     context: TransactionContext
-  ): ResultAsync<void, CollaboratorDocumentsFailure> {
+  ): Promise<Result<void, CollaboratorDocumentsFailure>> {
     if (!input || typeof input.collaboratorId !== "string" || typeof input.deletedAt !== "string") {
-      return errAsync(
+      return err(
         collaboratorDocumentsFailure(
           "INTERNAL_SERVER_ERROR",
           "Invalid collaborator document cascade input."
@@ -29,7 +29,7 @@ export class SoftDeleteCollaboratorDocumentsUseCase {
     }
     const deletedAt = new Date(input.deletedAt);
     if (!input.collaboratorId || Number.isNaN(deletedAt.getTime())) {
-      return errAsync(
+      return err(
         collaboratorDocumentsFailure(
           "INTERNAL_SERVER_ERROR",
           "Invalid collaborator document cascade input."

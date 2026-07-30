@@ -1,7 +1,7 @@
 import {Injectable} from "@tsed/di";
 import {MongooseService} from "@tsed/mongoose";
 import type {ClientSession} from "mongoose";
-import {err, ok, type Result, ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import {applicationFailure} from "../../../application/errors/application-failure.js";
 import type {
@@ -28,7 +28,7 @@ export function classifyMongoTransactionError(error: unknown): MongoTransactionE
  * Adaptador transacional MongoDB injetável pelo Ts.ED.
  *
  * A sessão Mongoose nunca cruza a porta de aplicação: o callback recebe um
- * `TransactionContext` opaco e retorna `ResultAsync`. Erros técnicos são
+ * `TransactionContext` opaco e retorna `Promise<Result>`. Erros técnicos são
  * convertidos para `TransactionFailure`, inclusive durante cleanup.
  */
 @Injectable()
@@ -42,13 +42,13 @@ export class MongoTransactionManager implements TransactionManager {
   }
 
   execute<T, E>(
-    work: (context: TransactionContext) => ResultAsync<T, E>
-  ): ResultAsync<T, E | TransactionFailure> {
-    return new ResultAsync(this.executeSafely(work));
+    work: (context: TransactionContext) => Promise<Result<T, E>>
+  ): Promise<Result<T, E | TransactionFailure>> {
+    return this.executeSafely(work);
   }
 
   private async executeSafely<T, E>(
-    work: (context: TransactionContext) => ResultAsync<T, E>
+    work: (context: TransactionContext) => Promise<Result<T, E>>
   ): Promise<Result<T, E | TransactionFailure>> {
     let session: ClientSession;
     try {
@@ -70,7 +70,7 @@ export class MongoTransactionManager implements TransactionManager {
 
   private async runAttempts<T, E>(
     session: ClientSession,
-    work: (context: TransactionContext) => ResultAsync<T, E>
+    work: (context: TransactionContext) => Promise<Result<T, E>>
   ): Promise<Result<T, E | TransactionFailure>> {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
       try {

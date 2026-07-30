@@ -1,4 +1,4 @@
-import {err, errAsync, ok, type Result, type ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import {DocumentTypeCode} from "../../domain/value-objects/document-type-code.js";
 import {
@@ -59,9 +59,9 @@ export function normalizeDocumentTypeFilters(
 export class ListDocumentTypesUseCase {
   constructor(private readonly repository: Pick<DocumentTypeRepository, "listActive">) {}
 
-  execute(
+  async execute(
     input: ListDocumentTypesInput
-  ): ResultAsync<ListDocumentTypesOutput, DocumentTypeFailure> {
+  ): Promise<Result<ListDocumentTypesOutput, DocumentTypeFailure>> {
     if (
       !input ||
       typeof input !== "object" ||
@@ -69,18 +69,20 @@ export class ListDocumentTypesUseCase {
       input.limit < 1 ||
       input.limit > 100
     ) {
-      return errAsync(
+      return err(
         documentTypeApplicationFailure("INVALID_QUERY_PARAMETER", "limit must be between 1 and 100")
       );
     }
 
     const filters = normalizeDocumentTypeFilters(input.filters);
-    if (filters.isErr()) return errAsync(filters.error);
+    if (filters.isErr()) return err(filters.error);
 
-    return this.repository.listActive({...input, filters: filters.value}).map((page) => ({
-      items: page.items.map(documentTypeToOutput),
-      hasNext: page.hasNext,
+    const page = await this.repository.listActive({...input, filters: filters.value});
+    if (page.isErr()) return err(page.error);
+    return ok({
+      items: page.value.items.map(documentTypeToOutput),
+      hasNext: page.value.hasNext,
       filters: filters.value
-    }));
+    });
   }
 }

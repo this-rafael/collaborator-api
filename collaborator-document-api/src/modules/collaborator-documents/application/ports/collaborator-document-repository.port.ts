@@ -1,4 +1,4 @@
-import type {ResultAsync} from "neverthrow";
+import type {Result} from "neverthrow";
 
 import type {TransactionContext} from "../../../../shared/application/ports/transaction-manager.js";
 import type {CollaboratorDocumentsFailure} from "../contracts/soft-delete-collaborator-documents.input.js";
@@ -9,10 +9,10 @@ export interface CollaboratorDocumentRepository {
     collaboratorId: string,
     deletedAt: Date,
     context: TransactionContext
-  ): ResultAsync<void, CollaboratorDocumentsFailure>;
+  ): Promise<Result<void, CollaboratorDocumentsFailure>>;
   softDeleteActiveByDocumentTypeId(
     documentTypeId: string,
     deletedAt: Date,
     context: TransactionContext
-  ): ResultAsync<void, CollaboratorDocumentsFailure>;
+  ): Promise<Result<void, CollaboratorDocumentsFailure>>;
 }

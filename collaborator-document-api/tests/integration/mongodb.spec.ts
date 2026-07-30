@@ -1,7 +1,7 @@
 import {afterAll, beforeAll, beforeEach, describe, expect, inject, it} from "vitest";
 import {PlatformTest} from "@tsed/platform-http/testing";
 import {MongooseService} from "@tsed/mongoose";
-import {errAsync, ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 import {MongoClient, type Db} from "mongodb";
 
 import {serverSettings, startApplication, stopApplication} from "../../src/bootstrap.js";
@@ -13,18 +13,21 @@ import {getMongoSession} from "../../src/shared/infrastructure/persistence/mongo
 import {MongoTransactionManager} from "../../src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.js";
 import {resetDatabase} from "../helpers/database.js";
 
-const insertFoundation = (
+const insertFoundation = async (
   db: Db,
   context: TransactionContext,
   state: string
-): ResultAsync<void, ReturnType<typeof applicationFailure>> => {
+): Promise<Result<void, ReturnType<typeof applicationFailure>>> => {
   const session = getMongoSession(context);
   if (!session) {
-    return errAsync(applicationFailure("INTERNAL_SERVER_ERROR", "Sessão MongoDB ausente."));
+    return err(applicationFailure("INTERNAL_SERVER_ERROR", "Sessão MongoDB ausente."));
   }
-  return ResultAsync.fromPromise(db.collection("foundation").insertOne({state}, {session}), () =>
-    applicationFailure("SERVICE_UNAVAILABLE", "MongoDB indisponível.")
-  ).map(() => undefined);
+  try {
+    await db.collection("foundation").insertOne({state}, {session});
+    return ok(undefined);
+  } catch {
+    return err(applicationFailure("SERVICE_UNAVAILABLE", "MongoDB indisponível."));
+  }
 };
 
 describe("MongoDB integration", () => {
@@ -60,11 +63,11 @@ describe("MongoDB integration", () => {
   it("aborts all writes when work returns a modeled failure", async () => {
     const transaction = PlatformTest.get<MongoTransactionManager>(MongoTransactionManager);
     const db = PlatformTest.get<MongooseService>(MongooseService).get()?.db;
-    const result = await transaction.execute((context) =>
-      insertFoundation(db!, context, "aborted").andThen(() =>
-        errAsync(applicationFailure("VALIDATION_ERROR", "Falha esperada."))
-      )
-    );
+    const result = await transaction.execute(async (context) => {
+      const inserted = await insertFoundation(db!, context, "aborted");
+      if (inserted.isErr()) return inserted;
+      return err(applicationFailure("VALIDATION_ERROR", "Falha esperada."));
+    });
 
     expect(result.isErr()).toBe(true);
     expect(await db!.collection("foundation").countDocuments()).toBe(0);

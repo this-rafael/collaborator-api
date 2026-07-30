@@ -1,7 +1,7 @@
 /**
  * Falha de regra de domínio serializável e discriminada.
  *
- * Falhas de domínio viajam em `Result`/`ResultAsync`; elas não são exceções.
+ * Falhas de domínio viajam em `Result` / `Promise<Result>`; elas não são exceções.
  */
 export type DomainFailure<TCode extends string = string> = Readonly<{
   kind: "domain";

@@ -1,4 +1,4 @@
-import type {ResultAsync} from "neverthrow";
+import type {Result} from "neverthrow";
 
 import type {TransactionContext} from "../../domain/transaction-context.js";
 import type {ApplicationFailure} from "../errors/application-failure.js";
@@ -13,6 +13,6 @@ export type TransactionFailure = ApplicationFailure<
 /** Porta de execução transacional independente do mecanismo de persistência. */
 export interface TransactionManager {
   execute<T, E>(
-    work: (context: TransactionContext) => ResultAsync<T, E>
-  ): ResultAsync<T, E | TransactionFailure>;
+    work: (context: TransactionContext) => Promise<Result<T, E>>
+  ): Promise<Result<T, E | TransactionFailure>>;
 }

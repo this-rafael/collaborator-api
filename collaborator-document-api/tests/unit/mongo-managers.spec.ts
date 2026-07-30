@@ -1,4 +1,4 @@
-import {okAsync} from "neverthrow";
+import {ok} from "neverthrow";
 import {describe, expect, it} from "vitest";
 
 import {MongoIndexManager} from "../../src/shared/infrastructure/persistence/mongodb/mongo-index-manager.js";
@@ -7,7 +7,7 @@ import {MongoTransactionManager} from "../../src/shared/infrastructure/persisten
 describe("Mongo manager guards", () => {
   it("returns a modeled unavailable failure when transactions have no connection", async () => {
     const manager = new MongoTransactionManager({get: () => undefined} as never);
-    const result = await manager.execute(() => okAsync(undefined));
+    const result = await manager.execute(() => Promise.resolve(ok(undefined)));
 
     expect(result.isErr()).toBe(true);
     if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");

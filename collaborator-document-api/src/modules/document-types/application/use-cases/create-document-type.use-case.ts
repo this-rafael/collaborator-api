@@ -1,4 +1,4 @@
-import {errAsync, type ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import type {Clock} from "../../../../shared/application/ports/clock.js";
 import type {IdGenerator} from "../../../../shared/application/ports/id-generator.js";
@@ -18,14 +18,16 @@ export class CreateDocumentTypeUseCase {
     private readonly ids: IdGenerator
   ) {}
 
-  execute(input: CreateDocumentTypeInput): ResultAsync<DocumentTypeOutput, DocumentTypeFailure> {
+  async execute(
+    input: CreateDocumentTypeInput
+  ): Promise<Result<DocumentTypeOutput, DocumentTypeFailure>> {
     let id: string;
     let now: Date;
     try {
       id = this.ids.next();
       now = this.clock.now();
     } catch {
-      return errAsync(
+      return err(
         documentTypeApplicationFailure(
           "INTERNAL_SERVER_ERROR",
           "Document type creation dependencies failed."
@@ -34,8 +36,10 @@ export class CreateDocumentTypeUseCase {
     }
 
     const documentType = DocumentType.create({...input, id}, now);
-    if (documentType.isErr()) return errAsync(documentType.error);
+    if (documentType.isErr()) return err(documentType.error);
 
-    return this.repository.create(documentType.value).map(documentTypeToOutput);
+    const created = await this.repository.create(documentType.value);
+    if (created.isErr()) return err(created.error);
+    return ok(documentTypeToOutput(created.value));
   }
 }

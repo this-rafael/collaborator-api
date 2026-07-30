@@ -1,6 +1,6 @@
 import {Injectable} from "@tsed/di";
 import {MongooseService} from "@tsed/mongoose";
-import {err, ok, type Result, ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 import {Types, type Connection} from "mongoose";
 
 import type {
@@ -31,31 +31,31 @@ const unavailable = (): CollaboratorFailure =>
 export class MongoCollaboratorRepository implements CollaboratorRepository {
   constructor(private readonly mongoose: MongooseService) {}
 
-  create(collaborator: Collaborator): ResultAsync<Collaborator, CollaboratorFailure> {
-    return fromSafeResult(this.createSafely(collaborator));
+  create(collaborator: Collaborator): Promise<Result<Collaborator, CollaboratorFailure>> {
+    return this.createSafely(collaborator);
   }
 
-  findById(id: string): ResultAsync<Collaborator, CollaboratorFailure> {
-    return fromSafeResult(this.findByIdSafely(id));
+  findById(id: string): Promise<Result<Collaborator, CollaboratorFailure>> {
+    return this.findByIdSafely(id);
   }
 
   listActive(input: {
     filters: {name?: string; cpf?: string; email?: string};
     afterId?: string;
     limit: number;
-  }): ResultAsync<CollaboratorListPage, CollaboratorFailure> {
-    return fromSafeResult(this.listActiveSafely(input));
+  }): Promise<Result<CollaboratorListPage, CollaboratorFailure>> {
+    return this.listActiveSafely(input);
   }
 
-  updateActive(collaborator: Collaborator): ResultAsync<Collaborator, CollaboratorFailure> {
-    return fromSafeResult(this.updateActiveSafely(collaborator));
+  updateActive(collaborator: Collaborator): Promise<Result<Collaborator, CollaboratorFailure>> {
+    return this.updateActiveSafely(collaborator);
   }
 
   softDeleteActive(
     collaborator: Collaborator,
     context: TransactionContext
-  ): ResultAsync<boolean, CollaboratorFailure> {
-    return fromSafeResult(this.softDeleteActiveSafely(collaborator, context));
+  ): Promise<Result<boolean, CollaboratorFailure>> {
+    return this.softDeleteActiveSafely(collaborator, context);
   }
 
   private connection(): Connection | undefined {
@@ -219,9 +219,6 @@ export class MongoCollaboratorRepository implements CollaboratorRepository {
     }
   }
 }
-
-const fromSafeResult = <T, E>(promise: Promise<Result<T, E>>): ResultAsync<T, E> =>
-  ResultAsync.fromSafePromise(promise).andThen((result) => result);
 
 function mapMongoFailure(error: unknown): CollaboratorFailure {
   const key = (error as {keyPattern?: Record<string, number>}).keyPattern;

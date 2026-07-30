@@ -1,4 +1,4 @@
-import type {ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import type {CollaboratorFailure} from "../../domain/errors/collaborator.failure.js";
 import type {CollaboratorIdInput} from "../contracts/collaborator-input.js";
@@ -9,7 +9,11 @@ import type {CollaboratorRepository} from "../../domain/repositories/collaborato
 export class GetCollaboratorUseCase {
   constructor(private readonly repository: Pick<CollaboratorRepository, "findById">) {}
 
-  execute(input: CollaboratorIdInput): ResultAsync<CollaboratorOutput, CollaboratorFailure> {
-    return this.repository.findById(input.id).map(collaboratorToOutput);
+  async execute(
+    input: CollaboratorIdInput
+  ): Promise<Result<CollaboratorOutput, CollaboratorFailure>> {
+    const found = await this.repository.findById(input.id);
+    if (found.isErr()) return err(found.error);
+    return ok(collaboratorToOutput(found.value));
   }
 }

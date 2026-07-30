@@ -1,4 +1,4 @@
-import {errAsync, type ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import type {Clock} from "../../../../shared/application/ports/clock.js";
 import type {IdGenerator} from "../../../../shared/application/ports/id-generator.js";
@@ -19,14 +19,16 @@ export class CreateCollaboratorUseCase {
     private readonly ids: IdGenerator
   ) {}
 
-  execute(input: CreateCollaboratorInput): ResultAsync<CollaboratorOutput, CollaboratorFailure> {
+  async execute(
+    input: CreateCollaboratorInput
+  ): Promise<Result<CollaboratorOutput, CollaboratorFailure>> {
     let id: string;
     let now: Date;
     try {
       id = this.ids.next();
       now = this.clock.now();
     } catch {
-      return errAsync(
+      return err(
         collaboratorApplicationFailure(
           "INTERNAL_SERVER_ERROR",
           "Collaborator creation dependencies failed."
@@ -35,8 +37,10 @@ export class CreateCollaboratorUseCase {
     }
 
     const collaborator = Collaborator.create({...input, id}, now);
-    if (collaborator.isErr()) return errAsync(collaborator.error);
+    if (collaborator.isErr()) return err(collaborator.error);
 
-    return this.repository.create(collaborator.value).map(collaboratorToOutput);
+    const created = await this.repository.create(collaborator.value);
+    if (created.isErr()) return err(created.error);
+    return ok(collaboratorToOutput(created.value));
   }
 }

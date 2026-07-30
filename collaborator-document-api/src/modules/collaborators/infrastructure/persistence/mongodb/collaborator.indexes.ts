@@ -1,7 +1,7 @@
 import {Injectable} from "@tsed/di";
 import {MongooseService} from "@tsed/mongoose";
 import type {IndexDescription} from "mongodb";
-import {err, ok, type Result, ResultAsync} from "neverthrow";
+import {err, ok, type Result} from "neverthrow";
 
 import {
   collaboratorApplicationFailure,
@@ -35,8 +35,8 @@ export const collaboratorIndexes: readonly IndexDescription[] = [
 export class CollaboratorIndexProvisioner {
   constructor(private readonly mongoose: MongooseService) {}
 
-  ensure(): ResultAsync<readonly string[], CollaboratorFailure> {
-    return ResultAsync.fromSafePromise(this.ensureSafely()).andThen((result) => result);
+  ensure(): Promise<Result<readonly string[], CollaboratorFailure>> {
+    return this.ensureSafely();
   }
 
   private async ensureSafely(): Promise<Result<readonly string[], CollaboratorFailure>> {
@@ -68,5 +68,5 @@ export class CollaboratorIndexProvisioner {
 /** Forma funcional útil para bootstrap e testes sem expor conexão global. */
 export const ensureCollaboratorIndexes = (
   mongoose: MongooseService
-): ResultAsync<readonly string[], CollaboratorFailure> =>
+): Promise<Result<readonly string[], CollaboratorFailure>> =>
   new CollaboratorIndexProvisioner(mongoose).ensure();
