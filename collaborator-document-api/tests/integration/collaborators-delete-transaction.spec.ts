@@ -77,6 +77,12 @@ describe("Deleting collaborators transactionally", () => {
     const activeLink = await db.collection("collaborator_documents").findOne({collaboratorId});
     expect(collaborator?.deletedAt).toBeNull();
     expect(activeLink?.deletedAt).toBeNull();
+
+    await db
+      .collection("collaborator_documents")
+      .drop()
+      .catch(() => undefined);
+    await db.createCollection("collaborator_documents");
   });
 });
 

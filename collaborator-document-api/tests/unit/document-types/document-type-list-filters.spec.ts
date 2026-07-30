@@ -27,7 +27,7 @@ describe("Normalizing document type list filters", () => {
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error.code).toBe("INVALID_QUERY_PARAMETER");
-        expect(result.error.errors).toEqual(
+        expect(result.error.kind === "application" ? result.error.errors : undefined).toEqual(
           expect.arrayContaining([expect.objectContaining({field: "code"})])
         );
       }

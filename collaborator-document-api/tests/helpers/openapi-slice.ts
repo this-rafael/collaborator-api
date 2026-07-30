@@ -492,7 +492,12 @@ export const expectedFunctionalOperationIds = [
   "createCollaborator",
   "getCollaborator",
   "updateCollaborator",
-  "deleteCollaborator"
+  "deleteCollaborator",
+  "listDocumentTypes",
+  "createDocumentType",
+  "getDocumentType",
+  "updateDocumentType",
+  "deleteDocumentType"
 ] as const;
 
 export function selectDiscoverySlice(yaml: ParsedYaml): DiscoverySlice {

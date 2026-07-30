@@ -11,6 +11,9 @@ import {ApiRootController} from "./controllers/api-root.controller.js";
 import {CollaboratorsModule} from "./modules/collaborators/collaborators.module.js";
 import {CollaboratorIndexProvisioner} from "./modules/collaborators/infrastructure/persistence/mongodb/collaborator.indexes.js";
 import {CollaboratorsController} from "./modules/collaborators/presentation/http/controllers/collaborators.controller.js";
+import {DocumentTypesModule} from "./modules/document-types/document-types.module.js";
+import {DocumentTypeIndexProvisioner} from "./modules/document-types/infrastructure/persistence/mongodb/document-type.indexes.js";
+import {DocumentTypesController} from "./modules/document-types/presentation/http/controllers/document-types.controller.js";
 import {MongoReadinessCheck} from "./shared/infrastructure/availability/mongo-readiness-check.js";
 import {globalErrorMiddleware} from "./shared/presentation/http/filters/global-error.filter.js";
 import {requestIdMiddleware} from "./shared/presentation/http/middlewares/request-id.middleware.js";
@@ -49,9 +52,9 @@ const corsMiddleware = cors({
   swagger: [openApiSettings],
   acceptMimes: ["application/json", "application/hal+json", "application/problem+json"],
   mount: {
-    "/": [HealthController, ApiRootController, CollaboratorsController]
+    "/": [HealthController, ApiRootController, CollaboratorsController, DocumentTypesController]
   },
-  imports: [CollaboratorsModule, MongoReadinessCheck],
+  imports: [CollaboratorsModule, DocumentTypesModule, MongoReadinessCheck],
   middlewares: [
     helmet(),
     corsMiddleware,
@@ -67,7 +70,13 @@ export class Server {
   @Constant<boolean>("collaborators.provisionIndexes", true)
   private readonly provisionCollaboratorIndexes!: boolean;
 
-  constructor(private readonly collaboratorIndexes: CollaboratorIndexProvisioner) {}
+  @Constant<boolean>("documentTypes.provisionIndexes", true)
+  private readonly provisionDocumentTypeIndexes!: boolean;
+
+  constructor(
+    private readonly collaboratorIndexes: CollaboratorIndexProvisioner,
+    private readonly documentTypeIndexes: DocumentTypeIndexProvisioner
+  ) {}
 
   /**
    * Garante os índices normativos antes de abrir a porta HTTP.
@@ -76,10 +85,17 @@ export class Server {
    * dados incompatíveis com o contrato do módulo.
    */
   async $beforeListen(): Promise<void> {
-    if (!this.provisionCollaboratorIndexes) return;
-    const result = await this.collaboratorIndexes.ensure();
-    if (result.isErr()) {
-      throw new Error(`COLLABORATOR_INDEX_PROVISIONING_FAILED:${result.error.code}`);
+    if (this.provisionCollaboratorIndexes) {
+      const result = await this.collaboratorIndexes.ensure();
+      if (result.isErr()) {
+        throw new Error(`COLLABORATOR_INDEX_PROVISIONING_FAILED:${result.error.code}`);
+      }
+    }
+    if (this.provisionDocumentTypeIndexes) {
+      const result = await this.documentTypeIndexes.ensure();
+      if (result.isErr()) {
+        throw new Error(`DOCUMENT_TYPE_INDEX_PROVISIONING_FAILED:${result.error.code}`);
+      }
     }
   }
 }

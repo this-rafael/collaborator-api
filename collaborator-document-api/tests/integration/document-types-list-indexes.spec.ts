@@ -22,7 +22,7 @@ describe("Document type keyset indexes", () => {
     expect(indexes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          key: {_id: 1},
+          key: {deletedAt: 1, _id: 1},
           partialFilterExpression: {deletedAt: null}
         })
       ])

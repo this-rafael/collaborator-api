@@ -10,4 +10,9 @@ export interface CollaboratorDocumentRepository {
     deletedAt: Date,
     context: TransactionContext
   ): ResultAsync<void, CollaboratorDocumentsFailure>;
+  softDeleteActiveByDocumentTypeId(
+    documentTypeId: string,
+    deletedAt: Date,
+    context: TransactionContext
+  ): ResultAsync<void, CollaboratorDocumentsFailure>;
 }
