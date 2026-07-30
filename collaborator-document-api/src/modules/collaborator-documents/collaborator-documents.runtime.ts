@@ -1,13 +1,14 @@
 import {Injectable} from "@tsed/di";
+import {errAsync, type ResultAsync} from "neverthrow";
 
 import type {TransactionContext} from "../../shared/application/ports/transaction-manager.js";
 import type {
   CollaboratorDocumentsFailure,
   SoftDeleteCollaboratorDocumentsInput
 } from "./application/contracts/soft-delete-collaborator-documents.input.js";
+import {collaboratorDocumentsFailure} from "./application/contracts/soft-delete-collaborator-documents.input.js";
 import {SoftDeleteCollaboratorDocumentsUseCase} from "./application/use-cases/soft-delete-collaborator-documents.use-case.js";
 import {MongoCollaboratorDocumentRepository} from "./infrastructure/persistence/mongodb/collaborator-document.mongo-repository.js";
-import type {ResultAsync} from "neverthrow";
 
 /**
  * Superfície pública do módulo collaborator-documents para composições entre
@@ -17,7 +18,7 @@ import type {ResultAsync} from "neverthrow";
 export class CollaboratorDocumentsRuntime {
   private readonly softDelete: SoftDeleteCollaboratorDocumentsUseCase;
 
-  constructor(repository: MongoCollaboratorDocumentRepository) {
+  constructor(private readonly repository: MongoCollaboratorDocumentRepository) {
     this.softDelete = new SoftDeleteCollaboratorDocumentsUseCase(repository);
   }
 
@@ -26,5 +27,33 @@ export class CollaboratorDocumentsRuntime {
     context: TransactionContext
   ): ResultAsync<void, CollaboratorDocumentsFailure> {
     return this.softDelete.execute(input, context);
+  }
+
+  executeByDocumentType(
+    input: Readonly<{documentTypeId: string; deletedAt: string}>,
+    context: TransactionContext
+  ): ResultAsync<void, CollaboratorDocumentsFailure> {
+    if (!input || typeof input.documentTypeId !== "string" || typeof input.deletedAt !== "string") {
+      return errAsync(
+        collaboratorDocumentsFailure(
+          "INTERNAL_SERVER_ERROR",
+          "Invalid collaborator document cascade input."
+        )
+      );
+    }
+    const deletedAt = new Date(input.deletedAt);
+    if (!input.documentTypeId || Number.isNaN(deletedAt.getTime())) {
+      return errAsync(
+        collaboratorDocumentsFailure(
+          "INTERNAL_SERVER_ERROR",
+          "Invalid collaborator document cascade input."
+        )
+      );
+    }
+    return this.repository.softDeleteActiveByDocumentTypeId(
+      input.documentTypeId,
+      deletedAt,
+      context
+    );
   }
 }

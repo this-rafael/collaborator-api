@@ -21,12 +21,23 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
     context: TransactionContext
   ): ResultAsync<void, CollaboratorDocumentsFailure> {
     return ResultAsync.fromSafePromise(
-      this.softDeleteActiveByCollaboratorIdSafely(collaboratorId, deletedAt, context)
+      this.softDeleteByFieldSafely("collaboratorId", collaboratorId, deletedAt, context)
     ).andThen((result) => result);
   }
 
-  private async softDeleteActiveByCollaboratorIdSafely(
-    collaboratorId: string,
+  softDeleteActiveByDocumentTypeId(
+    documentTypeId: string,
+    deletedAt: Date,
+    context: TransactionContext
+  ): ResultAsync<void, CollaboratorDocumentsFailure> {
+    return ResultAsync.fromSafePromise(
+      this.softDeleteByFieldSafely("documentTypeId", documentTypeId, deletedAt, context)
+    ).andThen((result) => result);
+  }
+
+  private async softDeleteByFieldSafely(
+    field: "collaboratorId" | "documentTypeId",
+    value: string,
     deletedAt: Date,
     context: TransactionContext
   ): Promise<Result<void, CollaboratorDocumentsFailure>> {
@@ -52,7 +63,7 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
       }
       await database
         .collection("collaborator_documents")
-        .updateMany({collaboratorId, deletedAt: null}, {$set: {deletedAt}}, {session});
+        .updateMany({[field]: value, deletedAt: null}, {$set: {deletedAt}}, {session});
       return ok(undefined);
     } catch {
       return err(

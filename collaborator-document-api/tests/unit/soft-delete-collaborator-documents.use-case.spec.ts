@@ -15,7 +15,8 @@ const context = {} as TransactionContext;
 describe("SoftDeleteCollaboratorDocumentsUseCase", () => {
   it("parses the public cascade input and delegates it in the same transaction", async () => {
     const repository = {
-      softDeleteActiveByCollaboratorId: vi.fn(() => okAsync(undefined))
+      softDeleteActiveByCollaboratorId: vi.fn(() => okAsync(undefined)),
+      softDeleteActiveByDocumentTypeId: vi.fn(() => okAsync(undefined))
     };
 
     const result = await new SoftDeleteCollaboratorDocumentsUseCase(repository).execute(
@@ -39,7 +40,8 @@ describe("SoftDeleteCollaboratorDocumentsUseCase", () => {
     [{collaboratorId, deletedAt: "not-a-date"}]
   ])("returns a modeled failure for invalid cascade input: %o", async (input) => {
     const repository = {
-      softDeleteActiveByCollaboratorId: vi.fn(() => okAsync(undefined))
+      softDeleteActiveByCollaboratorId: vi.fn(() => okAsync(undefined)),
+      softDeleteActiveByDocumentTypeId: vi.fn(() => okAsync(undefined))
     };
 
     const result = await new SoftDeleteCollaboratorDocumentsUseCase(repository).execute(
@@ -58,7 +60,8 @@ describe("SoftDeleteCollaboratorDocumentsUseCase", () => {
       "Collaborator document persistence is unavailable."
     );
     const repository = {
-      softDeleteActiveByCollaboratorId: vi.fn(() => errAsync(failure))
+      softDeleteActiveByCollaboratorId: vi.fn(() => errAsync(failure)),
+      softDeleteActiveByDocumentTypeId: vi.fn(() => okAsync(undefined))
     };
 
     const result = await new SoftDeleteCollaboratorDocumentsUseCase(repository).execute(

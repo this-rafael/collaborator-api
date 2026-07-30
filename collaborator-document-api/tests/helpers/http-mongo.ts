@@ -7,6 +7,7 @@ import type {Db} from "mongodb";
 import {serverSettings} from "../../src/bootstrap.js";
 import {Server} from "../../src/Server.js";
 import {CollaboratorIndexProvisioner} from "../../src/modules/collaborators/infrastructure/persistence/mongodb/collaborator.indexes.js";
+import {DocumentTypeIndexProvisioner} from "../../src/modules/document-types/infrastructure/persistence/mongodb/document-type.indexes.js";
 
 type BootstrapHttpMongoOptions = {
   beforeBootstrap?: () => void | Promise<void>;
@@ -29,6 +30,12 @@ export function bootstrapHttpMongo(options: BootstrapHttpMongoOptions = {}): voi
     ).ensure();
     if (indexes.isErr()) {
       throw new Error(`COLLABORATOR_INDEX_PROVISIONING_FAILED:${indexes.error.code}`);
+    }
+    const documentTypeIndexes = await PlatformTest.get<DocumentTypeIndexProvisioner>(
+      DocumentTypeIndexProvisioner
+    ).ensure();
+    if (documentTypeIndexes.isErr()) {
+      throw new Error(`DOCUMENT_TYPE_INDEX_PROVISIONING_FAILED:${documentTypeIndexes.error.code}`);
     }
   });
   afterAll(async () => {
