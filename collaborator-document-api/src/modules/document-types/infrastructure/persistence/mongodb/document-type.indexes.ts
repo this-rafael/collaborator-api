@@ -9,6 +9,7 @@ import {
 } from "../../../domain/errors/document-type.failure.js";
 import {getDocumentTypeMongoModel} from "./document-type.mongo-document.js";
 
+/** Definições de índices normativos para a coleção de tipos de documento. */
 export const documentTypeIndexes: readonly IndexDescription[] = [
   {
     key: {code: 1},
@@ -23,6 +24,7 @@ export const documentTypeIndexes: readonly IndexDescription[] = [
   }
 ];
 
+/** Garante a existência dos índices de tipos de documento no MongoDB. */
 @Injectable()
 export class DocumentTypeIndexProvisioner {
   constructor(private readonly mongoose: MongooseService) {}
@@ -34,7 +36,7 @@ export class DocumentTypeIndexProvisioner {
   private async ensureSafely(): Promise<Result<readonly string[], DocumentTypeFailure>> {
     try {
       const connection = this.mongoose.get();
-      if (!connection || connection.readyState !== 1) {
+      if (connection?.readyState !== 1) {
         return err(
           documentTypeApplicationFailure(
             "SERVICE_UNAVAILABLE",
@@ -57,6 +59,7 @@ export class DocumentTypeIndexProvisioner {
   }
 }
 
+/** Atalho para garantir índices sem instanciar o provisioner. */
 export const ensureDocumentTypeIndexes = (
   mongoose: MongooseService
 ): Promise<Result<readonly string[], DocumentTypeFailure>> =>

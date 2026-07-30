@@ -2,6 +2,7 @@ import type {CollaboratorOutput} from "../../../application/contracts/collaborat
 
 type HalLink = Readonly<{href: string; method?: "DELETE" | "PATCH" | "POST"}>;
 
+/** Representação HAL de um colaborador para respostas HTTP. */
 export type CollaboratorHal = Readonly<{
   id: string;
   name: string;

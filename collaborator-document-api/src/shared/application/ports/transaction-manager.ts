@@ -3,6 +3,7 @@ import type {Result} from "neverthrow";
 import type {TransactionContext} from "../../domain/transaction-context.js";
 import type {ApplicationFailure} from "../errors/application-failure.js";
 
+/** Contexto de transação compartilhado entre módulos. */
 export type {TransactionContext} from "../../domain/transaction-context.js";
 
 /** Falhas técnicas possíveis ao controlar uma transação. */

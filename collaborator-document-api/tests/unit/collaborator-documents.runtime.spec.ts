@@ -16,7 +16,11 @@ describe("CollaboratorDocumentsRuntime", () => {
     };
 
     const result = await new CollaboratorDocumentsRuntime(
-      repository as never
+      repository as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never
     ).executeByDocumentType({documentTypeId, deletedAt}, context);
 
     expect(result.isOk()).toBe(true);
@@ -40,7 +44,11 @@ describe("CollaboratorDocumentsRuntime", () => {
     };
 
     const result = await new CollaboratorDocumentsRuntime(
-      repository as never
+      repository as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never
     ).executeByDocumentType(input as never, context);
 
     expect(result.isErr()).toBe(true);
@@ -55,10 +63,13 @@ describe("CollaboratorDocumentsRuntime", () => {
     };
     const collaboratorId = "66a64ab05bd7213b90d9b001";
 
-    const result = await new CollaboratorDocumentsRuntime(repository as never).execute(
-      {collaboratorId, deletedAt},
-      context
-    );
+    const result = await new CollaboratorDocumentsRuntime(
+      repository as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never
+    ).execute({collaboratorId, deletedAt}, context);
 
     expect(result.isOk()).toBe(true);
     expect(repository.softDeleteActiveByCollaboratorId).toHaveBeenCalledWith(

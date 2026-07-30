@@ -20,7 +20,7 @@ export class Email {
       value.length > 320 ||
       !localPart ||
       localPart.length > 64 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+      !/^[^\s@]+@[^\s@.]+\.[^\s@]+$/.test(value)
     ) {
       return err(collaboratorDomainFailure("VALIDATION_ERROR", "email is invalid"));
     }

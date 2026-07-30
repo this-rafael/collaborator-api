@@ -12,7 +12,6 @@ import {
   responseSchemaReference
 } from "./collaborators-contract.helpers.js";
 
-// COL-DELETE-001…008, TX-001…003
 describe("Published delete collaborator contract", () => {
   beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);

@@ -5,7 +5,6 @@ const id = "66a64ab05bd7213b90d9b010";
 const clock = {now: () => new Date("2026-07-30T13:00:00.000Z")};
 
 describe("Updating a document type through the application command", () => {
-  // TYPE-PATCH-001…004
   it("applies only present fields and treats a null description as a clear operation", async () => {
     const {DocumentType} =
       await import("../../../src/modules/document-types/domain/entities/document-type.js");
@@ -40,7 +39,6 @@ describe("Updating a document type through the application command", () => {
     expect(persisted).toBeDefined();
   });
 
-  // TYPE-PATCH-006…010
   it("does not persist a partial update rejected by value objects", async () => {
     const {DocumentType} =
       await import("../../../src/modules/document-types/domain/entities/document-type.js");
@@ -67,7 +65,6 @@ describe("Updating a document type through the application command", () => {
     expect(persisted).toBe(false);
   });
 
-  // TYPE-PATCH-014
   it("preserves the active-code duplicate failure from persistence", async () => {
     const {DocumentType} =
       await import("../../../src/modules/document-types/domain/entities/document-type.js");
@@ -96,7 +93,6 @@ describe("Updating a document type through the application command", () => {
     if (result.isErr()) expect(result.error.code).toBe("DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE");
   });
 
-  // TYPE-PATCH-015
   it("refuses to mutate a deleted document type", async () => {
     const {DocumentType} =
       await import("../../../src/modules/document-types/domain/entities/document-type.js");

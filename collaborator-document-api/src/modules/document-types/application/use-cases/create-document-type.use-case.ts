@@ -11,6 +11,7 @@ import type {CreateDocumentTypeInput} from "../contracts/document-type-input.js"
 import {documentTypeToOutput, type DocumentTypeOutput} from "../contracts/document-type-output.js";
 import type {DocumentTypeRepository} from "../../domain/repositories/document-type.repository.js";
 
+/** Caso de uso para criação de um tipo de documento. */
 export class CreateDocumentTypeUseCase {
   constructor(
     private readonly repository: Pick<DocumentTypeRepository, "create">,

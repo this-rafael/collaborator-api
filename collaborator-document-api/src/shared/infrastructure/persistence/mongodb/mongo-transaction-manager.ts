@@ -53,7 +53,7 @@ export class MongoTransactionManager implements TransactionManager {
     let session: ClientSession;
     try {
       const connection = this.mongooseService.get();
-      if (!connection || connection.readyState !== 1) {
+      if (connection?.readyState !== 1) {
         return err(this.unavailableFailure());
       }
       session = await connection.startSession();

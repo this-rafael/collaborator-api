@@ -497,7 +497,11 @@ export const expectedFunctionalOperationIds = [
   "createDocumentType",
   "getDocumentType",
   "updateDocumentType",
-  "deleteDocumentType"
+  "deleteDocumentType",
+  "listCollaboratorDocuments",
+  "createCollaboratorDocument",
+  "getCollaboratorDocument",
+  "unlinkCollaboratorDocument"
 ] as const;
 
 export function selectDiscoverySlice(yaml: ParsedYaml): DiscoverySlice {
@@ -622,3 +626,15 @@ export const loadUpdateDocumentTypeSliceFromExpected = (): OperationSlice =>
 
 export const loadDeleteDocumentTypeSliceFromExpected = (): OperationSlice =>
   loadOperationSliceFromExpected("/api/v1/document-types/{id}", "delete");
+
+export const loadCreateCollaboratorDocumentSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborator-documents", "post");
+
+export const loadListCollaboratorDocumentsSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborator-documents", "get");
+
+export const loadGetCollaboratorDocumentSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborator-documents/{id}", "get");
+
+export const loadUnlinkCollaboratorDocumentSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborator-documents/{id}", "delete");

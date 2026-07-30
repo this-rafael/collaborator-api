@@ -13,7 +13,6 @@ import {
   responseSchemaReference
 } from "./collaborators-contract.helpers.js";
 
-// TYPE-GET-001…008
 describe("Published get document type contract", () => {
   beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);

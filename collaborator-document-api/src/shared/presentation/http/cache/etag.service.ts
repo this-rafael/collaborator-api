@@ -23,8 +23,12 @@ function canonicalize(value: unknown): string {
   }
   const keys = Object.keys(value as Record<string, unknown>)
     .filter((k) => !TRACE_KEYS.has(k))
-    .sort();
-  return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalize((value as Record<string, unknown>)[k])}`).join(",")}}`;
+    .sort((a, b) => a.localeCompare(b));
+  const entries = keys.map((k) => {
+    const val = canonicalize((value as Record<string, unknown>)[k]);
+    return `${JSON.stringify(k)}:${val}`;
+  });
+  return `{${entries.join(",")}}`;
 }
 
 /**

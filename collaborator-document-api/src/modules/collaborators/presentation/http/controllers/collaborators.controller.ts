@@ -16,6 +16,7 @@ import {
   Tags
 } from "@tsed/schema";
 import type {Response} from "express";
+import {err, ok, type Result} from "neverthrow";
 
 import {normalizeCollaboratorFilters} from "../../../application/use-cases/list-collaborators.use-case.js";
 import {CollaboratorsRuntime} from "../../../collaborators.runtime.js";
@@ -122,22 +123,10 @@ export class CollaboratorsController {
     if (!(await this.runtime.rateLimiter("listCollaborators", "read").handle(res.req!, res)))
       return;
 
-    const limit = rawLimit === undefined || rawLimit === "" ? 20 : Number(rawLimit);
-    const cursor = rawCursor === undefined ? undefined : queryValue(rawCursor);
-    const filters = {name: queryValue(name), cpf: queryValue(cpf), email: queryValue(email)};
-    if (
-      !Number.isInteger(limit) ||
-      limit < 1 ||
-      limit > 100 ||
-      (rawCursor !== undefined && !cursor)
-    ) {
-      return this.writeProblem(
-        res,
-        invalidQueryFailure(rawCursor !== undefined && !cursor ? "cursor" : "limit"),
-        traceId
-      );
-    }
+    const parsed = parseCollaboratorListQuery(rawLimit, rawCursor, name, cpf, email);
+    if (parsed.isErr()) return this.writeProblem(res, parsed.error, traceId);
 
+    const {limit, cursor, filters} = parsed.value;
     const normalizedFilters = normalizeCollaboratorFilters(filters);
     if (normalizedFilters.isErr()) {
       const field = filters.cpf !== undefined ? "cpf" : "email";
@@ -375,4 +364,31 @@ function errorsFor(code: string): readonly FieldError[] | undefined {
 
 function fieldError(field: string, code: string, message: string): FieldError {
   return {field, code, message};
+}
+
+type ParsedCollaboratorListQuery = {
+  limit: number;
+  cursor: string | undefined;
+  filters: {name: string | undefined; cpf: string | undefined; email: string | undefined};
+};
+
+function parseCollaboratorListQuery(
+  rawLimit: string | undefined,
+  rawCursor: string | undefined,
+  name: string | undefined,
+  cpf: string | undefined,
+  email: string | undefined
+): Result<ParsedCollaboratorListQuery, HttpFailure> {
+  const limit = rawLimit === undefined || rawLimit === "" ? 20 : Number(rawLimit);
+  const cursor = rawCursor === undefined ? undefined : queryValue(rawCursor);
+  const filters = {name: queryValue(name), cpf: queryValue(cpf), email: queryValue(email)};
+
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return err(invalidQueryFailure("limit"));
+  }
+  if (rawCursor !== undefined && !cursor) {
+    return err(invalidQueryFailure("cursor"));
+  }
+
+  return ok({limit, cursor, filters});
 }

@@ -13,7 +13,12 @@ import type {CollaboratorDocumentRepository} from "../ports/collaborator-documen
  * exclusão. O módulo dono da coleção mantém a sua própria persistência.
  */
 export class SoftDeleteCollaboratorDocumentsUseCase {
-  constructor(private readonly repository: CollaboratorDocumentRepository) {}
+  constructor(
+    private readonly repository: Pick<
+      CollaboratorDocumentRepository,
+      "softDeleteActiveByCollaboratorId"
+    >
+  ) {}
 
   async execute(
     input: SoftDeleteCollaboratorDocumentsInput,

@@ -12,7 +12,6 @@ const input = {
 };
 
 describe("Creating a document type through the application command", () => {
-  // TYPE-CREATE-001, TYPE-CREATE-002, TYPE-CREATE-003
   it("returns a primitive active document type after valid creation", async () => {
     const {CreateDocumentTypeUseCase} =
       await import("../../../src/modules/document-types/application/use-cases/create-document-type.use-case.js");
@@ -29,7 +28,6 @@ describe("Creating a document type through the application command", () => {
     }
   });
 
-  // TYPE-CREATE-022
   it("preserves the stable active-code duplicate failure", async () => {
     const {CreateDocumentTypeUseCase} =
       await import("../../../src/modules/document-types/application/use-cases/create-document-type.use-case.js");
@@ -43,7 +41,6 @@ describe("Creating a document type through the application command", () => {
     if (result.isErr()) expect(result.error.code).toBe("DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE");
   });
 
-  // TYPE-CREATE-005…017, TYPE-CREATE-019
   it("does not call persistence when the aggregate rejects invalid input", async () => {
     const {CreateDocumentTypeUseCase} =
       await import("../../../src/modules/document-types/application/use-cases/create-document-type.use-case.js");
@@ -64,7 +61,6 @@ describe("Creating a document type through the application command", () => {
     expect(called).toBe(false);
   });
 
-  // TYPE-CREATE-024
   it("models an unavailable injected id generator as an internal failure", async () => {
     const {CreateDocumentTypeUseCase} =
       await import("../../../src/modules/document-types/application/use-cases/create-document-type.use-case.js");

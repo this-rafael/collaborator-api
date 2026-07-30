@@ -27,6 +27,7 @@ export type CollaboratorsApplication = Readonly<{
   delete: DeleteCollaboratorUseCase;
 }>;
 
+/** Compõe os casos de uso a partir das dependências injetadas. */
 export const createCollaboratorsApplication = (
   dependencies: CollaboratorsApplicationDependencies
 ): CollaboratorsApplication =>

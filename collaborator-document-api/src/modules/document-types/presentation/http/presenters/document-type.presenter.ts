@@ -2,6 +2,7 @@ import type {DocumentTypeOutput} from "../../../application/contracts/document-t
 
 type HalLink = Readonly<{href: string; method?: "DELETE" | "PATCH"}>;
 
+/** Representação HAL de um tipo de documento para respostas HTTP. */
 export type DocumentTypeHal = Readonly<{
   id: string;
   name: string;
@@ -25,6 +26,7 @@ type MutableLinks = {
   delete?: HalLink;
 };
 
+/** Converte a saída primitiva da aplicação para a representação HAL publicada. */
 export const documentTypePresenter = (documentType: DocumentTypeOutput): DocumentTypeHal => {
   const href = `/api/v1/document-types/${documentType.id}`;
   const links: MutableLinks = {

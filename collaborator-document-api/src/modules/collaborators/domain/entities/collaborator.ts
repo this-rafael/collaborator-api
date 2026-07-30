@@ -20,6 +20,7 @@ export type CollaboratorProps = Readonly<{
   deletedAt: Date | null;
 }>;
 
+/** Dados brutos aceitos para criar um colaborador. */
 export type CreateCollaboratorProps = Readonly<{
   id: unknown;
   name: unknown;
@@ -27,6 +28,7 @@ export type CreateCollaboratorProps = Readonly<{
   email: unknown;
 }>;
 
+/** Dados brutos aceitos para atualizar um colaborador. */
 export type UpdateCollaboratorProps = Readonly<{
   name?: unknown;
   cpf?: unknown;
