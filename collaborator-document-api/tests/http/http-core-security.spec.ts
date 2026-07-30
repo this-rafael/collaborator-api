@@ -1,12 +1,11 @@
-import {afterAll, beforeAll, describe, expect, it} from "vitest";
+import {describe, expect, it} from "vitest";
 import {PlatformTest} from "@tsed/platform-http/testing";
 import supertest from "supertest";
 
-import {Server} from "../../src/Server.js";
+import {bootstrapHttpMongo} from "../helpers/http-mongo.js";
 
 describe("HTTP core security headers", () => {
-  beforeAll(PlatformTest.bootstrap(Server));
-  afterAll(PlatformTest.reset);
+  bootstrapHttpMongo();
 
   it("applies Helmet security headers to the discovery response", async () => {
     const response = await supertest(PlatformTest.callback()).get("/api/v1");

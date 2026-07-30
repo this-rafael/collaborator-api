@@ -486,7 +486,14 @@ export interface DiscoverySlice {
   functionalOperationIds: string[];
 }
 
-export const expectedFunctionalOperationIds = ["discoverApi"] as const;
+export const expectedFunctionalOperationIds = [
+  "discoverApi",
+  "listCollaborators",
+  "createCollaborator",
+  "getCollaborator",
+  "updateCollaborator",
+  "deleteCollaborator"
+] as const;
 
 export function selectDiscoverySlice(yaml: ParsedYaml): DiscoverySlice {
   if (!isObjectValue(yaml)) {
@@ -547,3 +554,51 @@ export function loadDiscoverySliceFromExpected(): DiscoverySlice {
   const yaml = loadYamlFile(discoveryContractPath);
   return selectDiscoverySlice(yaml);
 }
+
+export interface OperationSlice {
+  path: string;
+  method: string;
+  operation: JsonObject;
+  schemas: JsonObject;
+  parameters: JsonObject;
+  headers: JsonObject;
+  responses: JsonObject;
+}
+
+export function loadOperationSliceFromExpected(path: string, method: string): OperationSlice {
+  const yaml = loadYamlFile(expectedOpenApiPath);
+  if (!isObjectValue(yaml) || !isObjectValue(yaml.paths)) {
+    throw new Error("Expected OpenAPI paths are missing");
+  }
+  const pathEntry = yaml.paths[path];
+  const operation =
+    isObjectValue(pathEntry) && isObjectValue(pathEntry[method]) ? pathEntry[method] : undefined;
+  if (!operation) {
+    throw new Error(`Expected ${method.toUpperCase()} ${path} operation is missing`);
+  }
+  const components = isObjectValue(yaml.components) ? yaml.components : {};
+  return {
+    path,
+    method,
+    operation,
+    schemas: isObjectValue(components.schemas) ? components.schemas : {},
+    parameters: isObjectValue(components.parameters) ? components.parameters : {},
+    headers: isObjectValue(components.headers) ? components.headers : {},
+    responses: isObjectValue(components.responses) ? components.responses : {}
+  };
+}
+
+export const loadCreateCollaboratorSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborators", "post");
+
+export const loadListCollaboratorsSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborators", "get");
+
+export const loadGetCollaboratorSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborators/{id}", "get");
+
+export const loadUpdateCollaboratorSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborators/{id}", "patch");
+
+export const loadDeleteCollaboratorSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborators/{id}", "delete");

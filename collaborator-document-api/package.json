@@ -34,6 +34,7 @@
     "hooks:pre-commit": "lefthook run pre-commit --all-files",
     "prepare": "lefthook install || true",
     "docs:api": "typedoc",
+    "docs:internal": "typedoc && npx --yes serve docs/typedoc",
     "sonar:up": "docker compose --profile quality up -d sonarqube",
     "sonar:scan": "pnpm test:coverage && node scripts/wait-sonar.mjs && docker compose --profile quality run --rm sonar-scanner"
   },

@@ -14,16 +14,35 @@ import {apiRootPresenter} from "../shared/presentation/http/presenters/api-root.
 import {ApiRoot} from "../shared/presentation/http/schemas/api-root.js";
 import {ProblemDetails} from "../shared/presentation/http/schemas/problem-details.js";
 
+/**
+ * Interpreta uma string como inteiro não negativo; devolve
+ * `fallback` se o valor for inválido.
+ */
 function parseNonNegativeInteger(value: string | undefined, fallback: number): number {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
+/**
+ * Interpreta uma string como inteiro positivo; devolve
+ * `fallback` se o valor for inválido.
+ */
 function parsePositiveInteger(value: string | undefined, fallback: number): number {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= 1 ? parsed : fallback;
 }
 
+/**
+ * Controlador REST do ponto de entrada da API.
+ *
+ * Rota `GET /api/v1` — expõe os recursos disponíveis
+ * (discovery) no formato HAL+JSON com suporte a cache
+ * condicional via ETag fraco e rate limiting por
+ * operação.
+ *
+ * @remarks Usa {@link DiscoverApiQuery} para obter a lista
+ *   de recursos e {@link EtagService} para cache.
+ */
 @Controller("/api/v1")
 export class ApiRootController {
   private readonly query = new DiscoverApiQuery(new MongoDiscoveryAvailability());
@@ -55,6 +74,14 @@ export class ApiRootController {
   @(Returns(503, ProblemDetails)
     .ContentType("application/problem+json")
     .Description("Dependência necessária temporariamente indisponível."))
+  /**
+   * Retorna os pontos de entrada da API no formato
+   * HAL+JSON com suporte a ETag e rate limit.
+   *
+   * @param res - Objeto response Express.
+   * @param ifNoneMatch - Cabeçalho `If-None-Match` para
+   *   cache condicional.
+   */
   async discoverApi(
     @Res() res: Response,
     @HeaderParams("If-None-Match") ifNoneMatch?: string

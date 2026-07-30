@@ -5,6 +5,14 @@ import {$log} from "@tsed/logger";
 import {startApplication, stopApplication} from "./bootstrap.js";
 import {loadEnv} from "./config/env.js";
 
+/**
+ * Ponto de entrada da aplicação.
+ *
+ * Carrega as variáveis de ambiente, inicializa a plataforma
+ * (Ts.ED + Express + Mongoose) e registra os handlers de
+ * desligamento gracioso (SIGINT/SIGTERM). Retorna 0 em caso
+ * de sucesso ou 1 se a inicialização falhar.
+ */
 export async function main(): Promise<number> {
   try {
     const platform = await startApplication(loadEnv());
