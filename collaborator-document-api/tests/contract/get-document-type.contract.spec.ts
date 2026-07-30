@@ -1,0 +1,41 @@
+import {afterAll, beforeAll, describe, expect, it} from "vitest";
+import {PlatformTest} from "@tsed/platform-http/testing";
+
+import {Server} from "../../src/Server.js";
+import {loadGetDocumentTypeSliceFromExpected} from "../helpers/openapi-slice.js";
+import {
+  contractServerSettings,
+  parameterNames,
+  publishedOperation,
+  responseCodes,
+  responseContentTypes,
+  responseHeaderNames,
+  responseSchemaReference
+} from "./collaborators-contract.helpers.js";
+
+// TYPE-GET-001…008
+describe("Published get document type contract", () => {
+  beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
+  afterAll(PlatformTest.reset);
+
+  it("publishes identifier, cache, HAL representation, and failure responses", async () => {
+    const operation = await publishedOperation("/api/v1/document-types/{id}", "get");
+    expect(operation.operationId).toBe(
+      loadGetDocumentTypeSliceFromExpected().operation.operationId
+    );
+    expect(parameterNames(operation)).toEqual(["If-None-Match", "id"]);
+    expect(responseCodes(operation)).toEqual(["200", "304", "400", "404", "429", "500", "503"]);
+    expect(responseContentTypes(operation, "200")).toEqual(["application/hal+json"]);
+    expect(responseSchemaReference(operation, "200", "application/hal+json")).toEqual({
+      $ref: "#/components/schemas/DocumentType"
+    });
+    expect(responseHeaderNames(operation, "200")).toEqual(["ETag"]);
+    for (const status of ["400", "404", "429", "500", "503"]) {
+      expect(responseContentTypes(operation, status)).toEqual(["application/problem+json"]);
+      expect(responseSchemaReference(operation, status, "application/problem+json")).toEqual({
+        $ref: "#/components/schemas/ProblemDetails"
+      });
+    }
+    expect(responseHeaderNames(operation, "429")).toEqual(["Retry-After"]);
+  });
+});
