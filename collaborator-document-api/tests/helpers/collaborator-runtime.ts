@@ -1,75 +1,84 @@
-import {err, ok, type Result} from "neverthrow";
+import {errAsync, okAsync, type ResultAsync} from "neverthrow";
 
-import {Collaborator} from "../../src/modules/collaborators/domain/collaborator.js";
+import {Collaborator} from "../../src/modules/collaborators/domain/entities/collaborator.js";
+import type {
+  CollaboratorListPage,
+  CollaboratorRepository
+} from "../../src/modules/collaborators/domain/repositories/collaborator.repository.js";
+import type {CollaboratorFailure} from "../../src/modules/collaborators/domain/errors/collaborator.failure.js";
 
-export type CollaboratorRuntimeFailure =
-  | "COLLABORATOR_NOT_FOUND"
-  | "DUPLICATE_ACTIVE_CPF"
-  | "DUPLICATE_ACTIVE_EMAIL"
-  | "COLLABORATOR_DELETED"
-  | "SERVICE_UNAVAILABLE";
+export type CollaboratorRuntimeFailure = CollaboratorFailure;
 
-export class CollaboratorRepositoryStub {
+const fixedCollaborator = (): Collaborator =>
+  Collaborator.create(
+    {
+      id: "66a64ab05bd7213b90d9b001",
+      name: "Ana Silva",
+      cpf: "12345678909",
+      email: "ana@example.com"
+    },
+    new Date("2026-07-29T12:00:00.000Z")
+  )._unsafeUnwrap();
+
+export class CollaboratorRepositoryStub implements CollaboratorRepository {
   constructor(
-    private readonly result: Result<Collaborator, CollaboratorRuntimeFailure> = ok(
-      Collaborator.reconstitute({
-        id: "66a64ab05bd7213b90d9b001",
-        name: Collaborator.create({
-          name: "Ana Silva",
-          cpf: "12345678909",
-          email: "ana@example.com"
-        })._unsafeUnwrap().props.name,
-        cpf: Collaborator.create({
-          name: "Ana Silva",
-          cpf: "12345678909",
-          email: "ana@example.com"
-        })._unsafeUnwrap().props.cpf,
-        email: Collaborator.create({
-          name: "Ana Silva",
-          cpf: "12345678909",
-          email: "ana@example.com"
-        })._unsafeUnwrap().props.email,
-        createdAt: new Date("2026-07-29T12:00:00.000Z"),
-        updatedAt: new Date("2026-07-29T12:00:00.000Z"),
-        deletedAt: null
-      })
+    private readonly result: ResultAsync<Collaborator, CollaboratorRuntimeFailure> = okAsync(
+      fixedCollaborator()
     )
   ) {}
 
-  async create(): Promise<Result<Collaborator, CollaboratorRuntimeFailure>> {
+  create(): ResultAsync<Collaborator, CollaboratorRuntimeFailure> {
     return this.result;
   }
 
-  async findById(): Promise<Result<Collaborator, CollaboratorRuntimeFailure>> {
+  findById(): ResultAsync<Collaborator, CollaboratorRuntimeFailure> {
     return this.result;
   }
 
-  async updateActive(): Promise<Result<Collaborator, CollaboratorRuntimeFailure>> {
+  updateActive(): ResultAsync<Collaborator, CollaboratorRuntimeFailure> {
     return this.result;
   }
 
-  async listActive(): Promise<
-    Result<{items: readonly Collaborator[]; hasNext: boolean}, CollaboratorRuntimeFailure>
-  > {
+  listActive(): ResultAsync<CollaboratorListPage, CollaboratorRuntimeFailure> {
     return this.result.map((value) => ({
       items: value.deletedAt === null ? [value] : [],
       hasNext: false
     }));
   }
 
+  softDeleteActive(): ResultAsync<boolean, CollaboratorRuntimeFailure> {
+    return okAsync(true);
+  }
+
   static unavailable(): CollaboratorRepositoryStub {
-    return new CollaboratorRepositoryStub(err("SERVICE_UNAVAILABLE"));
+    return new CollaboratorRepositoryStub(
+      errAsync({
+        kind: "application",
+        code: "SERVICE_UNAVAILABLE",
+        message: "Collaborator persistence is unavailable."
+      })
+    );
   }
 
   static notFound(): CollaboratorRepositoryStub {
-    return new CollaboratorRepositoryStub(err("COLLABORATOR_NOT_FOUND"));
+    return new CollaboratorRepositoryStub(
+      errAsync({kind: "application", code: "COLLABORATOR_NOT_FOUND", message: "Not found."})
+    );
   }
 
   static duplicateCpf(): CollaboratorRepositoryStub {
-    return new CollaboratorRepositoryStub(err("DUPLICATE_ACTIVE_CPF"));
+    return new CollaboratorRepositoryStub(
+      errAsync({kind: "application", code: "DUPLICATE_ACTIVE_CPF", message: "Duplicate CPF."})
+    );
   }
 
   static duplicateEmail(): CollaboratorRepositoryStub {
-    return new CollaboratorRepositoryStub(err("DUPLICATE_ACTIVE_EMAIL"));
+    return new CollaboratorRepositoryStub(
+      errAsync({
+        kind: "application",
+        code: "DUPLICATE_ACTIVE_EMAIL",
+        message: "Duplicate email."
+      })
+    );
   }
 }

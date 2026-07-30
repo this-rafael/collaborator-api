@@ -1,7 +1,7 @@
 import {err, ok, type Result} from "neverthrow";
 
 import type {ApiRoot} from "../../presentation/http/schemas/api-root.js";
-import {ApplicationFailure} from "../application-failure.js";
+import {applicationFailure, type ApplicationFailure} from "../errors/application-failure.js";
 import type {DiscoveryAvailability} from "../ports/discovery-availability.js";
 
 const discoveryLinks = {
@@ -37,7 +37,7 @@ export class DiscoverApiQuery {
   async execute(): Promise<Result<ApiRoot, ApplicationFailure>> {
     const available = await this.availability.isAvailable();
     if (!available) {
-      return err(new ApplicationFailure("SERVICE_UNAVAILABLE", "MongoDB indisponível"));
+      return err(applicationFailure("SERVICE_UNAVAILABLE", "MongoDB indisponível"));
     }
 
     const root: ApiRoot = {

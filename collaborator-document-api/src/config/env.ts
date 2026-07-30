@@ -20,7 +20,8 @@ export type LogLevel = (typeof logLevels)[number];
  * Configuração de rate limiting para as rotas da API.
  */
 export type RateLimitConfig = Readonly<{
-  limit: number;
+  readLimit: number;
+  writeLimit: number;
   windowMs: number;
 }>;
 
@@ -96,7 +97,7 @@ function isOneOf<T extends readonly string[]>(value: string, values: T): value i
  *   `mongodb+srv:`, incluir nome do banco e conter
  *   `replicaSet` para URLs `mongodb:`.
  * - `LOG_LEVEL` deve estar em `logLevels`.
- * - `RATE_LIMIT_GET` deve ser inteiro não negativo.
+ * - `RATE_LIMIT_GET` e `RATE_LIMIT_WRITE` devem ser inteiros não negativos.
  * - `RATE_LIMIT_WINDOW_MS` deve ser >= 1000.
  *
  * @param source - Fonte das variáveis (default `process.env`).
@@ -154,10 +155,16 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
         .filter(Boolean)
     : [];
 
-  const rawRateLimit = optional(source, "RATE_LIMIT_GET", "60");
-  const rateLimitNumber = Number(rawRateLimit);
-  if (!Number.isInteger(rateLimitNumber) || rateLimitNumber < 0) {
+  const rawReadRateLimit = optional(source, "RATE_LIMIT_GET", "60");
+  const readLimit = Number(rawReadRateLimit);
+  if (!Number.isInteger(readLimit) || readLimit < 0) {
     issues.push("RATE_LIMIT_GET must be a non-negative integer");
+  }
+
+  const rawWriteRateLimit = optional(source, "RATE_LIMIT_WRITE", "20");
+  const writeLimit = Number(rawWriteRateLimit);
+  if (!Number.isInteger(writeLimit) || writeLimit < 0) {
+    issues.push("RATE_LIMIT_WRITE must be a non-negative integer");
   }
 
   const rawRateWindow = optional(source, "RATE_LIMIT_WINDOW_MS", "60000");
@@ -182,7 +189,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
       allowlist: corsAllowlist
     },
     rateLimit: {
-      limit: rateLimitNumber,
+      readLimit,
+      writeLimit,
       windowMs: rateWindowNumber
     },
     openapi: {

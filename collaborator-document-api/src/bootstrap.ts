@@ -5,7 +5,10 @@ import type {AppEnv} from "./config/env.js";
 import {Server} from "./Server.js";
 
 type BootstrapEnv = Pick<AppEnv, "nodeEnv" | "port" | "mongodbUri" | "logLevel"> &
-  Partial<Pick<AppEnv, "cors" | "rateLimit" | "openapi">>;
+  Partial<Pick<AppEnv, "cors" | "cursorHmacSecret" | "rateLimit" | "openapi">>;
+
+const testCursorHmacSecret = "test-only-cursor-secret-must-be-at-least-32-bytes";
+const defaultRateLimit = {readLimit: 60, writeLimit: 20, windowMs: 60_000} as const;
 
 /**
  * Monta o objeto de configuração do servidor Ts.ED a partir
@@ -18,9 +21,15 @@ type BootstrapEnv = Pick<AppEnv, "nodeEnv" | "port" | "mongodbUri" | "logLevel">
  *   `mongoose` consumidas pelo bootstrap do Ts.ED.
  */
 export function serverSettings(env: BootstrapEnv) {
+  const rateLimit = env.rateLimit ?? defaultRateLimit;
   return {
     httpPort: env.port,
     logger: {level: env.logLevel},
+    collaborators: {
+      cursorHmacSecret: env.cursorHmacSecret ?? testCursorHmacSecret,
+      rateLimit,
+      provisionIndexes: true
+    },
     mongoose: [
       {
         id: "default",

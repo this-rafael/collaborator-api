@@ -1,7 +1,7 @@
 import {err, ok, type Result} from "neverthrow";
 
 import type {HealthStatus} from "../../presentation/http/schemas/health-status.js";
-import {ApplicationFailure} from "../application-failure.js";
+import {applicationFailure, type ApplicationFailure} from "../errors/application-failure.js";
 import type {ReadinessCheck} from "../ports/readiness-check.js";
 
 const READINESS_UNAVAILABLE = "A dependência necessária está temporariamente indisponível.";
@@ -25,7 +25,7 @@ export class GetReadinessQuery {
     }
 
     if (!ready) {
-      return err(new ApplicationFailure("SERVICE_UNAVAILABLE", READINESS_UNAVAILABLE));
+      return err(applicationFailure("SERVICE_UNAVAILABLE", READINESS_UNAVAILABLE));
     }
 
     return ok({status: "ok"});

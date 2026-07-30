@@ -1,10 +1,12 @@
 import type {ClientSession, Connection} from "mongoose";
+import {errAsync, okAsync} from "neverthrow";
 import {describe, expect, it} from "vitest";
 
 import {
   classifyMongoTransactionError,
   MongoTransactionManager
-} from "../../src/shared/infrastructure/mongo/mongo-transaction.manager.js";
+} from "../../src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.js";
+import {getMongoSession} from "../../src/shared/infrastructure/persistence/mongodb/mongo-transaction-context.js";
 
 const labeledError = (
   label: string,
@@ -20,6 +22,7 @@ type SessionHarness = {
   abortCalls: {count: number};
   commitCalls: {count: number};
   endCalls: {count: number};
+  startCalls: {count: number};
   setCommitImpl: (impl: () => Promise<void>) => void;
 };
 
@@ -28,12 +31,14 @@ const createSessionHarness = (): SessionHarness => {
   const abortCalls = {count: 0};
   const commitCalls = {count: 0};
   const endCalls = {count: 0};
+  const startCalls = {count: 0};
   let commitImpl: () => Promise<void> = async () => {
     inTxn = false;
   };
 
   const session = {
     startTransaction() {
+      startCalls.count += 1;
       inTxn = true;
     },
     async commitTransaction() {
@@ -57,6 +62,7 @@ const createSessionHarness = (): SessionHarness => {
     abortCalls,
     commitCalls,
     endCalls,
+    startCalls,
     setCommitImpl(impl) {
       commitImpl = impl;
     }
@@ -64,9 +70,10 @@ const createSessionHarness = (): SessionHarness => {
 };
 
 const createConnection = (session: ClientSession): Connection =>
-  ({
-    startSession: async () => session
-  }) as unknown as Connection;
+  ({readyState: 1, startSession: async () => session}) as unknown as Connection;
+
+const createManager = (session: ClientSession): MongoTransactionManager =>
+  new MongoTransactionManager({get: () => createConnection(session)} as never);
 
 describe("classifyMongoTransactionError", () => {
   it("returns TRANSIENT for TransientTransactionError", () => {
@@ -89,12 +96,19 @@ describe("classifyMongoTransactionError", () => {
 });
 
 describe("MongoTransactionManager", () => {
-  it("runs work and commits on the happy path", async () => {
+  it("runs work through an opaque context and commits on the happy path", async () => {
     const harness = createSessionHarness();
-    const manager = new MongoTransactionManager(createConnection(harness.session));
-    const result = await manager.runInTransaction(async () => "ok");
+    const manager = createManager(harness.session);
+    let receivedSession: ClientSession | undefined;
+    const result = await manager.execute((context) => {
+      receivedSession = getMongoSession(context);
+      return okAsync("ok");
+    });
 
-    expect(result).toBe("ok");
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) expect(result.value).toBe("ok");
+    expect(receivedSession).toBe(harness.session);
+    expect(harness.startCalls.count).toBe(1);
     expect(harness.commitCalls.count).toBe(1);
     expect(harness.abortCalls.count).toBe(0);
     expect(harness.endCalls.count).toBe(1);
@@ -103,16 +117,17 @@ describe("MongoTransactionManager", () => {
 
   it("aborts, retries TransientTransactionError, and increments the retry counter", async () => {
     const harness = createSessionHarness();
-    const manager = new MongoTransactionManager(createConnection(harness.session));
+    const manager = createManager(harness.session);
     let attempts = 0;
 
-    const result = await manager.runInTransaction(async () => {
+    const result = await manager.execute(() => {
       attempts += 1;
       if (attempts === 1) throw labeledError("TransientTransactionError");
-      return "recovered";
+      return okAsync("recovered");
     });
 
-    expect(result).toBe("recovered");
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) expect(result.value).toBe("recovered");
     expect(attempts).toBe(2);
     expect(harness.abortCalls.count).toBe(1);
     expect(harness.commitCalls.count).toBe(1);
@@ -120,89 +135,97 @@ describe("MongoTransactionManager", () => {
     expect(harness.endCalls.count).toBe(1);
   });
 
-  it("rethrows TransientTransactionError after the third attempt", async () => {
+  it("returns SERVICE_UNAVAILABLE after the third transient attempt", async () => {
     const harness = createSessionHarness();
-    const manager = new MongoTransactionManager(createConnection(harness.session));
+    const manager = createManager(harness.session);
     let attempts = 0;
-    const failure = labeledError("TransientTransactionError", "still transient");
+    const result = await manager.execute<never, never>(() => {
+      attempts += 1;
+      throw labeledError("TransientTransactionError", "still transient");
+    });
 
-    await expect(
-      manager.runInTransaction(async () => {
-        attempts += 1;
-        throw failure;
-      })
-    ).rejects.toBe(failure);
-
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");
     expect(attempts).toBe(3);
     expect(harness.abortCalls.count).toBe(3);
     expect(manager.mongoTransactionRetriesTotal).toBe(2);
     expect(harness.endCalls.count).toBe(1);
   });
 
-  it("retries UnknownTransactionCommitResult on commit then succeeds", async () => {
+  it("retries only commit after UnknownTransactionCommitResult", async () => {
     const harness = createSessionHarness();
     let commitAttempts = 0;
     harness.setCommitImpl(async () => {
       commitAttempts += 1;
       if (commitAttempts === 1) throw labeledError("UnknownTransactionCommitResult");
     });
-    const manager = new MongoTransactionManager(createConnection(harness.session));
+    const manager = createManager(harness.session);
+    let workCalls = 0;
 
-    const result = await manager.runInTransaction(async () => "committed");
+    const result = await manager.execute(() => {
+      workCalls += 1;
+      return okAsync("committed");
+    });
 
-    expect(result).toBe("committed");
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) expect(result.value).toBe("committed");
+    expect(workCalls).toBe(1);
     expect(harness.commitCalls.count).toBe(2);
     expect(manager.mongoTransactionRetriesTotal).toBe(1);
     expect(harness.abortCalls.count).toBe(0);
     expect(harness.endCalls.count).toBe(1);
   });
 
-  it("does not retry non-labeled errors", async () => {
+  it("returns INTERNAL_SERVER_ERROR for a non-labeled technical error", async () => {
     const harness = createSessionHarness();
-    const manager = new MongoTransactionManager(createConnection(harness.session));
+    const manager = createManager(harness.session);
     let attempts = 0;
-    const failure = new Error("business failure");
-
-    await expect(
-      manager.runInTransaction(async () => {
-        attempts += 1;
-        throw failure;
-      })
-    ).rejects.toBe(failure);
+    const result = await manager.execute<never, never>(() => {
+      attempts += 1;
+      throw new Error("technical failure");
+    });
 
     expect(attempts).toBe(1);
     expect(harness.abortCalls.count).toBe(1);
     expect(manager.mongoTransactionRetriesTotal).toBe(0);
     expect(harness.endCalls.count).toBe(1);
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("INTERNAL_SERVER_ERROR");
   });
 
-  it("rethrows UnknownTransactionCommitResult after the third commit attempt", async () => {
+  it("returns SERVICE_UNAVAILABLE after the third unknown commit result", async () => {
     const harness = createSessionHarness();
-    const failure = labeledError("UnknownTransactionCommitResult", "commit unknown");
     harness.setCommitImpl(async () => {
-      throw failure;
+      throw labeledError("UnknownTransactionCommitResult", "commit unknown");
     });
-    const manager = new MongoTransactionManager(createConnection(harness.session));
+    const manager = createManager(harness.session);
 
-    await expect(manager.runInTransaction(async () => "never")).rejects.toBe(failure);
+    const result = await manager.execute(() => okAsync("never"));
     expect(harness.commitCalls.count).toBe(3);
     expect(manager.mongoTransactionRetriesTotal).toBe(2);
     expect(harness.endCalls.count).toBe(1);
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");
   });
 
-  it("skips abort when the session is no longer in a transaction", async () => {
+  it("aborts a modeled work failure without retrying it", async () => {
     const harness = createSessionHarness();
-    const manager = new MongoTransactionManager(createConnection(harness.session));
-    const failure = new Error("already aborted");
-
-    await expect(
-      manager.runInTransaction(async (session) => {
-        await session.abortTransaction();
-        throw failure;
-      })
-    ).rejects.toBe(failure);
+    const manager = createManager(harness.session);
+    const failure = {kind: "domain" as const, code: "RULE", message: "Regra violada"};
+    const result = await manager.execute(() => errAsync(failure));
 
     expect(harness.abortCalls.count).toBe(1);
     expect(harness.endCalls.count).toBe(1);
+    expect(manager.mongoTransactionRetriesTotal).toBe(0);
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error).toBe(failure);
+  });
+
+  it("returns SERVICE_UNAVAILABLE when no usable connection exists", async () => {
+    const manager = new MongoTransactionManager({get: () => undefined} as never);
+    const result = await manager.execute(() => okAsync("never"));
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");
   });
 });

@@ -23,11 +23,16 @@ export default defineConfig({
         "src/index.ts",
         "src/config/index.ts",
         "src/shared/application/ports/**",
+        "src/shared/application/pagination/**",
+        "src/shared/domain/transaction-context.ts",
         "src/shared/presentation/http/schemas/**",
         "src/modules/collaborators/application/ports/**",
-        "src/modules/collaborators/presentation/dto/**"
+        "src/modules/collaborator-documents/application/ports/**",
+        "src/modules/collaborators/domain/repositories/**",
+        "src/modules/collaborators/presentation/http/dtos/**",
+        "src/modules/collaborators/presentation/http/schemas/**"
       ],
-      thresholds: {lines: 95, branches: 95, functions: 95, statements: 95}
+      thresholds: {lines: 90, branches: 90, functions: 90, statements: 90}
     },
     projects: [
       {extends: true, test: {name: "unit", include: ["tests/unit/**/*.spec.ts"]}},

@@ -1,22 +1,35 @@
 import {describe, expect, it} from "vitest";
 
-// COL-LIST-003…008
-describe("Normalizing collaborator list filters", () => {
-  it("normalizes a partial name and exact email while preserving the CPF", async () => {
+describe("normalizeCollaboratorFilters", () => {
+  it("normalizes valid filters", async () => {
     const {normalizeCollaboratorFilters} =
-      await import("../../src/modules/collaborators/application/queries/list-collaborators.query.js");
+      await import("../../src/modules/collaborators/application/use-cases/list-collaborators.use-case.js");
     const result = normalizeCollaboratorFilters({
-      name: " ÁNA  Silva ",
+      name: "  Ána   Silva ",
       cpf: "12345678909",
       email: " ANA@EXAMPLE.COM "
     });
-    expect(result.isOk()).toBe(true);
+
+    expect(result).toMatchObject({
+      value: {name: "ana silva", cpf: "12345678909", email: "ana@example.com"}
+    });
   });
 
-  it("returns Err for invalid CPF and email filters", async () => {
+  it("returns a modeled query failure for invalid filters", async () => {
     const {normalizeCollaboratorFilters} =
-      await import("../../src/modules/collaborators/application/queries/list-collaborators.query.js");
-    expect(normalizeCollaboratorFilters({cpf: "bad"}).isErr()).toBe(true);
-    expect(normalizeCollaboratorFilters({email: "bad"}).isErr()).toBe(true);
+      await import("../../src/modules/collaborators/application/use-cases/list-collaborators.use-case.js");
+    const result = normalizeCollaboratorFilters({cpf: "123"});
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("INVALID_QUERY_PARAMETER");
+  });
+
+  it("requires the filter input to be an object", async () => {
+    const {normalizeCollaboratorFilters} =
+      await import("../../src/modules/collaborators/application/use-cases/list-collaborators.use-case.js");
+    const result = normalizeCollaboratorFilters(null as never);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("INVALID_QUERY_PARAMETER");
   });
 });

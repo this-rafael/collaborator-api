@@ -1,8 +1,8 @@
 import {describe, expect, it} from "vitest";
 
 import {ProblemDetailsMapper} from "../../src/shared/presentation/http/errors/problem-details.mapper.js";
-import {ApplicationFailure} from "../../src/shared/application/application-failure.js";
-import {DomainFailure} from "../../src/shared/domain/domain-failure.js";
+import {applicationFailure} from "../../src/shared/application/errors/application-failure.js";
+import {domainFailure} from "../../src/shared/domain/errors/domain-failure.js";
 import {
   problemDetailsFixture,
   problemDetailsRateLimitFixture,
@@ -13,10 +13,7 @@ import {fixedTraceId} from "../helpers/discovery-runtime.js";
 describe("Problem Details mapper", () => {
   it("maps a rate limit failure to 429 with RATE_LIMIT_EXCEEDED and Retry-After >= 1", () => {
     const mapper = new ProblemDetailsMapper();
-    const failure = new ApplicationFailure(
-      "RATE_LIMIT_EXCEEDED",
-      "Limite excedido para discoverApi"
-    );
+    const failure = applicationFailure("RATE_LIMIT_EXCEEDED", "Limite excedido para discoverApi");
     const {problem, retryAfter} = mapper.fromFailure(failure, {
       instance: "/api/v1",
       traceId: fixedTraceId
@@ -34,7 +31,7 @@ describe("Problem Details mapper", () => {
 
   it("maps a service unavailable failure to 503 with SERVICE_UNAVAILABLE", () => {
     const mapper = new ProblemDetailsMapper();
-    const failure = new ApplicationFailure("SERVICE_UNAVAILABLE", "MongoDB indisponível");
+    const failure = applicationFailure("SERVICE_UNAVAILABLE", "MongoDB indisponível");
     const {problem} = mapper.fromFailure(failure, {instance: "/api/v1", traceId: fixedTraceId});
 
     expect(problem.status).toBe(503);
@@ -47,7 +44,7 @@ describe("Problem Details mapper", () => {
 
   it("maps a domain failure with status and code declared by the failure", () => {
     const mapper = new ProblemDetailsMapper();
-    const failure = new DomainFailure("INVALID_QUERY_PARAMETER", "cursor expirado");
+    const failure = domainFailure("INVALID_QUERY_PARAMETER", "cursor expirado");
     const {problem} = mapper.fromFailure(failure, {instance: "/api/v1", traceId: fixedTraceId});
 
     expect(problem.code).toBe("INVALID_QUERY_PARAMETER");
@@ -57,7 +54,7 @@ describe("Problem Details mapper", () => {
 
   it("falls back to 500 INTERNAL_SERVER_ERROR when the failure has no recognized code", () => {
     const mapper = new ProblemDetailsMapper();
-    const failure = new ApplicationFailure("SOMETHING_UNEXPECTED", "detalhe privado");
+    const failure = applicationFailure("SOMETHING_UNEXPECTED", "detalhe privado");
     const {problem} = mapper.fromFailure(failure, {instance: "/api/v1", traceId: fixedTraceId});
 
     expect(problem.status).toBe(500);
@@ -70,7 +67,7 @@ describe("Problem Details mapper", () => {
   it("never propagates the original error message into the problem body", () => {
     const mapper = new ProblemDetailsMapper();
     const sensitive = "mongodb://user:hunter2@cluster0.example.com/admin";
-    const failure = new ApplicationFailure("SOMETHING_UNEXPECTED", sensitive);
+    const failure = applicationFailure("SOMETHING_UNEXPECTED", sensitive);
     const {problem} = mapper.fromFailure(failure, {instance: "/api/v1", traceId: fixedTraceId});
 
     const serialized = JSON.stringify(problem);
@@ -81,7 +78,7 @@ describe("Problem Details mapper", () => {
 
   it("always populates the seven mandatory Problem Details fields", () => {
     const mapper = new ProblemDetailsMapper();
-    const failure = new ApplicationFailure("RATE_LIMIT_EXCEEDED", "Limite excedido");
+    const failure = applicationFailure("RATE_LIMIT_EXCEEDED", "Limite excedido");
     const {problem} = mapper.fromFailure(failure, {instance: "/api/v1", traceId: fixedTraceId});
 
     for (const field of ["type", "title", "status", "detail", "instance", "code", "traceId"]) {
@@ -94,7 +91,7 @@ describe("Problem Details mapper", () => {
 
   it("ignores any pre-existing traceId inside the failure message", () => {
     const mapper = new ProblemDetailsMapper();
-    const failure = new ApplicationFailure(
+    const failure = applicationFailure(
       "SOMETHING_UNEXPECTED",
       "01J3Y2QHB8FV4RGY7Y1QXNT2D4 mongodb stack"
     );
@@ -105,13 +102,13 @@ describe("Problem Details mapper", () => {
     expect(problem.traceId).toBe(fixedTraceId);
   });
 
-  it("keeps an unknown domain failure code", () => {
+  it("sanitizes an unknown domain failure code to INTERNAL_SERVER_ERROR", () => {
     const mapper = new ProblemDetailsMapper();
-    const failure = new DomainFailure("UNKNOWN_DOMAIN_CODE", "detalhe privado");
+    const failure = domainFailure("UNKNOWN_DOMAIN_CODE", "detalhe privado");
     const {problem} = mapper.fromFailure(failure, {instance: "/api/v1", traceId: fixedTraceId});
 
     expect(problem.status).toBe(500);
-    expect(problem.code).toBe("UNKNOWN_DOMAIN_CODE");
+    expect(problem.code).toBe("INTERNAL_SERVER_ERROR");
     expect(problem.title).toBe(problemDetailsFixture().title);
   });
 

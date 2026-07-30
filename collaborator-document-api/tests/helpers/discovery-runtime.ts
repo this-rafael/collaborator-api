@@ -1,4 +1,4 @@
-import type {Clock} from "./clock.js";
+import type {Clock} from "../../src/shared/application/ports/clock.js";
 
 export interface RequestContextFixture {
   traceId: string;

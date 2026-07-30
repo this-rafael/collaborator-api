@@ -6,7 +6,7 @@ import type {Db} from "mongodb";
 
 import {serverSettings} from "../../src/bootstrap.js";
 import {Server} from "../../src/Server.js";
-import {ensureCollaboratorIndexes} from "../../src/modules/collaborators/infrastructure/indexes/collaborator.indexes.js";
+import {CollaboratorIndexProvisioner} from "../../src/modules/collaborators/infrastructure/persistence/mongodb/collaborator.indexes.js";
 
 type BootstrapHttpMongoOptions = {
   beforeBootstrap?: () => void | Promise<void>;
@@ -24,7 +24,12 @@ export function bootstrapHttpMongo(options: BootstrapHttpMongoOptions = {}): voi
       Server,
       serverSettings({nodeEnv: "test", port: 3000, mongodbUri: mongoUri, logLevel: "error"})
     )();
-    await ensureCollaboratorIndexes();
+    const indexes = await PlatformTest.get<CollaboratorIndexProvisioner>(
+      CollaboratorIndexProvisioner
+    ).ensure();
+    if (indexes.isErr()) {
+      throw new Error(`COLLABORATOR_INDEX_PROVISIONING_FAILED:${indexes.error.code}`);
+    }
   });
   afterAll(async () => {
     try {

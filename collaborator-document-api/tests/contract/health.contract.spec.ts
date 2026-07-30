@@ -3,9 +3,10 @@ import {PlatformTest} from "@tsed/platform-http/testing";
 import supertest from "supertest";
 
 import {Server} from "../../src/Server.js";
+import {contractServerSettings} from "./collaborators-contract.helpers.js";
 
 describe("Health contract minimum", () => {
-  beforeAll(PlatformTest.bootstrap(Server));
+  beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);
 
   afterEach(() => {

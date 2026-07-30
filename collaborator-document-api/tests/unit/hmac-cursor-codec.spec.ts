@@ -6,7 +6,7 @@ import {cursorClock, cursorSecret} from "../helpers/cursor-runtime.js";
 describe("Signing list cursors", () => {
   it("signs verifies and rejects altered cursors using constant-time validation", async () => {
     const {HmacCursorCodec} =
-      await import("../../src/shared/application/services/hmac-cursor-codec.js");
+      await import("../../src/shared/infrastructure/security/hmac-cursor-codec.js");
     const codec = new HmacCursorCodec(cursorSecret, cursorClock());
     const cursor = codec.encode({
       operationId: "listCollaborators",
@@ -39,7 +39,7 @@ describe("Signing list cursors", () => {
 
   it("rejects expired and context-incompatible cursors", async () => {
     const {HmacCursorCodec} =
-      await import("../../src/shared/application/services/hmac-cursor-codec.js");
+      await import("../../src/shared/infrastructure/security/hmac-cursor-codec.js");
     const clock = cursorClock();
     const codec = new HmacCursorCodec(cursorSecret, clock);
     const cursor = codec.encode({
@@ -65,7 +65,7 @@ describe("Signing list cursors", () => {
   it("rejects cursors whose payload is not valid JSON", async () => {
     const {createHmac} = await import("node:crypto");
     const {HmacCursorCodec} =
-      await import("../../src/shared/application/services/hmac-cursor-codec.js");
+      await import("../../src/shared/infrastructure/security/hmac-cursor-codec.js");
     const codec = new HmacCursorCodec(cursorSecret, cursorClock());
     const encoded = Buffer.from("not-json").toString("base64url");
     const signature = createHmac("sha256", cursorSecret).update(encoded).digest("base64url");

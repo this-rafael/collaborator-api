@@ -1,80 +1,84 @@
+import {okAsync} from "neverthrow";
 import {describe, expect, it} from "vitest";
 
 import {CollaboratorRepositoryStub} from "../helpers/collaborator-runtime.js";
 
-// COL-CREATE-001, COL-CREATE-021, COL-CREATE-022
-describe("Creating a collaborator in the application layer", () => {
-  it("returns Ok with an active collaborator after valid creation", async () => {
-    const {CreateCollaborator} =
-      await import("../../src/modules/collaborators/application/commands/create-collaborator.command.js");
-    const result = await new CreateCollaborator(new CollaboratorRepositoryStub()).execute({
-      name: "Ana Silva",
-      cpf: "12345678909",
-      email: "ana@example.com"
-    });
+const clock = {now: () => new Date("2026-07-29T12:00:00.000Z")};
+const ids = {next: () => "66a64ab05bd7213b90d9b001"};
+const input = {name: "Ana Silva", cpf: "12345678909", email: "ana@example.com"};
+
+describe("CreateCollaboratorUseCase", () => {
+  it("returns a primitive active output after valid creation", async () => {
+    const {CreateCollaboratorUseCase} =
+      await import("../../src/modules/collaborators/application/use-cases/create-collaborator.use-case.js");
+
+    const result = await new CreateCollaboratorUseCase(
+      new CollaboratorRepositoryStub(),
+      clock,
+      ids
+    ).execute(input);
+
     expect(result.isOk()).toBe(true);
-    if (result.isOk()) expect(result.value.deletedAt).toBeNull();
+    if (result.isOk()) {
+      expect(result.value).toMatchObject({id: ids.next(), deletedAt: null, name: "Ana Silva"});
+      expect(result.value.createdAt).toBe("2026-07-29T12:00:00.000Z");
+    }
   });
 
-  it("returns Err instead of throwing for duplicate records", async () => {
-    const {CreateCollaborator} =
-      await import("../../src/modules/collaborators/application/commands/create-collaborator.command.js");
-    const result = await new CreateCollaborator(CollaboratorRepositoryStub.duplicateCpf()).execute({
-      name: "Ana Silva",
-      cpf: "12345678909",
-      email: "ana@example.com"
-    });
+  it("preserves the modeled duplicate failure", async () => {
+    const {CreateCollaboratorUseCase} =
+      await import("../../src/modules/collaborators/application/use-cases/create-collaborator.use-case.js");
+
+    const result = await new CreateCollaboratorUseCase(
+      CollaboratorRepositoryStub.duplicateCpf(),
+      clock,
+      ids
+    ).execute(input);
+
     expect(result.isErr()).toBe(true);
     if (result.isErr()) expect(result.error.code).toBe("DUPLICATE_ACTIVE_CPF");
   });
 
-  it("returns the domain validation code without calling the repository", async () => {
-    const {CreateCollaborator} =
-      await import("../../src/modules/collaborators/application/commands/create-collaborator.command.js");
-    let repositoryCalled = false;
+  it("does not invoke persistence when the aggregate rejects input", async () => {
+    const {CreateCollaboratorUseCase} =
+      await import("../../src/modules/collaborators/application/use-cases/create-collaborator.use-case.js");
+    let called = false;
     const repository = {
-      create: async () => {
-        repositoryCalled = true;
-        throw new Error("must not be called");
+      create: () => {
+        called = true;
+        return okAsync(undefined as never);
       }
     };
-    const result = await new CreateCollaborator(repository).execute({
-      name: "",
-      cpf: "12345678909",
-      email: "ana@example.com"
+
+    const result = await new CreateCollaboratorUseCase(repository, clock, ids).execute({
+      ...input,
+      name: ""
     });
+
     expect(result.isErr()).toBe(true);
     if (result.isErr()) expect(result.error.code).toBe("VALIDATION_ERROR");
-    expect(repositoryCalled).toBe(false);
+    expect(called).toBe(false);
   });
-});
 
-describe("Collaborator.create fail branches", () => {
-  it("rejects invalid name, cpf and email", async () => {
-    const {Collaborator} = await import("../../src/modules/collaborators/domain/collaborator.js");
+  it("returns a modeled internal failure when an injected dependency is unavailable", async () => {
+    const {CreateCollaboratorUseCase} =
+      await import("../../src/modules/collaborators/application/use-cases/create-collaborator.use-case.js");
+    let called = false;
+    const repository = {
+      create: () => {
+        called = true;
+        return okAsync(undefined as never);
+      }
+    };
 
-    const invalidName = Collaborator.create({
-      name: "",
-      cpf: "12345678909",
-      email: "ana@example.com"
-    });
-    expect(invalidName.isErr()).toBe(true);
-    if (invalidName.isErr()) expect(invalidName.error.code).toBe("VALIDATION_ERROR");
+    const result = await new CreateCollaboratorUseCase(repository, clock, {
+      next: () => {
+        throw new Error("generator unavailable");
+      }
+    }).execute(input);
 
-    const invalidCpf = Collaborator.create({
-      name: "Ana Silva",
-      cpf: "123",
-      email: "ana@example.com"
-    });
-    expect(invalidCpf.isErr()).toBe(true);
-    if (invalidCpf.isErr()) expect(invalidCpf.error.code).toBe("VALIDATION_ERROR");
-
-    const invalidEmail = Collaborator.create({
-      name: "Ana Silva",
-      cpf: "12345678909",
-      email: "not-an-email"
-    });
-    expect(invalidEmail.isErr()).toBe(true);
-    if (invalidEmail.isErr()) expect(invalidEmail.error.code).toBe("VALIDATION_ERROR");
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("INTERNAL_SERVER_ERROR");
+    expect(called).toBe(false);
   });
 });

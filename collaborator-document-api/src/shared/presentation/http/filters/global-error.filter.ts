@@ -16,13 +16,23 @@ export class GlobalErrorFilter {
   catch(error: unknown, ctx: {response: Response}): void {
     const res = ctx.response;
     const traceId = randomUUID();
+    const code = isMalformedJsonError(error) ? "MALFORMED_JSON" : "INTERNAL_SERVER_ERROR";
 
     const {problem} = this.mapper.fromFailure(
-      {code: "INTERNAL_SERVER_ERROR"},
+      {code},
       {instance: normalizeInstance(res.req?.path), traceId}
     );
-    res.status(500).type("application/problem+json").json(problem);
+    res.status(problem.status).type("application/problem+json").json(problem);
   }
+}
+
+function isMalformedJsonError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "type" in error &&
+    error.type === "entity.parse.failed"
+  );
 }
 
 function normalizeInstance(path: string | undefined): string {

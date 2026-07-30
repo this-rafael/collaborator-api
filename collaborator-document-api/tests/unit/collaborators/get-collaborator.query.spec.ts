@@ -2,27 +2,37 @@ import {describe, expect, it} from "vitest";
 
 import {CollaboratorRepositoryStub} from "../../helpers/collaborator-runtime.js";
 
-// COL-GET-001, COL-GET-005
-describe("Getting a collaborator in the application layer", () => {
-  it("returns Ok for an existing collaborator", async () => {
-    const {GetCollaborator} =
-      await import("../../../src/modules/collaborators/application/queries/get-collaborator.query.js");
-    expect(
-      (
-        await new GetCollaborator(new CollaboratorRepositoryStub()).execute(
-          "66a64ab05bd7213b90d9b001"
-        )
-      ).isOk()
-    ).toBe(true);
+describe("GetCollaboratorUseCase", () => {
+  it("returns a primitive output for an existing collaborator", async () => {
+    const {GetCollaboratorUseCase} =
+      await import("../../../src/modules/collaborators/application/use-cases/get-collaborator.use-case.js");
+    const result = await new GetCollaboratorUseCase(new CollaboratorRepositoryStub()).execute({
+      id: "66a64ab05bd7213b90d9b001"
+    });
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) expect(result.value.id).toBe("66a64ab05bd7213b90d9b001");
   });
 
-  it("returns Err with a stable not found failure", async () => {
-    const {GetCollaborator} =
-      await import("../../../src/modules/collaborators/application/queries/get-collaborator.query.js");
-    const result = await new GetCollaborator(CollaboratorRepositoryStub.notFound()).execute(
-      "66a64ab05bd7213b90d9b099"
-    );
+  it("returns the stable not-found failure", async () => {
+    const {GetCollaboratorUseCase} =
+      await import("../../../src/modules/collaborators/application/use-cases/get-collaborator.use-case.js");
+    const result = await new GetCollaboratorUseCase(CollaboratorRepositoryStub.notFound()).execute({
+      id: "66a64ab05bd7213b90d9b099"
+    });
+
     expect(result.isErr()).toBe(true);
     if (result.isErr()) expect(result.error.code).toBe("COLLABORATOR_NOT_FOUND");
+  });
+
+  it("exposes the canonical not-found failure as discriminated data", async () => {
+    const {collaboratorNotFoundFailure} =
+      await import("../../../src/modules/collaborators/domain/errors/collaborator-not-found.failure.js");
+
+    expect(collaboratorNotFoundFailure()).toEqual({
+      kind: "application",
+      code: "COLLABORATOR_NOT_FOUND",
+      message: "Collaborator was not found."
+    });
   });
 });

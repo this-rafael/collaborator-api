@@ -3,11 +3,19 @@ import {PlatformTest} from "@tsed/platform-http/testing";
 
 import {Server} from "../../src/Server.js";
 import {loadGetCollaboratorSliceFromExpected} from "../helpers/openapi-slice.js";
-import {publishedOperation} from "./collaborators-contract.helpers.js";
+import {
+  contractServerSettings,
+  parameterNames,
+  publishedOperation,
+  responseCodes,
+  responseContentTypes,
+  responseHeaderNames,
+  responseSchemaReference
+} from "./collaborators-contract.helpers.js";
 
 // COL-GET-001…008
 describe("Published get collaborator contract", () => {
-  beforeAll(PlatformTest.bootstrap(Server));
+  beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);
 
   it("publishes the identifier parameter representation and error responses", async () => {
@@ -15,14 +23,19 @@ describe("Published get collaborator contract", () => {
     expect(operation.operationId).toBe(
       loadGetCollaboratorSliceFromExpected().operation.operationId
     );
-    expect(operation.parameters).toEqual(
-      expect.arrayContaining([expect.objectContaining({name: "id", in: "path"})])
-    );
-    expect(operation.responses).toMatchObject({
-      "200": expect.anything(),
-      "304": expect.anything(),
-      "400": expect.anything(),
-      "404": expect.anything()
+    expect(parameterNames(operation)).toEqual(["If-None-Match", "id"]);
+    expect(responseCodes(operation)).toEqual(["200", "304", "400", "404", "429", "500", "503"]);
+    expect(responseContentTypes(operation, "200")).toEqual(["application/hal+json"]);
+    expect(responseSchemaReference(operation, "200", "application/hal+json")).toEqual({
+      $ref: "#/components/schemas/Collaborator"
     });
+    expect(responseHeaderNames(operation, "200")).toEqual(["ETag"]);
+    for (const status of ["400", "404", "429", "500", "503"]) {
+      expect(responseContentTypes(operation, status)).toEqual(["application/problem+json"]);
+      expect(responseSchemaReference(operation, status, "application/problem+json")).toEqual({
+        $ref: "#/components/schemas/ProblemDetails"
+      });
+    }
+    expect(responseHeaderNames(operation, "429")).toEqual(["Retry-After"]);
   });
 });

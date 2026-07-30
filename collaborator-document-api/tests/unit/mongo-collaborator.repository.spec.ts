@@ -1,214 +1,215 @@
-import {beforeEach, describe, expect, it, vi} from "vitest";
+import type {MongooseService} from "@tsed/mongoose";
+import type {ClientSession} from "mongoose";
+import type {Result} from "neverthrow";
+import {describe, expect, it} from "vitest";
 
-import {Collaborator} from "../../src/modules/collaborators/domain/collaborator.js";
+import {Collaborator} from "../../src/modules/collaborators/domain/entities/collaborator.js";
+import {MongoCollaboratorRepository} from "../../src/modules/collaborators/infrastructure/persistence/mongodb/collaborator.mongo-repository.js";
+import {createMongoTransactionContext} from "../../src/shared/infrastructure/persistence/mongodb/mongo-transaction-context.js";
 
-const getCollaboratorModel = vi.hoisted(() => vi.fn());
+const now = new Date("2026-07-29T12:00:00.000Z");
+const validId = "66a64ab05bd7213b90d9b001";
 
-vi.mock("../../src/modules/collaborators/infrastructure/mongoose/collaborator.schema.js", () => ({
-  getCollaboratorModel
-}));
+const collaborator = (id = validId) =>
+  Collaborator.create(
+    {
+      id,
+      name: "Ana Silva",
+      cpf: "12345678909",
+      email: "ana@example.com"
+    },
+    now
+  )._unsafeUnwrap();
 
-const validCollaborator = () =>
-  Collaborator.create({
-    name: "Ana Silva",
-    cpf: "12345678909",
-    email: "ana@example.com"
-  })._unsafeUnwrap();
-
-const validRow = {
-  _id: {toString: () => "66a64ab05bd7213b90d9b001"},
+const row = (overrides: Record<string, unknown> = {}) => ({
+  _id: {toString: () => validId},
   name: "Ana Silva",
+  nameNormalized: "ana silva",
   cpf: "12345678909",
   email: "ana@example.com",
-  createdAt: new Date("2026-07-29T12:00:00.000Z"),
-  updatedAt: new Date("2026-07-29T12:00:00.000Z"),
-  deletedAt: null
+  createdAt: now,
+  updatedAt: now,
+  deletedAt: null,
+  ...overrides
+});
+
+const mongooseWithModel = (model: object): MongooseService =>
+  ({
+    get: () => ({readyState: 1, models: {Collaborator: model}})
+  }) as unknown as MongooseService;
+
+const expectFailureCode = (result: Result<unknown, {code: string}>, code: string) => {
+  expect(result.isErr()).toBe(true);
+  if (result.isErr()) expect(result.error.code).toBe(code);
 };
 
-describe("MongoCollaboratorRepository error paths", () => {
-  beforeEach(() => {
-    getCollaboratorModel.mockReset();
-  });
+describe("MongoCollaboratorRepository", () => {
+  it("returns a modeled unavailability failure without an active connection", async () => {
+    const repository = new MongoCollaboratorRepository({get: () => undefined} as MongooseService);
 
-  it("maps create catch without keyPattern to SERVICE_UNAVAILABLE", async () => {
-    getCollaboratorModel.mockReturnValue({
-      create: async () => {
-        throw new Error("network down");
-      }
-    });
-    const {MongoCollaboratorRepository} =
-      await import("../../src/modules/collaborators/infrastructure/repositories/mongo-collaborator.repository.js");
+    const result = await repository.create(collaborator());
 
-    const result = await new MongoCollaboratorRepository().create(validCollaborator());
     expect(result.isErr()).toBe(true);
-    if (result.isErr()) expect(result.error).toBe("SERVICE_UNAVAILABLE");
+    if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");
   });
 
-  it("maps duplicate email keyPattern on create", async () => {
-    getCollaboratorModel.mockReturnValue({
-      create: async () => {
-        throw {keyPattern: {email: 1}};
-      }
-    });
-    const {MongoCollaboratorRepository} =
-      await import("../../src/modules/collaborators/infrastructure/repositories/mongo-collaborator.repository.js");
-
-    const result = await new MongoCollaboratorRepository().create(validCollaborator());
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) expect(result.error).toBe("DUPLICATE_ACTIVE_EMAIL");
-  });
-
-  it("maps unknown keyPattern on create to SERVICE_UNAVAILABLE", async () => {
-    getCollaboratorModel.mockReturnValue({
-      create: async () => {
-        throw {keyPattern: {other: 1}};
-      }
-    });
-    const {MongoCollaboratorRepository} =
-      await import("../../src/modules/collaborators/infrastructure/repositories/mongo-collaborator.repository.js");
-
-    const result = await new MongoCollaboratorRepository().create(validCollaborator());
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) expect(result.error).toBe("SERVICE_UNAVAILABLE");
-  });
-
-  it("rejects an invalid afterId without querying", async () => {
-    getCollaboratorModel.mockReturnValue({
-      find: () => {
-        throw new Error("should not query");
-      }
-    });
-    const {MongoCollaboratorRepository} =
-      await import("../../src/modules/collaborators/infrastructure/repositories/mongo-collaborator.repository.js");
-
-    const result = await new MongoCollaboratorRepository().listActive({
-      filters: {},
-      afterId: "not-a-valid-object-id",
-      limit: 10
-    });
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) expect(result.error).toBe("SERVICE_UNAVAILABLE");
-  });
-
-  it("maps a corrupt persistence row to SERVICE_UNAVAILABLE", async () => {
-    getCollaboratorModel.mockReturnValue({
-      find: () => ({
-        sort: () => ({
-          limit: () => ({
-            lean: async () => [{...validRow, email: "not-an-email"}]
-          })
+  it("maps duplicate-key errors to the CPF conflict", async () => {
+    const mongoose = {
+      get: () => ({
+        readyState: 1,
+        models: {},
+        model: () => ({
+          create: async () => {
+            throw {keyPattern: {cpf: 1}};
+          }
         })
       })
-    });
-    const {MongoCollaboratorRepository} =
-      await import("../../src/modules/collaborators/infrastructure/repositories/mongo-collaborator.repository.js");
+    } as unknown as MongooseService;
+    const repository = new MongoCollaboratorRepository(mongoose);
 
-    const result = await new MongoCollaboratorRepository().listActive({
-      filters: {},
-      limit: 10
-    });
+    const result = await repository.create(collaborator());
+
     expect(result.isErr()).toBe(true);
-    if (result.isErr()) expect(result.error).toBe("SERVICE_UNAVAILABLE");
+    if (result.isErr()) expect(result.error.code).toBe("DUPLICATE_ACTIVE_CPF");
   });
 
-  it("maps findById catch to SERVICE_UNAVAILABLE", async () => {
-    getCollaboratorModel.mockReturnValue({
-      findById: () => ({
-        lean: async () => {
-          throw new Error("timeout");
+  it("guards invalid ids and maps missing and unavailable reads", async () => {
+    const invalidId = await new MongoCollaboratorRepository(mongooseWithModel({})).findById(
+      "invalid"
+    );
+    const missing = await new MongoCollaboratorRepository(
+      mongooseWithModel({findById: () => ({lean: async () => null})})
+    ).findById(validId);
+    const unavailable = await new MongoCollaboratorRepository(
+      mongooseWithModel({
+        findById: () => ({
+          lean: async () => {
+            throw {name: "MongoServerSelectionError"};
+          }
+        })
+      })
+    ).findById(validId);
+
+    expectFailureCode(invalidId, "VALIDATION_ERROR");
+    expectFailureCode(missing, "COLLABORATOR_NOT_FOUND");
+    expectFailureCode(unavailable, "SERVICE_UNAVAILABLE");
+  });
+
+  it("does not rely on a working Mongoose getter or model factory", async () => {
+    const getterFailure = await new MongoCollaboratorRepository({
+      get: () => {
+        throw new Error("Mongoose unavailable");
+      }
+    } as unknown as MongooseService).findById(validId);
+    const modelFailure = await new MongoCollaboratorRepository({
+      get: () => ({readyState: 1, models: {}, model: () => undefined})
+    } as unknown as MongooseService).findById(validId);
+
+    for (const result of [getterFailure, modelFailure]) {
+      expectFailureCode(result, "SERVICE_UNAVAILABLE");
+    }
+  });
+
+  it("maps email conflicts and unexpected persistence failures", async () => {
+    const duplicateEmail = await new MongoCollaboratorRepository(
+      mongooseWithModel({
+        create: async () => {
+          throw {keyPattern: {email: 1}};
         }
       })
-    });
-    const {MongoCollaboratorRepository} =
-      await import("../../src/modules/collaborators/infrastructure/repositories/mongo-collaborator.repository.js");
-
-    const result = await new MongoCollaboratorRepository().findById("66a64ab05bd7213b90d9b001");
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) expect(result.error).toBe("SERVICE_UNAVAILABLE");
-  });
-
-  it("maps listActive query failures to SERVICE_UNAVAILABLE", async () => {
-    getCollaboratorModel.mockReturnValue({
-      find: () => ({
-        sort: () => ({
-          limit: () => ({
-            lean: async () => {
-              throw new Error("list failed");
-            }
-          })
-        })
-      })
-    });
-    const {MongoCollaboratorRepository} =
-      await import("../../src/modules/collaborators/infrastructure/repositories/mongo-collaborator.repository.js");
-
-    const result = await new MongoCollaboratorRepository().listActive({
-      filters: {},
-      limit: 10
-    });
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) expect(result.error).toBe("SERVICE_UNAVAILABLE");
-  });
-
-  it("maps updateActive catch and deleted-row status", async () => {
-    getCollaboratorModel.mockReturnValue({
-      findOneAndUpdate: () => ({
-        lean: async () => {
-          throw new Error("update failed");
+    ).create(collaborator());
+    const unexpected = await new MongoCollaboratorRepository(
+      mongooseWithModel({
+        create: async () => {
+          throw new Error("validation error");
         }
       })
-    });
-    const {MongoCollaboratorRepository} =
-      await import("../../src/modules/collaborators/infrastructure/repositories/mongo-collaborator.repository.js");
-
-    const result = await new MongoCollaboratorRepository().updateActive(
-      "66a64ab05bd7213b90d9b001",
-      {email: "new@example.com"}
+    ).create(collaborator());
+    const invalidAggregateId = await new MongoCollaboratorRepository(mongooseWithModel({})).create(
+      collaborator("not-a-mongo-id")
     );
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) expect(result.error).toBe("SERVICE_UNAVAILABLE");
+
+    expectFailureCode(duplicateEmail, "DUPLICATE_ACTIVE_EMAIL");
+    expectFailureCode(unexpected, "INTERNAL_SERVER_ERROR");
+    expectFailureCode(invalidAggregateId, "INTERNAL_SERVER_ERROR");
   });
 
-  it("maps rows that expose id without _id", async () => {
-    getCollaboratorModel.mockReturnValue({
-      find: () => ({
-        sort: () => ({
-          limit: () => ({
-            lean: async () => [{...validRow, _id: undefined, id: "66a64ab05bd7213b90d9b002"}]
+  it("maps invalid list cursors, malformed rows, and technical list failures", async () => {
+    const invalidCursor = await new MongoCollaboratorRepository(mongooseWithModel({})).listActive({
+      filters: {},
+      afterId: "invalid",
+      limit: 1
+    });
+    const malformed = await new MongoCollaboratorRepository(
+      mongooseWithModel({
+        find: () => ({sort: () => ({limit: () => ({lean: async () => [{}]})})})
+      })
+    ).listActive({filters: {}, limit: 1});
+    const technicalFailure = await new MongoCollaboratorRepository(
+      mongooseWithModel({
+        find: () => ({
+          sort: () => ({
+            limit: () => ({
+              lean: async () => {
+                throw new Error("query failed");
+              }
+            })
           })
         })
       })
-    });
-    const {MongoCollaboratorRepository} =
-      await import("../../src/modules/collaborators/infrastructure/repositories/mongo-collaborator.repository.js");
+    ).listActive({filters: {}, limit: 1});
 
-    const result = await new MongoCollaboratorRepository().listActive({
-      filters: {},
-      limit: 10
-    });
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) expect(result.value.items[0]?.props.id).toBe("66a64ab05bd7213b90d9b002");
+    expectFailureCode(invalidCursor, "INVALID_QUERY_PARAMETER");
+    expectFailureCode(malformed, "INTERNAL_SERVER_ERROR");
+    expectFailureCode(technicalFailure, "INTERNAL_SERVER_ERROR");
   });
 
-  it("maps update of a soft-deleted collaborator", async () => {
-    getCollaboratorModel.mockReturnValue({
-      findOneAndUpdate: () => ({
-        lean: async () => null
-      }),
-      findById: () => ({
-        select: () => ({
-          lean: async () => ({deletedAt: new Date("2026-07-29T12:00:00.000Z")})
-        })
+  it("distinguishes active updates from deleted and missing collaborators", async () => {
+    const updated = await new MongoCollaboratorRepository(
+      mongooseWithModel({findOneAndUpdate: () => ({lean: async () => row()})})
+    ).updateActive(collaborator());
+    const deleted = await new MongoCollaboratorRepository(
+      mongooseWithModel({
+        findOneAndUpdate: () => ({lean: async () => null}),
+        findById: () => ({select: () => ({lean: async () => ({deletedAt: now})})})
       })
-    });
-    const {MongoCollaboratorRepository} =
-      await import("../../src/modules/collaborators/infrastructure/repositories/mongo-collaborator.repository.js");
+    ).updateActive(collaborator());
+    const missing = await new MongoCollaboratorRepository(
+      mongooseWithModel({
+        findOneAndUpdate: () => ({lean: async () => null}),
+        findById: () => ({select: () => ({lean: async () => ({deletedAt: null})})})
+      })
+    ).updateActive(collaborator());
 
-    const result = await new MongoCollaboratorRepository().updateActive(
-      "66a64ab05bd7213b90d9b001",
-      {name: "Ana"}
-    );
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) expect(result.error).toBe("COLLABORATOR_DELETED");
+    expect(updated.isOk()).toBe(true);
+    expectFailureCode(deleted, "COLLABORATOR_DELETED");
+    expectFailureCode(missing, "COLLABORATOR_NOT_FOUND");
+  });
+
+  it("uses the opaque transaction context and preserves soft-delete outcomes", async () => {
+    const context = createMongoTransactionContext({} as ClientSession);
+    const updated = await new MongoCollaboratorRepository(
+      mongooseWithModel({updateOne: async () => ({modifiedCount: 1})})
+    ).softDeleteActive(collaborator(), context);
+    const unchanged = await new MongoCollaboratorRepository(
+      mongooseWithModel({updateOne: async () => ({modifiedCount: 0})})
+    ).softDeleteActive(collaborator(), context);
+    const noSession = await new MongoCollaboratorRepository(
+      mongooseWithModel({updateOne: async () => ({modifiedCount: 1})})
+    ).softDeleteActive(collaborator(), {} as never);
+    const technicalFailure = await new MongoCollaboratorRepository(
+      mongooseWithModel({
+        updateOne: async () => {
+          throw new Error("write failed");
+        }
+      })
+    ).softDeleteActive(collaborator(), context);
+
+    expect(updated.isOk()).toBe(true);
+    expect(unchanged.isOk()).toBe(true);
+    if (updated.isOk()) expect(updated.value).toBe(true);
+    if (unchanged.isOk()) expect(unchanged.value).toBe(false);
+    expectFailureCode(noSession, "SERVICE_UNAVAILABLE");
+    expectFailureCode(technicalFailure, "INTERNAL_SERVER_ERROR");
   });
 });
