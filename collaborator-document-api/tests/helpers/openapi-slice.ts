@@ -625,3 +625,12 @@ export const loadDeleteDocumentTypeSliceFromExpected = (): OperationSlice =>
 
 export const loadCreateCollaboratorDocumentSliceFromExpected = (): OperationSlice =>
   loadOperationSliceFromExpected("/api/v1/collaborator-documents", "post");
+
+export const loadListCollaboratorDocumentsSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborator-documents", "get");
+
+export const loadGetCollaboratorDocumentSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborator-documents/{id}", "get");
+
+export const loadUnlinkCollaboratorDocumentSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/collaborator-documents/{id}", "delete");

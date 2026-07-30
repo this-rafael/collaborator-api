@@ -14,7 +14,6 @@ import {
   responseSchemaReference
 } from "./collaborators-contract.helpers.js";
 
-// TYPE-PATCH-001…018
 describe("Published update document type contract", () => {
   beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);

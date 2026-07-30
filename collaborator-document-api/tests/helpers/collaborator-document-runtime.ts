@@ -8,6 +8,9 @@ import {
 
 export type CollaboratorDocumentRuntimeFailureCode =
   | "ACTIVE_LINK_ALREADY_EXISTS"
+  | "COLLABORATOR_DOCUMENT_DELETED"
+  | "COLLABORATOR_DOCUMENT_NOT_FOUND"
+  | "COLLABORATOR_DOCUMENT_UNLINKED"
   | "COLLABORATOR_DELETED"
   | "COLLABORATOR_NOT_FOUND"
   | "DOCUMENT_TYPE_DELETED"
@@ -40,6 +43,20 @@ export interface CollaboratorDocumentRepository {
   create(
     input: CollaboratorDocumentCreateInput
   ): Promise<Result<CollaboratorDocumentFixture, CollaboratorDocumentRuntimeFailure>>;
+}
+
+export interface CollaboratorDocumentGetRepository {
+  findById(
+    id: string
+  ): Promise<Result<CollaboratorDocumentFixture, CollaboratorDocumentRuntimeFailure>>;
+}
+
+export interface CollaboratorDocumentUnlinkRepository {
+  unlinkActive(
+    id: string,
+    unlinkedAt: Date,
+    updatedAt: Date
+  ): Promise<Result<void, CollaboratorDocumentRuntimeFailure>>;
 }
 
 const runtimeFailure = (
@@ -81,6 +98,98 @@ export class CollaboratorDocumentRepositoryStub implements CollaboratorDocumentR
 
   static unavailable(): CollaboratorDocumentRepositoryStub {
     return new CollaboratorDocumentRepositoryStub(
+      Promise.resolve(
+        err(
+          runtimeFailure("SERVICE_UNAVAILABLE", "Collaborator document persistence is unavailable.")
+        )
+      )
+    );
+  }
+}
+
+export class CollaboratorDocumentGetRepositoryStub implements CollaboratorDocumentGetRepository {
+  constructor(
+    private readonly result: Promise<
+      Result<CollaboratorDocumentFixture, CollaboratorDocumentRuntimeFailure>
+    >
+  ) {}
+
+  async findById(
+    _id: string
+  ): Promise<Result<CollaboratorDocumentFixture, CollaboratorDocumentRuntimeFailure>> {
+    return this.result;
+  }
+
+  static found(
+    fixture: CollaboratorDocumentFixture = activeCollaboratorDocumentFixture()
+  ): CollaboratorDocumentGetRepositoryStub {
+    return new CollaboratorDocumentGetRepositoryStub(Promise.resolve(ok(fixture)));
+  }
+
+  static notFound(): CollaboratorDocumentGetRepositoryStub {
+    return new CollaboratorDocumentGetRepositoryStub(
+      Promise.resolve(
+        err(
+          runtimeFailure("COLLABORATOR_DOCUMENT_NOT_FOUND", "Collaborator document was not found.")
+        )
+      )
+    );
+  }
+
+  static unavailable(): CollaboratorDocumentGetRepositoryStub {
+    return new CollaboratorDocumentGetRepositoryStub(
+      Promise.resolve(
+        err(
+          runtimeFailure("SERVICE_UNAVAILABLE", "Collaborator document persistence is unavailable.")
+        )
+      )
+    );
+  }
+}
+
+export class CollaboratorDocumentUnlinkRepositoryStub implements CollaboratorDocumentUnlinkRepository {
+  constructor(private readonly result: Promise<Result<void, CollaboratorDocumentRuntimeFailure>>) {}
+
+  async unlinkActive(
+    _id: string,
+    _unlinkedAt: Date,
+    _updatedAt: Date
+  ): Promise<Result<void, CollaboratorDocumentRuntimeFailure>> {
+    return this.result;
+  }
+
+  static success(): CollaboratorDocumentUnlinkRepositoryStub {
+    return new CollaboratorDocumentUnlinkRepositoryStub(Promise.resolve(ok(undefined)));
+  }
+
+  static notFound(): CollaboratorDocumentUnlinkRepositoryStub {
+    return new CollaboratorDocumentUnlinkRepositoryStub(
+      Promise.resolve(
+        err(
+          runtimeFailure("COLLABORATOR_DOCUMENT_NOT_FOUND", "Collaborator document was not found.")
+        )
+      )
+    );
+  }
+
+  static alreadyUnlinked(): CollaboratorDocumentUnlinkRepositoryStub {
+    return new CollaboratorDocumentUnlinkRepositoryStub(
+      Promise.resolve(
+        err(runtimeFailure("COLLABORATOR_DOCUMENT_UNLINKED", "Collaborator document was unlinked."))
+      )
+    );
+  }
+
+  static deleted(): CollaboratorDocumentUnlinkRepositoryStub {
+    return new CollaboratorDocumentUnlinkRepositoryStub(
+      Promise.resolve(
+        err(runtimeFailure("COLLABORATOR_DOCUMENT_DELETED", "Collaborator document was deleted."))
+      )
+    );
+  }
+
+  static unavailable(): CollaboratorDocumentUnlinkRepositoryStub {
+    return new CollaboratorDocumentUnlinkRepositoryStub(
       Promise.resolve(
         err(
           runtimeFailure("SERVICE_UNAVAILABLE", "Collaborator document persistence is unavailable.")

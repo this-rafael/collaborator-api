@@ -12,7 +12,6 @@ import {
   responseSchemaReference
 } from "./collaborators-contract.helpers.js";
 
-// TYPE-DELETE-001…008, TX-001…003
 describe("Published delete document type contract", () => {
   beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);

@@ -14,7 +14,6 @@ import {
   responseSchemaReference
 } from "./collaborators-contract.helpers.js";
 
-// COL-PATCH-001…024
 describe("Published update collaborator contract", () => {
   beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);

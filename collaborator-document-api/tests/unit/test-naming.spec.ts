@@ -11,7 +11,6 @@ type ScannedSuite = (typeof scannedSuites)[number];
 const callPattern =
   /\b(?:it|test|describe|it\.only|test\.only|describe\.only|it\.skip|test\.skip|describe\.skip)\s*(?:\.\s*each\s*\(\s*\[[\s\S]*?\]\s*\))?\s*\(\s*(["'`])([^"'`]*?)\1/g;
 
-/** Scenario/module labels such as DISC-001, COL-CREATE-001, HEALTH-LIVE-001, FND-HTTP. */
 const labelPattern =
   /\b(?:FND|DISC|COL|TYPE|LINK|VER|QUERY|STAT|SUB|HEALTH|CURSOR|TX)(?:-[A-Z][A-Z0-9]*)*(?:-\d{3})?\b/;
 

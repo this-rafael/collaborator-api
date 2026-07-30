@@ -64,6 +64,33 @@ export const linkUnlinkedFixture = (
     ...overrides
   });
 
+/** LINK-DELETED: ciclo removido por cascata, com ou sem unlink anterior. */
+export const linkDeletedFixture = (
+  overrides: Partial<CollaboratorDocumentFixture> = {}
+): CollaboratorDocumentFixture =>
+  activeCollaboratorDocumentFixture({
+    id: "66a64ab05bd7213b90d9c003",
+    status: "PENDING",
+    deletedAt: "2026-07-30T14:00:00.000Z",
+    updatedAt: "2026-07-30T14:00:00.000Z",
+    ...overrides
+  });
+
+/** LINK-SUBMITTED: ciclo ativo com histórico e última versão enviada. */
+export const linkSubmittedFixture = (
+  overrides: Partial<CollaboratorDocumentFixture> = {}
+): CollaboratorDocumentFixture =>
+  submittedDocumentTypeLinkFixture({
+    status: "SUBMITTED",
+    currentVersion: 1,
+    versions: [{version: 1}],
+    lastSubmittedAt: "2026-07-30T12:30:00.000Z",
+    unlinkedAt: null,
+    deletedAt: null,
+    versionCount: 1,
+    ...overrides
+  });
+
 /** COL-ACTIVE: colaborador pai apto para iniciar um vínculo. */
 export const activeCollaboratorForLinkFixture = (
   overrides: Partial<{id: string; deletedAt: string | null}> = {}
@@ -113,4 +140,22 @@ export const submittedDocumentTypeLinkFixture = (
     lastSubmittedAt: "2026-07-30T12:30:00.000Z",
     versionCount: 1,
     ...overrides
+  });
+
+export const collaboratorDocumentPageFixtures = (
+  count: number,
+  overrides: Partial<CollaboratorDocumentFixture> = {}
+): CollaboratorDocumentFixture[] =>
+  Array.from({length: count}, (_, index) => {
+    const id = (BigInt("0x66a64ab05bd7213b90d9d000") + BigInt(index + 1))
+      .toString(16)
+      .padStart(24, "0");
+    const fixture = index % 2 === 0 ? linkPendingFixture() : linkSubmittedFixture();
+    return {
+      ...fixture,
+      id,
+      collaboratorId: index % 3 === 0 ? "66a64ab05bd7213b90d9b001" : "66a64ab05bd7213b90d9b002",
+      documentTypeId: index % 2 === 0 ? "66a64ab05bd7213b90d9b010" : "66a64ab05bd7213b90d9b011",
+      ...overrides
+    };
   });

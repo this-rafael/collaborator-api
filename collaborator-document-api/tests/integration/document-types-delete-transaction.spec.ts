@@ -11,7 +11,6 @@ import {MongoTransactionTestHarness} from "../helpers/mongo-transaction-test-har
 
 const documentTypeId = "66a64ab05bd7213b90d9b010";
 
-// TYPE-DELETE-001, TYPE-DELETE-002, TYPE-DELETE-003
 describe("Deleting document types transactionally", () => {
   bootstrapHttpMongo();
   beforeEach(async () => resetDatabase(httpDatabase()));
@@ -82,7 +81,6 @@ describe("Deleting document types transactionally", () => {
   });
 });
 
-// TX-001, TX-002, TX-003
 describe("Retrying document type delete transactions", () => {
   it("retries all work after a transient transaction failure", async () => {
     const injected = new MongoTransactionTestHarness();

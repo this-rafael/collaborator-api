@@ -13,7 +13,6 @@ import {
   responseSchemaReference
 } from "./collaborators-contract.helpers.js";
 
-// COL-GET-001…008
 describe("Published get collaborator contract", () => {
   beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);

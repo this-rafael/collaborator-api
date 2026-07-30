@@ -6,7 +6,6 @@ import {PlatformTest} from "@tsed/platform-http/testing";
 import {resetDatabase} from "../helpers/database.js";
 import {bootstrapHttpMongo, httpDatabase} from "../helpers/http-mongo.js";
 
-// COL-LIST-001…020, CURSOR-001, CURSOR-002
 describe("Listing collaborators", () => {
   bootstrapHttpMongo();
 

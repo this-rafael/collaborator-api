@@ -13,7 +13,6 @@ import {
   responseSchemaReference
 } from "./collaborators-contract.helpers.js";
 
-// COL-LIST-001…020, CURSOR-001, CURSOR-002
 describe("Published list collaborators contract", () => {
   beforeAll(PlatformTest.bootstrap(Server, contractServerSettings));
   afterAll(PlatformTest.reset);

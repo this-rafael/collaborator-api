@@ -7,7 +7,6 @@ const id = "66a64ab05bd7213b90d9b010";
 const clock = {now: () => new Date("2026-07-30T13:00:00.000Z")};
 
 describe("Deleting a document type through the application command", () => {
-  // TYPE-DELETE-001
   it("uses one opaque transaction for the type and document cascade", async () => {
     const {DocumentType} =
       await import("../../../src/modules/document-types/domain/entities/document-type.js");
@@ -57,7 +56,6 @@ describe("Deleting a document type through the application command", () => {
     });
   });
 
-  // TYPE-DELETE-002
   it("propagates a modeled cascade failure so the transaction can roll back", async () => {
     const {DocumentType} =
       await import("../../../src/modules/document-types/domain/entities/document-type.js");
@@ -95,7 +93,6 @@ describe("Deleting a document type through the application command", () => {
     if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");
   });
 
-  // TYPE-DELETE-003
   it("does not cascade when the type was already deleted concurrently", async () => {
     const {DocumentType} =
       await import("../../../src/modules/document-types/domain/entities/document-type.js");
@@ -130,7 +127,6 @@ describe("Deleting a document type through the application command", () => {
     expect(cascaded).toBe(false);
   });
 
-  // TYPE-DELETE-008, TX-003
   it("preserves transaction service unavailability", async () => {
     const {DocumentType} =
       await import("../../../src/modules/document-types/domain/entities/document-type.js");
