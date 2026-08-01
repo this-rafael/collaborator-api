@@ -11,7 +11,6 @@ import {bootstrapHttpMongo, httpDatabase} from "../helpers/http-mongo.js";
 import type {PendingDocumentTypeStatisticFixture} from "../helpers/reporting-fixtures.js";
 
 const path = "/api/v1/statistics/pending-document-types";
-const collaboratorId = "66a64ab05bd7213b90d9b001";
 const typeOne = "66a64ab05bd7213b90d9b010";
 const typeTwo = "66a64ab05bd7213b90d9b011";
 const typeThree = "66a64ab05bd7213b90d9b012";
@@ -333,7 +332,7 @@ function collaboratorDocumentRow(
   const now = new Date("2026-07-31T12:00:00.000Z");
   return {
     _id: new ObjectId(hexadecimalId("66a64ab05bd7213b90d9c000", offset)),
-    collaboratorId,
+    collaboratorId: hexadecimalId("66a64ab05bd7213b90d9b000", offset),
     documentTypeId,
     status: "PENDING",
     currentVersion: null,
