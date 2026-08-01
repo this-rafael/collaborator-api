@@ -1,0 +1,2003 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "collaborator-document-api",
+    "languages": [
+      "config",
+      "dockerfile",
+      "javascript",
+      "json",
+      "markdown",
+      "mts",
+      "typescript",
+      "unknown",
+      "yaml"
+    ],
+    "frameworks": [
+      "Express",
+      "Vitest",
+      "Docker",
+      "Docker Compose"
+    ],
+    "description": "API REST para gerenciar a documentação de colaboradores, com consistência transacional, histórico de versões e contratos HTTP explícitos.",
+    "analyzedAt": "2026-07-28T16:31:15.763Z",
+    "gitCommitHash": "c8a5ffef99af10b354fc2e9a486799f8251c32ab"
+  },
+  "nodes": [
+    {
+      "id": "file:collaborator-document-api/src/Server.ts",
+      "type": "file",
+      "name": "Server.ts",
+      "filePath": "collaborator-document-api/src/Server.ts",
+      "summary": "Define a configuração raiz do Ts.ED, registra o controlador de saúde e integra os gerenciadores MongoDB ao ciclo de vida HTTP.",
+      "tags": [
+        "entry-point",
+        "tsed",
+        "http-server",
+        "dependency-injection",
+        "tested"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Usa decorators do Ts.ED para declarar montagem de rotas e dependências de infraestrutura."
+    },
+    {
+      "id": "class:collaborator-document-api/src/Server.ts:Server",
+      "type": "class",
+      "name": "Server",
+      "filePath": "collaborator-document-api/src/Server.ts",
+      "lineRange": [
+        17,
+        17
+      ],
+      "summary": "Classe de configuração exportada que conecta o servidor aos controladores e serviços de persistência.",
+      "tags": [
+        "configuration",
+        "tsed",
+        "http-server"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/src/controllers/health.controller.ts",
+      "type": "file",
+      "name": "health.controller.ts",
+      "filePath": "collaborator-document-api/src/controllers/health.controller.ts",
+      "summary": "Expõe o controlador HTTP de saúde com uma resposta estável para verificar a disponibilidade da aplicação.",
+      "tags": [
+        "api-handler",
+        "health-check",
+        "http",
+        "tsed"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:collaborator-document-api/src/controllers/health.controller.ts:HealthController",
+      "type": "class",
+      "name": "HealthController",
+      "filePath": "collaborator-document-api/src/controllers/health.controller.ts",
+      "lineRange": [
+        5,
+        14
+      ],
+      "summary": "Controlador decorado do endpoint GET /health/live que retorna o estado operacional da API.",
+      "tags": [
+        "api-handler",
+        "health-check",
+        "http"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "type": "file",
+      "name": "mongo-index-manager.ts",
+      "filePath": "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "summary": "Fornece um serviço injetável para criar e listar índices MongoDB, validando a disponibilidade da conexão e do banco.",
+      "tags": [
+        "mongodb",
+        "persistence",
+        "service",
+        "validation",
+        "tested"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts:MongoIndexManager",
+      "type": "class",
+      "name": "MongoIndexManager",
+      "filePath": "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "lineRange": [
+        6,
+        33
+      ],
+      "summary": "Gerencia operações de índices em coleções MongoDB por meio da conexão fornecida pelo MongooseService.",
+      "tags": [
+        "mongodb",
+        "persistence",
+        "indexing",
+        "service"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "type": "file",
+      "name": "mongo-transaction-manager.ts",
+      "filePath": "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "summary": "Implementa um serviço injetável que executa uma função de trabalho dentro de uma transação MongoDB e sempre encerra a sessão.",
+      "tags": [
+        "mongodb",
+        "transactions",
+        "persistence",
+        "service",
+        "tested"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts:MongoTransactionManager",
+      "type": "class",
+      "name": "MongoTransactionManager",
+      "filePath": "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "lineRange": [
+        6,
+        26
+      ],
+      "summary": "Coordena sessões MongoDB, valida a conexão e encapsula o trabalho fornecido em withTransaction.",
+      "tags": [
+        "mongodb",
+        "transactions",
+        "persistence",
+        "service"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/contract/health.contract.spec.ts",
+      "type": "file",
+      "name": "health.contract.spec.ts",
+      "filePath": "collaborator-document-api/tests/contract/health.contract.spec.ts",
+      "summary": "Verifica o contrato mínimo do endpoint de saúde, incluindo status HTTP e o formato exato da resposta.",
+      "tags": [
+        "test",
+        "contract-test",
+        "health-check",
+        "http"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/helpers/database.ts",
+      "type": "file",
+      "name": "database.ts",
+      "filePath": "collaborator-document-api/tests/helpers/database.ts",
+      "summary": "Disponibiliza um auxiliar de teste para limpar completamente um banco MongoDB entre cenários de integração.",
+      "tags": [
+        "test-helper",
+        "mongodb",
+        "database",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:collaborator-document-api/tests/helpers/database.ts:resetDatabase",
+      "type": "function",
+      "name": "resetDatabase",
+      "filePath": "collaborator-document-api/tests/helpers/database.ts",
+      "lineRange": [
+        3,
+        5
+      ],
+      "summary": "Remove todas as coleções do banco fornecido para restaurar o isolamento de testes.",
+      "tags": [
+        "test-helper",
+        "mongodb",
+        "database-reset"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/http/health.spec.ts",
+      "type": "file",
+      "name": "health.spec.ts",
+      "filePath": "collaborator-document-api/tests/http/health.spec.ts",
+      "summary": "Executa um smoke test HTTP que inicializa o Ts.ED e confirma a disponibilidade e o content type do endpoint de saúde.",
+      "tags": [
+        "test",
+        "http-test",
+        "health-check",
+        "smoke-test"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "type": "file",
+      "name": "mongodb.spec.ts",
+      "filePath": "collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "summary": "Valida a integração real com MongoDB: transações, rollback, criação de índices e ciclo de vida completo da aplicação.",
+      "tags": [
+        "test",
+        "integration-test",
+        "mongodb",
+        "transactions"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/unit/mongo-managers.spec.ts",
+      "type": "file",
+      "name": "mongo-managers.spec.ts",
+      "filePath": "collaborator-document-api/tests/unit/mongo-managers.spec.ts",
+      "summary": "Testa os erros de guarda dos gerenciadores MongoDB quando o serviço não disponibiliza conexão.",
+      "tags": [
+        "test",
+        "unit-test",
+        "mongodb",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/src/shared/application/application-failure.ts",
+      "type": "file",
+      "name": "application-failure.ts",
+      "filePath": "collaborator-document-api/src/shared/application/application-failure.ts",
+      "summary": "Define a falha da camada de aplicação com código estável, mensagem e classificação explícita para tratamento sem exceções de fluxo.",
+      "tags": [
+        "tratamento-de-erros",
+        "aplicacao",
+        "typescript",
+        "tested"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:collaborator-document-api/src/shared/application/application-failure.ts:ApplicationFailure",
+      "type": "class",
+      "name": "ApplicationFailure",
+      "filePath": "collaborator-document-api/src/shared/application/application-failure.ts",
+      "lineRange": [
+        1,
+        11
+      ],
+      "summary": "Representa um erro da aplicação com código e tipo application, preservando a semântica de Error.",
+      "tags": [
+        "tratamento-de-erros",
+        "aplicacao",
+        "error"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/src/shared/domain/domain-failure.ts",
+      "type": "file",
+      "name": "domain-failure.ts",
+      "filePath": "collaborator-document-api/src/shared/domain/domain-failure.ts",
+      "summary": "Define a falha de domínio com código estável, mensagem e classificação explícita para violações das regras de negócio.",
+      "tags": [
+        "tratamento-de-erros",
+        "dominio",
+        "typescript",
+        "tested"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:collaborator-document-api/src/shared/domain/domain-failure.ts:DomainFailure",
+      "type": "class",
+      "name": "DomainFailure",
+      "filePath": "collaborator-document-api/src/shared/domain/domain-failure.ts",
+      "lineRange": [
+        1,
+        11
+      ],
+      "summary": "Representa uma falha de domínio com código e tipo domain, preservando a semântica de Error.",
+      "tags": [
+        "tratamento-de-erros",
+        "dominio",
+        "error"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/src/shared/result.ts",
+      "type": "file",
+      "name": "result.ts",
+      "filePath": "collaborator-document-api/src/shared/result.ts",
+      "summary": "Centraliza a API de Result baseada em neverthrow e expõe construtores tipados de sucesso e falha para o fluxo da aplicação.",
+      "tags": [
+        "result",
+        "neverthrow",
+        "tratamento-de-erros",
+        "barrel",
+        "tested"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Usa genéricos TypeScript para preservar os tipos de valor e erro em Result."
+    },
+    {
+      "id": "function:collaborator-document-api/src/shared/result.ts:success",
+      "type": "function",
+      "name": "success",
+      "filePath": "collaborator-document-api/src/shared/result.ts",
+      "lineRange": [
+        5,
+        5
+      ],
+      "summary": "Encapsula um valor em um Result de sucesso sem possibilidade de erro.",
+      "tags": [
+        "result",
+        "sucesso",
+        "generics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:collaborator-document-api/src/shared/result.ts:failure",
+      "type": "function",
+      "name": "failure",
+      "filePath": "collaborator-document-api/src/shared/result.ts",
+      "lineRange": [
+        7,
+        7
+      ],
+      "summary": "Encapsula um erro em um Result de falha sem valor de sucesso.",
+      "tags": [
+        "result",
+        "falha",
+        "generics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/helpers/clock.ts",
+      "type": "file",
+      "name": "clock.ts",
+      "filePath": "collaborator-document-api/tests/helpers/clock.ts",
+      "summary": "Fornece um relógio fixo para que testes controlem o instante atual de forma determinística e sem compartilhar a mesma instância de Date.",
+      "tags": [
+        "teste",
+        "relogio",
+        "determinismo",
+        "fixture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:collaborator-document-api/tests/helpers/clock.ts:FixedClock",
+      "type": "class",
+      "name": "FixedClock",
+      "filePath": "collaborator-document-api/tests/helpers/clock.ts",
+      "lineRange": [
+        5,
+        11
+      ],
+      "summary": "Implementa um relógio de teste que devolve uma cópia defensiva de um instante previamente definido.",
+      "tags": [
+        "teste",
+        "relogio",
+        "determinismo"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/helpers/failures.ts",
+      "type": "file",
+      "name": "failures.ts",
+      "filePath": "collaborator-document-api/tests/helpers/failures.ts",
+      "summary": "Fornece uma fábrica mínima de Error para simular falhas nos cenários de teste.",
+      "tags": [
+        "teste",
+        "tratamento-de-erros",
+        "fixture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:collaborator-document-api/tests/helpers/failures.ts:simulatedFailure",
+      "type": "function",
+      "name": "simulatedFailure",
+      "filePath": "collaborator-document-api/tests/helpers/failures.ts",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Cria uma instância de Error com mensagem configurável para testes de caminhos de falha.",
+      "tags": [
+        "teste",
+        "falha",
+        "factory"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/helpers/fixtures.ts",
+      "type": "file",
+      "name": "fixtures.ts",
+      "filePath": "collaborator-document-api/tests/helpers/fixtures.ts",
+      "summary": "Fornece fábricas genéricas para construir uma fixture isolada ou uma sequência determinística de fixtures.",
+      "tags": [
+        "teste",
+        "fixture",
+        "factory",
+        "generics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:collaborator-document-api/tests/helpers/fixtures.ts:fixture",
+      "type": "function",
+      "name": "fixture",
+      "filePath": "collaborator-document-api/tests/helpers/fixtures.ts",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Executa uma fábrica e retorna uma fixture tipada para o cenário de teste.",
+      "tags": [
+        "teste",
+        "fixture",
+        "factory"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:collaborator-document-api/tests/helpers/fixtures.ts:sequenceFixture",
+      "type": "function",
+      "name": "sequenceFixture",
+      "filePath": "collaborator-document-api/tests/helpers/fixtures.ts",
+      "lineRange": [
+        3,
+        4
+      ],
+      "summary": "Gera uma sequência de fixtures aplicando uma fábrica ao índice de cada elemento.",
+      "tags": [
+        "teste",
+        "fixture",
+        "factory",
+        "colecao"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "type": "file",
+      "name": "shared-foundation.spec.ts",
+      "filePath": "collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "summary": "Valida os contratos das falhas compartilhadas, dos helpers Result e das fixtures determinísticas da fundação da API.",
+      "tags": [
+        "teste",
+        "vitest",
+        "fundacao",
+        "unidade"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/src/bootstrap.ts",
+      "type": "file",
+      "name": "bootstrap.ts",
+      "filePath": "collaborator-document-api/src/bootstrap.ts",
+      "summary": "Define a configuração do servidor Ts.ED e o ciclo de inicialização e parada da aplicação HTTP.",
+      "complexity": "simple",
+      "tags": [
+        "bootstrap",
+        "servidor",
+        "tsed",
+        "ciclo-de-vida",
+        "tested"
+      ]
+    },
+    {
+      "id": "function:collaborator-document-api/src/bootstrap.ts:serverSettings",
+      "type": "function",
+      "name": "serverSettings",
+      "filePath": "collaborator-document-api/src/bootstrap.ts",
+      "summary": "Converte as variáveis de ambiente validadas nas opções de porta, logger e conexão MongoDB do Ts.ED.",
+      "complexity": "simple",
+      "tags": [
+        "configuração",
+        "tsed",
+        "mongodb"
+      ]
+    },
+    {
+      "id": "function:collaborator-document-api/src/bootstrap.ts:startApplication",
+      "type": "function",
+      "name": "startApplication",
+      "filePath": "collaborator-document-api/src/bootstrap.ts",
+      "summary": "Inicializa a plataforma Express com o servidor configurado, abre a porta HTTP e registra o evento de inicialização.",
+      "complexity": "simple",
+      "tags": [
+        "bootstrap",
+        "express",
+        "tsed",
+        "inicialização"
+      ]
+    },
+    {
+      "id": "function:collaborator-document-api/src/bootstrap.ts:stopApplication",
+      "type": "function",
+      "name": "stopApplication",
+      "filePath": "collaborator-document-api/src/bootstrap.ts",
+      "summary": "Encerra de forma assíncrona a plataforma HTTP em execução.",
+      "complexity": "simple",
+      "tags": [
+        "desligamento",
+        "ciclo-de-vida",
+        "servidor"
+      ]
+    },
+    {
+      "id": "file:collaborator-document-api/src/config/env.ts",
+      "type": "file",
+      "name": "env.ts",
+      "filePath": "collaborator-document-api/src/config/env.ts",
+      "summary": "Declara e valida as variáveis obrigatórias do ambiente, incluindo limites de porta, níveis de log e URIs MongoDB com requisitos de réplica.",
+      "complexity": "moderate",
+      "tags": [
+        "configuração",
+        "validação",
+        "ambiente",
+        "mongodb",
+        "tested"
+      ]
+    },
+    {
+      "id": "class:collaborator-document-api/src/config/env.ts:EnvironmentValidationError",
+      "type": "class",
+      "name": "EnvironmentValidationError",
+      "filePath": "collaborator-document-api/src/config/env.ts",
+      "summary": "Erro de domínio que agrega as inconsistências encontradas na configuração de ambiente.",
+      "complexity": "simple",
+      "tags": [
+        "erro",
+        "validação",
+        "ambiente"
+      ]
+    },
+    {
+      "id": "function:collaborator-document-api/src/config/env.ts:loadEnv",
+      "type": "function",
+      "name": "loadEnv",
+      "filePath": "collaborator-document-api/src/config/env.ts",
+      "summary": "Lê, valida e tipa as variáveis do processo antes que a aplicação inicie, emitindo todos os problemas em uma única exceção.",
+      "complexity": "moderate",
+      "tags": [
+        "configuração",
+        "validação",
+        "ambiente",
+        "factory"
+      ]
+    },
+    {
+      "id": "file:collaborator-document-api/src/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "collaborator-document-api/src/index.ts",
+      "summary": "Fornece o ponto de entrada executável da API, coordenando a validação do ambiente, a inicialização e o desligamento por sinais do processo.",
+      "complexity": "simple",
+      "tags": [
+        "entry-point",
+        "bootstrap",
+        "sinais",
+        "servidor"
+      ]
+    },
+    {
+      "id": "function:collaborator-document-api/src/index.ts:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "collaborator-document-api/src/index.ts",
+      "summary": "Inicia a API e instala tratamento idempotente para SIGINT e SIGTERM, retornando código de saída apropriado em caso de falha.",
+      "complexity": "moderate",
+      "tags": [
+        "entry-point",
+        "bootstrap",
+        "desligamento",
+        "tratamento-de-erro"
+      ]
+    },
+    {
+      "id": "file:collaborator-document-api/tests/unit/env.spec.ts",
+      "type": "file",
+      "name": "env.spec.ts",
+      "filePath": "collaborator-document-api/tests/unit/env.spec.ts",
+      "summary": "Testa a validação de ambiente para configurações válidas, campos obrigatórios, enums, portas e URIs MongoDB.",
+      "complexity": "simple",
+      "tags": [
+        "test",
+        "vitest",
+        "configuração",
+        "validação"
+      ]
+    },
+    {
+      "id": "service:collaborator-document-api/docker-compose.yml",
+      "type": "service",
+      "name": "docker-compose.yml",
+      "filePath": "collaborator-document-api/docker-compose.yml",
+      "summary": "Orquestra um MongoDB em replica set, sua inicialização e o contêiner da API em um perfil de execução completo.",
+      "tags": [
+        "infrastructure",
+        "orchestration",
+        "containerization",
+        "mongodb"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "A configuração usa um contêiner de inicialização para tornar o replica set rs0 disponível antes da API."
+    },
+    {
+      "id": "service:collaborator-document-api/Dockerfile",
+      "type": "service",
+      "name": "Dockerfile",
+      "filePath": "collaborator-document-api/Dockerfile",
+      "summary": "Constrói a API TypeScript com pnpm e produz uma imagem Node.js de produção que executa o artefato compilado na porta 3000.",
+      "tags": [
+        "containerization",
+        "infrastructure",
+        "deployment",
+        "build-system"
+      ],
+      "complexity": "simple",
+      "languageNotes": "O build multiestágio separa dependências e compilação do runtime de produção."
+    },
+    {
+      "id": "service:collaborator-document-api/Dockerfile:build",
+      "type": "service",
+      "name": "build",
+      "filePath": "collaborator-document-api/Dockerfile",
+      "lineRange": [
+        1,
+        15
+      ],
+      "summary": "Estágio que instala as dependências congeladas, copia o código-fonte e compila a API.",
+      "tags": [
+        "containerization",
+        "build",
+        "pnpm"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "service:collaborator-document-api/Dockerfile:runtime",
+      "type": "service",
+      "name": "runtime",
+      "filePath": "collaborator-document-api/Dockerfile",
+      "lineRange": [
+        16,
+        35
+      ],
+      "summary": "Estágio de produção que instala somente dependências de runtime e inicia a API compilada como o usuário node.",
+      "tags": [
+        "containerization",
+        "runtime",
+        "production",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "Documentação principal da Collaborator Document API, cobrindo arquitetura hexagonal, regras de domínio, contratos HTTP, operação local, testes e decisões de produção.",
+      "tags": [
+        "documentação",
+        "visão-geral",
+        "arquitetura",
+        "api",
+        "produção"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:TEXTO_BASE_DESAFIO.md",
+      "type": "document",
+      "name": "TEXTO_BASE_DESAFIO.md",
+      "filePath": "TEXTO_BASE_DESAFIO.md",
+      "summary": "Especificação do desafio técnico que define o fluxo de documentação de colaboradores, requisitos de consistência, restrições e critérios de avaliação.",
+      "tags": [
+        "documentação",
+        "requisitos",
+        "desafio-técnico",
+        "escopo",
+        "avaliação"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:lefthook.yml",
+      "type": "config",
+      "name": "lefthook.yml",
+      "filePath": "lefthook.yml",
+      "summary": "Configura o hook de pre-commit para executar typecheck, lint e testes unitários no subprojeto collaborator-document-api quando arquivos JavaScript ou TypeScript são preparados.",
+      "tags": [
+        "configuração",
+        "git-hooks",
+        "qualidade",
+        "typecheck",
+        "testes"
+      ],
+      "complexity": "simple",
+      "languageNotes": "A configuração do Lefthook executa os comandos em paralelo e restringe o hook aos arquivos alterados no subprojeto da API."
+    },
+    {
+      "id": "config:collaborator-document-api/.env.example",
+      "type": "config",
+      "name": ".env.example",
+      "filePath": "collaborator-document-api/.env.example",
+      "summary": "Fornece valores de exemplo para ambiente, porta, conexão MongoDB em replica set e nível de log da API.",
+      "tags": [
+        "configuration",
+        "environment",
+        "mongodb",
+        "runtime"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:collaborator-document-api/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "collaborator-document-api/README.md",
+      "summary": "Documenta os pré-requisitos, a instalação, o desenvolvimento, os scripts e a execução do MongoDB em replica set para a API.",
+      "tags": [
+        "documentation",
+        "getting-started",
+        "api",
+        "development"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:collaborator-document-api/lefthook.yml",
+      "type": "config",
+      "name": "lefthook.yml",
+      "filePath": "collaborator-document-api/lefthook.yml",
+      "summary": "Mantém um espelho local obsoleto da configuração Lefthook e registra verificações de tipo, lint e testes unitários no pre-commit.",
+      "tags": [
+        "configuration",
+        "git-hooks",
+        "quality-gate",
+        "lefthook"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:collaborator-document-api/package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "collaborator-document-api/package.json",
+      "summary": "Define o pacote ESM da API, seus requisitos de runtime, dependências Ts.ED/MongoDB e comandos de desenvolvimento, build, qualidade e testes.",
+      "tags": [
+        "configuration",
+        "nodejs",
+        "build-system",
+        "testing",
+        "api"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:collaborator-document-api/pnpm-workspace.yaml",
+      "type": "config",
+      "name": "pnpm-workspace.yaml",
+      "filePath": "collaborator-document-api/pnpm-workspace.yaml",
+      "summary": "Autoriza scripts de build de dependências nativas e ferramentas necessárias à instalação reproduzível com pnpm.",
+      "tags": [
+        "configuration",
+        "pnpm",
+        "dependencies",
+        "build-system"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:collaborator-document-api/tsconfig.build.json",
+      "type": "config",
+      "name": "tsconfig.build.json",
+      "filePath": "collaborator-document-api/tsconfig.build.json",
+      "summary": "Especializa a configuração TypeScript para o build de produção, limitando a compilação ao código-fonte e aos tipos de Node.js.",
+      "tags": [
+        "configuration",
+        "typescript",
+        "build-system",
+        "production"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:collaborator-document-api/tsconfig.json",
+      "type": "config",
+      "name": "tsconfig.json",
+      "filePath": "collaborator-document-api/tsconfig.json",
+      "summary": "Configura TypeScript estrito em modo NodeNext, decorators e metadados para o código-fonte, testes e geração de declarações.",
+      "tags": [
+        "configuration",
+        "typescript",
+        "strict-mode",
+        "decorators",
+        "build-system"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Usa NodeNext para compatibilidade ESM e habilita metadata de decorators exigida pela integração Ts.ED."
+    },
+    {
+      "id": "file:.nvmrc",
+      "type": "file",
+      "name": ".nvmrc",
+      "filePath": ".nvmrc",
+      "summary": "Fixa a versão do Node.js usada no repositório raiz para padronizar o ambiente de desenvolvimento.",
+      "tags": [
+        "runtime",
+        "nodejs",
+        "versionamento"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.ua/.understandignore",
+      "type": "file",
+      "name": ".understandignore",
+      "filePath": ".ua/.understandignore",
+      "summary": "Define exclusões de arquivos e diretórios para a varredura do grafo de conhecimento do projeto.",
+      "tags": [
+        "analise",
+        "configuracao",
+        "exclusoes"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:.ua/config.json",
+      "type": "config",
+      "name": "config.json",
+      "filePath": ".ua/config.json",
+      "summary": "Armazena a preferência de geração do grafo em português para o Understand Anything.",
+      "tags": [
+        "configuracao",
+        "analise",
+        "idioma"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/.nvmrc",
+      "type": "file",
+      "name": ".nvmrc",
+      "filePath": "collaborator-document-api/.nvmrc",
+      "summary": "Fixa a versão do Node.js exigida pela API para manter o runtime reproduzível.",
+      "tags": [
+        "runtime",
+        "nodejs",
+        "versionamento"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/.prettierignore",
+      "type": "file",
+      "name": ".prettierignore",
+      "filePath": "collaborator-document-api/.prettierignore",
+      "summary": "Lista artefatos da API que o Prettier deve ignorar durante a formatação.",
+      "tags": [
+        "formatacao",
+        "prettier",
+        "configuracao"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/.swcrc",
+      "type": "file",
+      "name": ".swcrc",
+      "filePath": "collaborator-document-api/.swcrc",
+      "summary": "Configura o SWC para compilar TypeScript com decorators, módulos ES e alvo ECMAScript 2024.",
+      "tags": [
+        "compilacao",
+        "swc",
+        "typescript",
+        "decorators"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/docker/mongo/init-replica-set.js",
+      "type": "file",
+      "name": "init-replica-set.js",
+      "filePath": "collaborator-document-api/docker/mongo/init-replica-set.js",
+      "summary": "Inicializa e aguarda um replica set MongoDB de nó único para uso local e como referência de bootstrap.",
+      "tags": [
+        "mongodb",
+        "replica-set",
+        "docker",
+        "bootstrap"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:collaborator-document-api/docs/foundation.md",
+      "type": "document",
+      "name": "foundation.md",
+      "filePath": "collaborator-document-api/docs/foundation.md",
+      "summary": "Documenta o ambiente obrigatório, comandos de validação e convenções de falhas e fixtures que fundamentam a API.",
+      "tags": [
+        "documentacao",
+        "ambiente",
+        "testes",
+        "arquitetura"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/eslint.config.js",
+      "type": "file",
+      "name": "eslint.config.js",
+      "filePath": "collaborator-document-api/eslint.config.js",
+      "summary": "Estabelece as regras ESLint para JavaScript e TypeScript, integrando configurações recomendadas e Prettier.",
+      "tags": [
+        "lint",
+        "eslint",
+        "typescript",
+        "configuracao"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/scripts/check-runtime.d.mts",
+      "type": "file",
+      "name": "check-runtime.d.mts",
+      "filePath": "collaborator-document-api/scripts/check-runtime.d.mts",
+      "summary": "Declara a assinatura TypeScript da função de validação de versões de Node.js e pnpm.",
+      "tags": [
+        "tipos",
+        "runtime",
+        "typescript",
+        "validacao"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/scripts/check-runtime.mjs",
+      "type": "file",
+      "name": "check-runtime.mjs",
+      "filePath": "collaborator-document-api/scripts/check-runtime.mjs",
+      "summary": "Valida as versões mínimas de Node.js e pnpm, podendo ser usado como módulo ou como verificação de linha de comando.",
+      "tags": [
+        "runtime",
+        "validacao",
+        "nodejs",
+        "pnpm",
+        "tested"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:collaborator-document-api/scripts/check-runtime.mjs:validateRuntime",
+      "type": "function",
+      "name": "validateRuntime",
+      "filePath": "collaborator-document-api/scripts/check-runtime.mjs",
+      "lineRange": [
+        16,
+        26
+      ],
+      "summary": "Compara versões informadas com os mínimos suportados e retorna as incompatibilidades encontradas.",
+      "tags": [
+        "runtime",
+        "validacao",
+        "nodejs",
+        "pnpm"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/scripts/smoke-built-app.mjs",
+      "type": "file",
+      "name": "smoke-built-app.mjs",
+      "filePath": "collaborator-document-api/scripts/smoke-built-app.mjs",
+      "summary": "Executa smoke test da aplicação compilada com MongoDB efêmero, verificando health check e desligamento por SIGTERM.",
+      "tags": [
+        "smoke-test",
+        "mongodb",
+        "testcontainers",
+        "processo"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:collaborator-document-api/scripts/smoke-built-app.mjs:freePort",
+      "type": "function",
+      "name": "freePort",
+      "filePath": "collaborator-document-api/scripts/smoke-built-app.mjs",
+      "lineRange": [
+        17,
+        28
+      ],
+      "summary": "Reserva e libera uma porta local disponível para inicializar o processo HTTP do smoke test.",
+      "tags": [
+        "teste",
+        "rede",
+        "porta",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/scripts/verify-test-runner.mjs",
+      "type": "file",
+      "name": "verify-test-runner.mjs",
+      "filePath": "collaborator-document-api/scripts/verify-test-runner.mjs",
+      "summary": "Confirma que o Vitest rejeita uma asserção propositalmente falha para validar o executor de testes.",
+      "tags": [
+        "test-runner",
+        "vitest",
+        "validacao",
+        "regressao"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/src/config/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "collaborator-document-api/src/config/index.ts",
+      "summary": "Reexporta o carregamento de ambiente e o tipo AppEnv como interface pública do módulo de configuração.",
+      "tags": [
+        "barrel",
+        "configuracao",
+        "exports",
+        "typescript"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/fixtures/intentional-failure.spec.ts",
+      "type": "file",
+      "name": "intentional-failure.spec.ts",
+      "filePath": "collaborator-document-api/tests/fixtures/intentional-failure.spec.ts",
+      "summary": "Contém uma asserção intencionalmente falha usada para testar o comportamento do Vitest.",
+      "tags": [
+        "test",
+        "fixture",
+        "vitest",
+        "falha-intencional"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/fixtures/vitest.failure.config.ts",
+      "type": "file",
+      "name": "vitest.failure.config.ts",
+      "filePath": "collaborator-document-api/tests/fixtures/vitest.failure.config.ts",
+      "summary": "Limita uma execução do Vitest à fixture de falha intencional.",
+      "tags": [
+        "test",
+        "fixture",
+        "vitest",
+        "configuracao"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/helpers/mongo-container.global.ts",
+      "type": "file",
+      "name": "mongo-container.global.ts",
+      "filePath": "collaborator-document-api/tests/helpers/mongo-container.global.ts",
+      "summary": "Fornece setup global de integração que inicia MongoDB via Testcontainers, publica a URI e encerra o container ao final.",
+      "tags": [
+        "test",
+        "mongodb",
+        "testcontainers",
+        "global-setup"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:collaborator-document-api/tests/helpers/mongo-container.global.ts:setup",
+      "type": "function",
+      "name": "setup",
+      "filePath": "collaborator-document-api/tests/helpers/mongo-container.global.ts",
+      "lineRange": [
+        12,
+        33
+      ],
+      "summary": "Configura Podman quando disponível, inicia o MongoDB de teste e devolve a rotina de limpeza do container.",
+      "tags": [
+        "test",
+        "mongodb",
+        "setup",
+        "testcontainers"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/tests/unit/runtime.spec.ts",
+      "type": "file",
+      "name": "runtime.spec.ts",
+      "filePath": "collaborator-document-api/tests/unit/runtime.spec.ts",
+      "summary": "Testa a aceitação e a rejeição de versões de runtime pela validação de Node.js e pnpm.",
+      "tags": [
+        "test",
+        "unit-test",
+        "runtime",
+        "vitest"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:collaborator-document-api/vitest.config.ts",
+      "type": "file",
+      "name": "vitest.config.ts",
+      "filePath": "collaborator-document-api/vitest.config.ts",
+      "summary": "Configura Vitest com SWC, cobertura mínima de 90% e projetos de testes unitários, HTTP, contrato e integração.",
+      "tags": [
+        "test",
+        "vitest",
+        "coverage",
+        "configuracao"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:collaborator-document-api/src/Server.ts",
+      "target": "file:collaborator-document-api/src/controllers/health.controller.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/src/Server.ts",
+      "target": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/src/Server.ts",
+      "target": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/contract/health.contract.spec.ts",
+      "target": "file:collaborator-document-api/src/Server.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/http/health.spec.ts",
+      "target": "file:collaborator-document-api/src/Server.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "target": "file:collaborator-document-api/src/bootstrap.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "target": "file:collaborator-document-api/src/Server.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "target": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "target": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "target": "file:collaborator-document-api/tests/helpers/database.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/unit/mongo-managers.spec.ts",
+      "target": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/unit/mongo-managers.spec.ts",
+      "target": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/src/Server.ts",
+      "target": "class:collaborator-document-api/src/Server.ts:Server",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/src/Server.ts",
+      "target": "class:collaborator-document-api/src/Server.ts:Server",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/src/controllers/health.controller.ts",
+      "target": "class:collaborator-document-api/src/controllers/health.controller.ts:HealthController",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/src/controllers/health.controller.ts",
+      "target": "class:collaborator-document-api/src/controllers/health.controller.ts:HealthController",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "target": "class:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts:MongoIndexManager",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "target": "class:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts:MongoIndexManager",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "target": "class:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts:MongoTransactionManager",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "target": "class:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts:MongoTransactionManager",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/tests/helpers/database.ts",
+      "target": "function:collaborator-document-api/tests/helpers/database.ts:resetDatabase",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/tests/helpers/database.ts",
+      "target": "function:collaborator-document-api/tests/helpers/database.ts:resetDatabase",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/src/Server.ts",
+      "target": "file:collaborator-document-api/tests/contract/health.contract.spec.ts",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:collaborator-document-api/src/Server.ts",
+      "target": "file:collaborator-document-api/tests/http/health.spec.ts",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:collaborator-document-api/src/Server.ts",
+      "target": "file:collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "target": "file:collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "target": "file:collaborator-document-api/tests/unit/mongo-managers.spec.ts",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "target": "file:collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "target": "file:collaborator-document-api/tests/unit/mongo-managers.spec.ts",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:collaborator-document-api/src/bootstrap.ts",
+      "target": "file:collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/application/application-failure.ts",
+      "target": "class:collaborator-document-api/src/shared/application/application-failure.ts:ApplicationFailure",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/application/application-failure.ts",
+      "target": "class:collaborator-document-api/src/shared/application/application-failure.ts:ApplicationFailure",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/domain/domain-failure.ts",
+      "target": "class:collaborator-document-api/src/shared/domain/domain-failure.ts:DomainFailure",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/domain/domain-failure.ts",
+      "target": "class:collaborator-document-api/src/shared/domain/domain-failure.ts:DomainFailure",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/result.ts",
+      "target": "function:collaborator-document-api/src/shared/result.ts:success",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/result.ts",
+      "target": "function:collaborator-document-api/src/shared/result.ts:success",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/result.ts",
+      "target": "function:collaborator-document-api/src/shared/result.ts:failure",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/result.ts",
+      "target": "function:collaborator-document-api/src/shared/result.ts:failure",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/tests/helpers/clock.ts",
+      "target": "class:collaborator-document-api/tests/helpers/clock.ts:FixedClock",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/tests/helpers/clock.ts",
+      "target": "class:collaborator-document-api/tests/helpers/clock.ts:FixedClock",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/tests/helpers/failures.ts",
+      "target": "function:collaborator-document-api/tests/helpers/failures.ts:simulatedFailure",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/tests/helpers/failures.ts",
+      "target": "function:collaborator-document-api/tests/helpers/failures.ts:simulatedFailure",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/tests/helpers/fixtures.ts",
+      "target": "function:collaborator-document-api/tests/helpers/fixtures.ts:fixture",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/tests/helpers/fixtures.ts",
+      "target": "function:collaborator-document-api/tests/helpers/fixtures.ts:fixture",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/tests/helpers/fixtures.ts",
+      "target": "function:collaborator-document-api/tests/helpers/fixtures.ts:sequenceFixture",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/tests/helpers/fixtures.ts",
+      "target": "function:collaborator-document-api/tests/helpers/fixtures.ts:sequenceFixture",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "target": "file:collaborator-document-api/src/shared/application/application-failure.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "target": "file:collaborator-document-api/src/shared/domain/domain-failure.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "target": "file:collaborator-document-api/src/shared/result.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "target": "file:collaborator-document-api/tests/helpers/clock.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "target": "file:collaborator-document-api/tests/helpers/failures.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "target": "file:collaborator-document-api/tests/helpers/fixtures.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/application/application-failure.ts",
+      "target": "file:collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/domain/domain-failure.ts",
+      "target": "file:collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:collaborator-document-api/src/shared/result.ts",
+      "target": "file:collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:collaborator-document-api/src/bootstrap.ts",
+      "target": "function:collaborator-document-api/src/bootstrap.ts:serverSettings",
+      "type": "contains",
+      "weight": 1,
+      "direction": "forward"
+    },
+    {
+      "source": "file:collaborator-document-api/src/bootstrap.ts",
+      "target": "function:collaborator-document-api/src/bootstrap.ts:startApplication",
+      "type": "contains",
+      "weight": 1,
+      "direction": "forward"
+    },
+    {
+      "source": "file:collaborator-document-api/src/bootstrap.ts",
+      "target": "function:collaborator-document-api/src/bootstrap.ts:stopApplication",
+      "type": "contains",
+      "weight": 1,
+      "direction": "forward"
+    },
+    {
+      "source": "file:collaborator-document-api/src/bootstrap.ts",
+      "target": "file:collaborator-document-api/src/config/env.ts",
+      "type": "imports",
+      "weight": 0.7,
+      "direction": "forward"
+    },
+    {
+      "source": "file:collaborator-document-api/src/bootstrap.ts",
+      "target": "file:collaborator-document-api/src/Server.ts",
+      "type": "imports",
+      "weight": 0.7,
+      "direction": "forward"
+    },
+    {
+      "source": "function:collaborator-document-api/src/bootstrap.ts:startApplication",
+      "target": "function:collaborator-document-api/src/bootstrap.ts:serverSettings",
+      "type": "calls",
+      "weight": 0.8,
+      "direction": "forward"
+    },
+    {
+      "source": "file:collaborator-document-api/src/config/env.ts",
+      "target": "class:collaborator-document-api/src/config/env.ts:EnvironmentValidationError",
+      "type": "contains",
+      "weight": 1,
+      "direction": "forward"
+    },
+    {
+      "source": "file:collaborator-document-api/src/config/env.ts",
+      "target": "function:collaborator-document-api/src/config/env.ts:loadEnv",
+      "type": "contains",
+      "weight": 1,
+      "direction": "forward"
+    },
+    {
+      "source": "file:collaborator-document-api/src/index.ts",
+      "target": "function:collaborator-document-api/src/index.ts:main",
+      "type": "contains",
+      "weight": 1,
+      "direction": "forward"
+    },
+    {
+      "source": "file:collaborator-document-api/src/index.ts",
+      "target": "file:collaborator-document-api/src/bootstrap.ts",
+      "type": "imports",
+      "weight": 0.7,
+      "direction": "forward"
+    },
+    {
+      "source": "file:collaborator-document-api/src/index.ts",
+      "target": "file:collaborator-document-api/src/config/env.ts",
+      "type": "imports",
+      "weight": 0.7,
+      "direction": "forward"
+    },
+    {
+      "source": "function:collaborator-document-api/src/index.ts:main",
+      "target": "function:collaborator-document-api/src/bootstrap.ts:startApplication",
+      "type": "calls",
+      "weight": 0.8,
+      "direction": "forward"
+    },
+    {
+      "source": "function:collaborator-document-api/src/index.ts:main",
+      "target": "function:collaborator-document-api/src/config/env.ts:loadEnv",
+      "type": "calls",
+      "weight": 0.8,
+      "direction": "forward"
+    },
+    {
+      "source": "file:collaborator-document-api/tests/unit/env.spec.ts",
+      "target": "file:collaborator-document-api/src/config/env.ts",
+      "type": "imports",
+      "weight": 0.7,
+      "direction": "forward"
+    },
+    {
+      "source": "file:collaborator-document-api/src/config/env.ts",
+      "target": "file:collaborator-document-api/tests/unit/env.spec.ts",
+      "type": "tested_by",
+      "weight": 0.5,
+      "direction": "forward"
+    },
+    {
+      "source": "service:collaborator-document-api/docker-compose.yml",
+      "target": "service:collaborator-document-api/Dockerfile",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "service:collaborator-document-api/Dockerfile",
+      "target": "file:collaborator-document-api/src/index.ts",
+      "type": "deploys",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "service:collaborator-document-api/Dockerfile",
+      "target": "service:collaborator-document-api/Dockerfile:build",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "service:collaborator-document-api/Dockerfile",
+      "target": "service:collaborator-document-api/Dockerfile:runtime",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "document:README.md",
+      "target": "document:TEXTO_BASE_DESAFIO.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:lefthook.yml",
+      "target": "config:collaborator-document-api/package.json",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:collaborator-document-api/.env.example",
+      "target": "file:collaborator-document-api/src/config/env.ts",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:collaborator-document-api/README.md",
+      "target": "file:collaborator-document-api/src/index.ts",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:collaborator-document-api/README.md",
+      "target": "service:collaborator-document-api/docker-compose.yml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:collaborator-document-api/lefthook.yml",
+      "target": "config:lefthook.yml",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:collaborator-document-api/package.json",
+      "target": "file:collaborator-document-api/src/index.ts",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:collaborator-document-api/pnpm-workspace.yaml",
+      "target": "config:collaborator-document-api/package.json",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:collaborator-document-api/tsconfig.build.json",
+      "target": "file:collaborator-document-api/src/index.ts",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:collaborator-document-api/tsconfig.json",
+      "target": "file:collaborator-document-api/src/index.ts",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:collaborator-document-api/scripts/check-runtime.mjs",
+      "target": "function:collaborator-document-api/scripts/check-runtime.mjs:validateRuntime",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/scripts/check-runtime.mjs",
+      "target": "function:collaborator-document-api/scripts/check-runtime.mjs:validateRuntime",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/scripts/smoke-built-app.mjs",
+      "target": "function:collaborator-document-api/scripts/smoke-built-app.mjs:freePort",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/tests/helpers/mongo-container.global.ts",
+      "target": "function:collaborator-document-api/tests/helpers/mongo-container.global.ts:setup",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:collaborator-document-api/tests/helpers/mongo-container.global.ts",
+      "target": "function:collaborator-document-api/tests/helpers/mongo-container.global.ts:setup",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:collaborator-document-api/tests/unit/runtime.spec.ts",
+      "target": "file:collaborator-document-api/scripts/check-runtime.mjs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:collaborator-document-api/scripts/check-runtime.mjs",
+      "target": "file:collaborator-document-api/tests/unit/runtime.spec.ts",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:collaborator-document-api/docs/foundation.md",
+      "target": "file:collaborator-document-api/tests/helpers/mongo-container.global.ts",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:collaborator-document-api/vitest.config.ts",
+      "target": "file:collaborator-document-api/tests/helpers/mongo-container.global.ts",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:api-e-inicializacao",
+      "name": "API e inicialização",
+      "description": "Pontos de entrada, configuração de ambiente e adaptadores HTTP que iniciam e expõem a API Ts.ED.",
+      "nodeIds": [
+        "file:collaborator-document-api/src/index.ts",
+        "file:collaborator-document-api/src/bootstrap.ts",
+        "file:collaborator-document-api/src/Server.ts",
+        "file:collaborator-document-api/src/config/env.ts",
+        "file:collaborator-document-api/src/config/index.ts",
+        "file:collaborator-document-api/src/controllers/health.controller.ts"
+      ]
+    },
+    {
+      "id": "layer:fundacao-da-aplicacao",
+      "name": "Fundação da aplicação",
+      "description": "Abstrações transversais para resultados e falhas explícitas usadas para modelar fluxos e erros da aplicação.",
+      "nodeIds": [
+        "file:collaborator-document-api/src/shared/application/application-failure.ts",
+        "file:collaborator-document-api/src/shared/domain/domain-failure.ts",
+        "file:collaborator-document-api/src/shared/result.ts"
+      ]
+    },
+    {
+      "id": "layer:persistencia-mongodb",
+      "name": "Persistência MongoDB",
+      "description": "Serviços de infraestrutura que administram transações e índices no banco MongoDB.",
+      "nodeIds": [
+        "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+        "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts"
+      ]
+    },
+    {
+      "id": "layer:testes-e-fixtures",
+      "name": "Testes e fixtures",
+      "description": "Cobertura de contratos, HTTP, integração e unidade, além dos auxiliares de banco, relógio e dados determinísticos.",
+      "nodeIds": [
+        "file:collaborator-document-api/tests/contract/health.contract.spec.ts",
+        "file:collaborator-document-api/tests/http/health.spec.ts",
+        "file:collaborator-document-api/tests/integration/mongodb.spec.ts",
+        "file:collaborator-document-api/tests/unit/mongo-managers.spec.ts",
+        "file:collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+        "file:collaborator-document-api/tests/unit/env.spec.ts",
+        "file:collaborator-document-api/tests/unit/runtime.spec.ts",
+        "file:collaborator-document-api/tests/helpers/database.ts",
+        "file:collaborator-document-api/tests/helpers/clock.ts",
+        "file:collaborator-document-api/tests/helpers/failures.ts",
+        "file:collaborator-document-api/tests/helpers/fixtures.ts",
+        "file:collaborator-document-api/tests/helpers/mongo-container.global.ts",
+        "file:collaborator-document-api/tests/fixtures/intentional-failure.spec.ts",
+        "file:collaborator-document-api/tests/fixtures/vitest.failure.config.ts",
+        "file:collaborator-document-api/vitest.config.ts"
+      ]
+    },
+    {
+      "id": "layer:build-qualidade-e-automacao",
+      "name": "Build, qualidade e automação",
+      "description": "Configurações de runtime, compilação, dependências, formatação e hooks, com scripts de verificação do artefato executável.",
+      "nodeIds": [
+        "file:.nvmrc",
+        "config:lefthook.yml",
+        "config:collaborator-document-api/.env.example",
+        "config:collaborator-document-api/lefthook.yml",
+        "config:collaborator-document-api/package.json",
+        "config:collaborator-document-api/pnpm-workspace.yaml",
+        "config:collaborator-document-api/tsconfig.build.json",
+        "config:collaborator-document-api/tsconfig.json",
+        "file:collaborator-document-api/.nvmrc",
+        "file:collaborator-document-api/.prettierignore",
+        "file:collaborator-document-api/.swcrc",
+        "file:collaborator-document-api/eslint.config.js",
+        "file:collaborator-document-api/scripts/check-runtime.d.mts",
+        "file:collaborator-document-api/scripts/check-runtime.mjs",
+        "file:collaborator-document-api/scripts/smoke-built-app.mjs",
+        "file:collaborator-document-api/scripts/verify-test-runner.mjs"
+      ]
+    },
+    {
+      "id": "layer:infraestrutura-de-execucao",
+      "name": "Infraestrutura de execução",
+      "description": "Definições de contêiner e bootstrap do replica set que reproduzem o ambiente de execução da API e do MongoDB.",
+      "nodeIds": [
+        "service:collaborator-document-api/docker-compose.yml",
+        "service:collaborator-document-api/Dockerfile",
+        "service:collaborator-document-api/Dockerfile:build",
+        "service:collaborator-document-api/Dockerfile:runtime",
+        "file:collaborator-document-api/docker/mongo/init-replica-set.js"
+      ]
+    },
+    {
+      "id": "layer:documentacao-e-analise",
+      "name": "Documentação e análise",
+      "description": "Especificações, guias de operação e metadados que documentam o sistema e sustentam sua análise arquitetural.",
+      "nodeIds": [
+        "document:README.md",
+        "document:TEXTO_BASE_DESAFIO.md",
+        "document:collaborator-document-api/README.md",
+        "document:collaborator-document-api/docs/foundation.md",
+        "file:.ua/.understandignore",
+        "config:.ua/config.json"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Visão geral do projeto",
+      "description": "Comece pela documentação principal para entender o objetivo da Collaborator Document API, sua arquitetura hexagonal e os contratos que ela pretende preservar. Ela estabelece o vocabulário para os passos seguintes, incluindo operação, testes e decisões de produção.",
+      "nodeIds": [
+        "document:README.md"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "Requisitos e fluxo",
+      "description": "A especificação do desafio detalha o fluxo de documentação de colaboradores, as restrições de consistência e os critérios que orientam a solução. Leia-a após a visão geral para distinguir regras de produto das escolhas técnicas da implementação.",
+      "nodeIds": [
+        "document:TEXTO_BASE_DESAFIO.md"
+      ]
+    },
+    {
+      "order": 3,
+      "title": "Entrada da aplicação",
+      "description": "O ponto de entrada coordena a validação do ambiente, a inicialização do servidor e o desligamento por sinais do processo. Ele oferece a melhor visão do ciclo de vida executável antes de entrar nos módulos que o sustentam.",
+      "nodeIds": [
+        "file:collaborator-document-api/src/index.ts"
+      ]
+    },
+    {
+      "order": 4,
+      "title": "Ambiente e bootstrap",
+      "description": "A configuração de ambiente define as pré-condições para a API iniciar com porta, logs e uma URI MongoDB adequada a transações. O bootstrap transforma essa configuração em ciclo de inicialização e parada do servidor, conectando a entrada à infraestrutura HTTP.",
+      "nodeIds": [
+        "file:collaborator-document-api/src/config/env.ts",
+        "file:collaborator-document-api/src/bootstrap.ts",
+        "config:collaborator-document-api/.env.example"
+      ],
+      "languageLesson": "Em TypeScript, validar as variáveis de ambiente na fronteira do processo evita que valores opcionais ou inválidos se espalhem pelo restante da aplicação."
+    },
+    {
+      "order": 5,
+      "title": "Servidor e saúde",
+      "description": "A configuração Ts.ED reúne o controlador HTTP e os gerenciadores MongoDB no ciclo de vida da aplicação. O endpoint de saúde é uma fronteira simples e estável para verificar disponibilidade, tornando visível como a API expõe contratos HTTP.",
+      "nodeIds": [
+        "file:collaborator-document-api/src/Server.ts",
+        "file:collaborator-document-api/src/controllers/health.controller.ts"
+      ]
+    },
+    {
+      "order": 6,
+      "title": "Resultados e falhas",
+      "description": "A fundação compartilhada representa sucesso e falha de modo explícito, separando violações de domínio de falhas da camada de aplicação. Esse padrão dá aos fluxos de negócio contratos previsíveis sem depender de exceções como controle normal de fluxo.",
+      "nodeIds": [
+        "file:collaborator-document-api/src/shared/result.ts",
+        "file:collaborator-document-api/src/shared/domain/domain-failure.ts",
+        "file:collaborator-document-api/src/shared/application/application-failure.ts"
+      ],
+      "languageLesson": "O tipo Result modela uma união discriminada: quem consome a operação precisa tratar explicitamente os caminhos de sucesso e de falha."
+    },
+    {
+      "order": 7,
+      "title": "Persistência transacional",
+      "description": "Os gerenciadores MongoDB concentram as responsabilidades de criar índices e executar trabalho dentro de uma transação com encerramento garantido da sessão. Com a base de falhas já apresentada, este é o ponto para entender como consistência e infraestrutura são encapsuladas.",
+      "nodeIds": [
+        "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+        "file:collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts"
+      ]
+    },
+    {
+      "order": 8,
+      "title": "Estratégia de testes",
+      "description": "Os testes percorrem contratos HTTP, disponibilidade, regras dos gerenciadores e integração real com MongoDB, complementados por auxiliares determinísticos. Essa combinação verifica tanto a superfície pública da API quanto os invariantes de persistência explicados nos passos anteriores.",
+      "nodeIds": [
+        "file:collaborator-document-api/tests/contract/health.contract.spec.ts",
+        "file:collaborator-document-api/tests/http/health.spec.ts",
+        "file:collaborator-document-api/tests/integration/mongodb.spec.ts",
+        "file:collaborator-document-api/tests/helpers/mongo-container.global.ts"
+      ]
+    },
+    {
+      "order": 9,
+      "title": "Build e qualidade",
+      "description": "O manifesto do pacote define dependências e comandos de desenvolvimento, build e testes, enquanto as configurações TypeScript mantêm o projeto estrito e compatível com ESM e decorators. Os hooks de qualidade antecipam typecheck, lint e testes antes que alterações cheguem ao repositório.",
+      "nodeIds": [
+        "config:collaborator-document-api/package.json",
+        "config:collaborator-document-api/tsconfig.json",
+        "config:lefthook.yml"
+      ],
+      "languageLesson": "NodeNext alinha a resolução de módulos do TypeScript ao ESM do Node.js; decorators exigem as opções de metadata para que o framework consiga inspecionar classes em runtime."
+    },
+    {
+      "order": 10,
+      "title": "Execução em contêiner",
+      "description": "O Dockerfile compila a API e produz uma imagem Node.js de produção, enquanto o Compose orquestra a aplicação e um MongoDB em replica set. Esse ambiente reproduz o requisito transacional apresentado antes e fecha o tour com o caminho de execução completo.",
+      "nodeIds": [
+        "service:collaborator-document-api/Dockerfile",
+        "service:collaborator-document-api/docker-compose.yml"
+      ],
+      "languageLesson": "Builds Docker multiestágio separam compilação e runtime, reduzindo a imagem final; no Compose, depends_on organiza o ambiente necessário para iniciar os serviços."
+    }
+  ]
+}

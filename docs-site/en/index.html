@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Collaborator Document API technical hub: OpenAPI, TypeDoc, and an interactive architecture graph."
+    />
+    <meta name="theme-color" content="#07121f" />
+    <title>Collaborator Document API · Documentation Hub</title>
+    <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../assets/styles.css" />
+  </head>
+  <body>
+    <header class="shell nav">
+      <a class="brand" href="../" aria-label="Collaborator Document API">
+        <span class="brand-mark">CD</span>
+        <span>Collaborator Document API</span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../openapi/">OpenAPI</a>
+        <a href="../reference/">TypeDoc</a>
+        <a href="../architecture/">Architecture</a>
+        <a href="https://github.com/this-rafael/collaborator-api">GitHub</a>
+        <a class="language" href="../" lang="pt-BR">PT</a>
+      </nav>
+    </header>
+
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <span class="eyebrow">living contract · preserved history</span>
+          <h1>
+            Collaborator documents,
+            <span class="gradient-text">without losing context.</span>
+          </h1>
+          <p class="lead">
+            Explore the HTTP contract, TypeScript symbols, and relationships of
+            an API for collaborators, document types, links, versions, and
+            operational reporting.
+          </p>
+          <div class="actions">
+            <a class="button primary" href="../openapi/">Explore the API →</a>
+            <a class="button" href="../architecture/">Navigate the graph</a>
+            <a class="button" href="../reference/">Read the code</a>
+          </div>
+        </div>
+
+        <div class="terminal" aria-label="HAL discovery example">
+          <div class="terminal-head" aria-hidden="true">
+            <span class="dot"></span><span class="dot"></span
+            ><span class="dot"></span>
+          </div>
+          <pre><span class="prompt">$</span> curl /api/v1
+<span class="value">{
+  "name": "Collaborator Document API",
+  "version": "1",
+  "_links": {
+    "collaborators": { "href": "/api/v1/collaborators{?cursor,limit}" },
+    "document-types": { "href": "/api/v1/document-types{?cursor,limit}" },
+    "pending-documents": { "href": "/api/v1/pending-documents{?cursor,limit}" }
+  }
+}</span>
+
+<span class="prompt">#</span> success: application/hal+json
+<span class="prompt">#</span> errors: application/problem+json</pre>
+        </div>
+      </section>
+
+      <section class="section" id="explore">
+        <div class="section-heading">
+          <span class="kicker">Three views · One system</span>
+          <h2>Choose your depth.</h2>
+          <p>
+            Start with the public contract, dive into symbols, or tour the
+            layers visually. Every view is generated from the repository.
+          </p>
+        </div>
+
+        <div class="cards">
+          <article class="card">
+            <span class="icon">API</span>
+            <h3>OpenAPI 3.1</h3>
+            <p>
+              23 business operations, health checks, HAL representations,
+              Problem Details, pagination, caching, and payload examples.
+            </p>
+            <a href="../openapi/">Open contract →</a>
+          </article>
+
+          <article class="card">
+            <span class="icon">TS</span>
+            <h3>TypeDoc</h3>
+            <p>
+              Use cases, entities, ports, adapters, repositories, and
+              composition points navigable by symbol.
+            </p>
+            <a href="../reference/">Open reference →</a>
+          </article>
+
+          <article class="card">
+            <span class="icon">⌘</span>
+            <h3>Architecture Explorer</h3>
+            <p>
+              Nodes, relationships, layers, and a guided tour of the modular
+              monolith in an interactive knowledge graph.
+            </p>
+            <a href="../architecture/">Open graph →</a>
+          </article>
+        </div>
+
+        <div class="stats" aria-label="Portal metrics">
+          <div class="stat">
+            <strong>23</strong><span>business operations</span>
+          </div>
+          <div class="stat"><strong>2</strong><span>health checks</span></div>
+          <div class="stat"><strong>75</strong><span>graph nodes</span></div>
+          <div class="stat">
+            <strong>93</strong><span>mapped relationships</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="shell">
+      <span
+        >Collaborator Document API · reproducible public documentation.</span
+      >
+      <span
+        >Built by
+        <a href="https://github.com/this-rafael">Rafael Pereira</a>.</span
+      >
+    </footer>
+  </body>
+</html>
