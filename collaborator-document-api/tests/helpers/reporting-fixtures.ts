@@ -73,6 +73,25 @@ export interface LatestSubmissionPageFixture {
   hasNext: boolean;
 }
 
+export interface SubmissionEventFixture {
+  documentId: string;
+  version: number;
+  submittedAt: string;
+  metadata: {
+    originalName: string;
+    mimeType: string | null;
+    sizeBytes: number | null;
+    storageKey: string | null;
+    notes: string | null;
+  };
+  _links: Record<string, {href: string}>;
+}
+
+export interface SubmissionEventPageFixture {
+  items: SubmissionEventFixture[];
+  hasNext: boolean;
+}
+
 export const pendingDocumentFixture = (
   overrides: Partial<PendingDocumentFixture> = {}
 ): PendingDocumentFixture => ({
@@ -215,6 +234,51 @@ export const latestSubmissionPageFixtures = (count: number): LatestSubmissionFix
         self: {href: `/api/v1/collaborator-documents/${documentId}`},
         collaborator: {href: "/api/v1/collaborators/66a64ab05bd7213b90d9b001"},
         documentType: {href: `/api/v1/document-types/${documentTypeId}`}
+      }
+    });
+  });
+
+export const submissionEventFixture = (
+  overrides: Partial<SubmissionEventFixture> = {}
+): SubmissionEventFixture => ({
+  documentId: "66a64ab05bd7213b90d9c001",
+  version: 2,
+  submittedAt: "2026-07-31T15:00:00.000Z",
+  metadata: {
+    originalName: "document-v2.pdf",
+    mimeType: "application/pdf",
+    sizeBytes: 2048,
+    storageKey: "documents/66a64ab05bd7213b90d9c001/v2",
+    notes: "Second submission"
+  },
+  _links: {
+    self: {href: "/api/v1/collaborator-documents/66a64ab05bd7213b90d9c001/versions/2"},
+    document: {href: "/api/v1/collaborator-documents/66a64ab05bd7213b90d9c001"}
+  },
+  ...overrides
+});
+
+export const submissionEventPageFixtures = (count: number): SubmissionEventFixture[] =>
+  Array.from({length: count}, (_, index) => {
+    const documentId = hexadecimalId("66a64ab05bd7213b90d9d000", index + 1);
+    const version = 1;
+    const submittedAt = new Date(
+      Date.parse("2026-07-31T15:00:00.000Z") - index * 60_000
+    ).toISOString();
+    return submissionEventFixture({
+      documentId,
+      version,
+      submittedAt,
+      metadata: {
+        originalName: `document-v${version}.pdf`,
+        mimeType: "application/pdf",
+        sizeBytes: 1024 + index,
+        storageKey: `documents/${documentId}/v${version}`,
+        notes: null
+      },
+      _links: {
+        self: {href: `/api/v1/collaborator-documents/${documentId}/versions/${version}`},
+        document: {href: `/api/v1/collaborator-documents/${documentId}`}
       }
     });
   });

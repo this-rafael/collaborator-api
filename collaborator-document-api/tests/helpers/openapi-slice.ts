@@ -64,6 +64,13 @@ export const listLatestSubmissionsContractPath = resolve(
   "contracts",
   "list-latest-submissions.openapi.yaml"
 );
+export const listSubmissionEventsContractPath = resolve(
+  repoRoot,
+  "specs",
+  "029-list-submission-events",
+  "contracts",
+  "list-submission-events.openapi.yaml"
+);
 
 export type JsonScalar = string | number | boolean | null;
 export type JsonValue = JsonScalar | JsonObject | JsonArray;
@@ -744,3 +751,9 @@ export const loadListLatestSubmissionsSliceFromContract = (): OperationSlice =>
 
 export const loadListLatestSubmissionsSliceFromExpected = (): OperationSlice =>
   loadOperationSliceFromExpected("/api/v1/submissions/latest", "get");
+
+export const loadListSubmissionEventsSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(listSubmissionEventsContractPath, "/api/v1/submission-events", "get");
+
+export const loadListSubmissionEventsSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/submission-events", "get");
