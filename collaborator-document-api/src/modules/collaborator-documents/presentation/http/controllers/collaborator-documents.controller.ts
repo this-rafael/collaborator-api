@@ -393,6 +393,55 @@ export class CollaboratorDocumentsController {
     );
   }
 
+  @Get("/:id/versions/:version")
+  @WithoutResponseContent(304)
+  @OperationId("getDocumentVersion")
+  @Tags("Document Versions")
+  @Summary("Consultar uma versão")
+  @ContentType("application/hal+json")
+  @(Returns(200, DocumentVersionResponse)
+    .ContentType("application/hal+json")
+    .Header("ETag", {$ref: "#/components/headers/ETag"} as never)
+    .Description("Versão encontrada."))
+  @(Returns(304).Description("Representação inalterada."))
+  @(Returns(400, ProblemDetails).ContentType("application/problem+json"))
+  @(Returns(404, ProblemDetails).ContentType("application/problem+json"))
+  @(Returns(429, ProblemDetails)
+    .ContentType("application/problem+json")
+    .Header("Retry-After", {$ref: "#/components/headers/RetryAfter"} as never))
+  @(Returns(500, ProblemDetails).ContentType("application/problem+json"))
+  @(Returns(503, ProblemDetails).ContentType("application/problem+json"))
+  async getVersion(
+    @PathParams("id") id: string,
+    @PathParams({expression: "version", useType: String, useValidation: false})
+    @Integer()
+    @Minimum(1)
+    rawVersion: string,
+    @HeaderParams({expression: "If-None-Match", useType: String, useValidation: false})
+    ifNoneMatch: string | undefined,
+    @Res() res: Response
+  ): Promise<void> {
+    const traceId = getRequestTraceId(res.req!);
+    if (!(await this.runtime.rateLimiter("getDocumentVersion", "read").handle(res.req!, res)))
+      return;
+    if (!isObjectId(id)) return this.writeProblem(res, invalidObjectIdFailure(), traceId);
+
+    const version = Number(rawVersion);
+    if (!Number.isInteger(version) || version < 1) {
+      return this.writeProblem(res, invalidVersionNumberFailure(), traceId);
+    }
+
+    const result = await this.runtime.application.getVersion.execute({id, version});
+    if (result.isErr()) return this.writeProblem(res, result.error, traceId);
+
+    const body = documentVersionPresenter(id, result.value);
+    const etag = this.etag.compute(body);
+    if (ifNoneMatch && this.etag.matches(etag, ifNoneMatch)) return this.notModified(res);
+
+    res.setHeader("ETag", etag);
+    res.status(200).type("application/hal+json").json(body);
+  }
+
   @Get("/:id")
   @OperationId("getCollaboratorDocument")
   @Tags("Collaborator Documents")
@@ -531,6 +580,19 @@ function invalidObjectIdFailure(): HttpFailure {
         field: "id",
         code: "INVALID_OBJECT_ID",
         message: "Informe um ObjectId hexadecimal com 24 caracteres."
+      }
+    ]
+  };
+}
+
+function invalidVersionNumberFailure(): HttpFailure {
+  return {
+    code: "INVALID_VERSION_NUMBER",
+    errors: [
+      {
+        field: "version",
+        code: "INVALID_INTEGER",
+        message: "Informe uma versão inteira maior ou igual a 1."
       }
     ]
   };

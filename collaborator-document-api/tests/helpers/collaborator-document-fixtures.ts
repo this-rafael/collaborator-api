@@ -175,6 +175,20 @@ export const documentVersionFixture = (
   ...overrides
 });
 
+export const documentVersionGetFixture = (
+  overrides: Partial<DocumentVersionFixture> = {}
+): DocumentVersionFixture =>
+  documentVersionFixture({
+    version: 2,
+    submittedAt: "2026-07-30T12:31:00.000Z",
+    metadata: documentVersionMetadataFixture({
+      originalName: "document-2.pdf",
+      storageKey: "collaborators/66a64ab05bd7213b90d9b001/documents/v2.pdf",
+      notes: "Document version 2"
+    }),
+    ...overrides
+  });
+
 export const documentVersionHistoryFixtures = (count: number): DocumentVersionFixture[] =>
   Array.from({length: count}, (_, index) => {
     const version = index + 1;

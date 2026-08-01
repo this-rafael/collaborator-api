@@ -47,6 +47,13 @@ const embeddedHistoryWarningBytes = 8 * 1024 * 1024;
 export class MongoCollaboratorDocumentRepository implements CollaboratorDocumentRepository {
   constructor(private readonly mongoose: MongooseService) {}
 
+  getVersion(input: {
+    id: string;
+    version: number;
+  }): Promise<Result<DocumentVersionOutput, CollaboratorDocumentFailure>> {
+    return this.getVersionSafely(input);
+  }
+
   appendVersion(input: {
     id: string;
     metadata: DocumentVersionMetadata;
@@ -286,6 +293,49 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
               "Collaborator document was not found."
             )
           );
+    } catch (error) {
+      return err(mapMongoFailure(error));
+    }
+  }
+
+  private async getVersionSafely(input: {
+    id: string;
+    version: number;
+  }): Promise<Result<DocumentVersionOutput, CollaboratorDocumentFailure>> {
+    try {
+      const model = this.model();
+      if (!model) return err(unavailable());
+      if (!Types.ObjectId.isValid(input.id)) {
+        return err(
+          collaboratorDocumentApplicationFailure(
+            "COLLABORATOR_DOCUMENT_NOT_FOUND",
+            "Collaborator document was not found."
+          )
+        );
+      }
+
+      const row = await model
+        .findOne({_id: input.id}, {versions: {$elemMatch: {version: input.version}}})
+        .lean();
+      if (!row) {
+        return err(
+          collaboratorDocumentApplicationFailure(
+            "COLLABORATOR_DOCUMENT_NOT_FOUND",
+            "Collaborator document was not found."
+          )
+        );
+      }
+
+      const version = Array.isArray(row.versions) ? row.versions[0] : undefined;
+      if (version === undefined) {
+        return err(
+          collaboratorDocumentApplicationFailure(
+            "DOCUMENT_VERSION_NOT_FOUND",
+            "Document version was not found."
+          )
+        );
+      }
+      return documentVersionOutput(version);
     } catch (error) {
       return err(mapMongoFailure(error));
     }

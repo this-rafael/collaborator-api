@@ -21,6 +21,7 @@ export type CollaboratorDocumentRuntimeFailureCode =
   | "DOCUMENT_TYPE_DELETED"
   | "DOCUMENT_TYPE_NOT_FOUND"
   | "DOCUMENT_HISTORY_LIMIT_REACHED"
+  | "DOCUMENT_VERSION_NOT_FOUND"
   | "INTERNAL_SERVER_ERROR"
   | "SERVICE_UNAVAILABLE"
   | "VALIDATION_ERROR";
@@ -47,6 +48,11 @@ export type DocumentVersionListInput = Readonly<{
   order: "asc" | "desc";
   limit: number;
   afterVersion?: number;
+}>;
+
+export type DocumentVersionGetInput = Readonly<{
+  id: string;
+  version: number;
 }>;
 
 export type ParentStatus = "ACTIVE";
@@ -89,6 +95,12 @@ export interface CollaboratorDocumentVersionListRepository {
   listVersions(
     input: DocumentVersionListInput
   ): Promise<Result<DocumentVersionListPageFixture, CollaboratorDocumentRuntimeFailure>>;
+}
+
+export interface CollaboratorDocumentVersionGetRepository {
+  getVersion(
+    input: DocumentVersionGetInput
+  ): Promise<Result<DocumentVersionFixture, CollaboratorDocumentRuntimeFailure>>;
 }
 
 const runtimeFailure = (
@@ -320,6 +332,53 @@ export class CollaboratorDocumentVersionListRepositoryStub implements Collaborat
     code: CollaboratorDocumentRuntimeFailureCode
   ): CollaboratorDocumentVersionListRepositoryStub {
     return new CollaboratorDocumentVersionListRepositoryStub(
+      Promise.resolve(err(runtimeFailure(code)))
+    );
+  }
+}
+
+export class CollaboratorDocumentVersionGetRepositoryStub implements CollaboratorDocumentVersionGetRepository {
+  readonly calls: DocumentVersionGetInput[] = [];
+
+  constructor(
+    private readonly result: Promise<
+      Result<DocumentVersionFixture, CollaboratorDocumentRuntimeFailure>
+    > = Promise.resolve(ok(documentVersionFixture({version: 2})))
+  ) {}
+
+  async getVersion(
+    input: DocumentVersionGetInput
+  ): Promise<Result<DocumentVersionFixture, CollaboratorDocumentRuntimeFailure>> {
+    this.calls.push(input);
+    return this.result;
+  }
+
+  static success(
+    version: DocumentVersionFixture = documentVersionFixture({version: 2})
+  ): CollaboratorDocumentVersionGetRepositoryStub {
+    return new CollaboratorDocumentVersionGetRepositoryStub(Promise.resolve(ok(version)));
+  }
+
+  static documentNotFound(): CollaboratorDocumentVersionGetRepositoryStub {
+    return CollaboratorDocumentVersionGetRepositoryStub.failure("COLLABORATOR_DOCUMENT_NOT_FOUND");
+  }
+
+  static versionNotFound(): CollaboratorDocumentVersionGetRepositoryStub {
+    return CollaboratorDocumentVersionGetRepositoryStub.failure("DOCUMENT_VERSION_NOT_FOUND");
+  }
+
+  static internalError(): CollaboratorDocumentVersionGetRepositoryStub {
+    return CollaboratorDocumentVersionGetRepositoryStub.failure("INTERNAL_SERVER_ERROR");
+  }
+
+  static unavailable(): CollaboratorDocumentVersionGetRepositoryStub {
+    return CollaboratorDocumentVersionGetRepositoryStub.failure("SERVICE_UNAVAILABLE");
+  }
+
+  private static failure(
+    code: CollaboratorDocumentRuntimeFailureCode
+  ): CollaboratorDocumentVersionGetRepositoryStub {
+    return new CollaboratorDocumentVersionGetRepositoryStub(
       Promise.resolve(err(runtimeFailure(code)))
     );
   }

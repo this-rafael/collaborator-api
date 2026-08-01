@@ -46,6 +46,17 @@ export type CollaboratorDocumentListPage = Readonly<{
 /** Porta de persistência do módulo collaborator-documents. */
 export interface CollaboratorDocumentRepository {
   /**
+   * Busca uma versão específica sem materializar o histórico completo.
+   *
+   * @param input - Identificador do vínculo e número positivo da versão.
+   * @returns Result com a versão encontrada; distingue vínculo inexistente de
+   * versão inexistente.
+   */
+  getVersion(input: {
+    id: string;
+    version: number;
+  }): Promise<Result<DocumentVersionOutput, CollaboratorDocumentFailure>>;
+  /**
    * Anexa uma versão ao histórico do vínculo em uma atualização atômica.
    *
    * @param input - Identificador, metadados normalizados e instante da submissão.
