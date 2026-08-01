@@ -3,17 +3,22 @@ import {MongooseService} from "@tsed/mongoose";
 import type {Document} from "mongodb";
 import {err, ok, type Result} from "neverthrow";
 
+import type {CompletenessCounts} from "../../../application/models/completeness-statistics.view.js";
 import type {PendingDocumentView} from "../../../application/models/pending-document.view.js";
+import type {CompletenessStatisticsReadModel} from "../../../application/ports/completeness-statistics.read-model.js";
 import type {
   PendingDocumentPage,
   PendingDocumentsReadModel
 } from "../../../application/ports/pending-documents.read-model.js";
 import {reportingFailure, type ReportingFailure} from "../../../application/reporting.failure.js";
+import {completenessStatisticsPipeline} from "./pipelines/completeness-statistics.pipeline.js";
 import {pendingDocumentsPipeline} from "./pipelines/pending-documents.pipeline.js";
 
 /** Adaptador MongoDB das consultas projetadas de reporting. */
 @Injectable()
-export class MongoReportingRepository implements PendingDocumentsReadModel {
+export class MongoReportingRepository
+  implements PendingDocumentsReadModel, CompletenessStatisticsReadModel
+{
   constructor(private readonly mongoose: MongooseService) {}
 
   async list(
@@ -47,6 +52,43 @@ export class MongoReportingRepository implements PendingDocumentsReadModel {
       return err(mapMongoFailure(error));
     }
   }
+
+  async getCounts(
+    filters: Parameters<CompletenessStatisticsReadModel["getCounts"]>[0]
+  ): Promise<Result<CompletenessCounts, ReportingFailure>> {
+    try {
+      const database = this.mongoose.get()?.db;
+      if (!database) {
+        return err(
+          reportingFailure("SERVICE_UNAVAILABLE", "Reporting persistence is unavailable.")
+        );
+      }
+      const rows = await database
+        .collection("collaborator_documents")
+        .aggregate(completenessStatisticsPipeline(filters))
+        .toArray();
+      if (rows.length === 0) {
+        return ok({totalActiveDocuments: 0, submittedDocuments: 0});
+      }
+      return completenessCountsFromRow(rows[0]!);
+    } catch (error) {
+      return err(mapMongoFailure(error));
+    }
+  }
+}
+
+function completenessCountsFromRow(row: Document): Result<CompletenessCounts, ReportingFailure> {
+  const {totalActiveDocuments, submittedDocuments} = row;
+  if (
+    !Number.isSafeInteger(totalActiveDocuments) ||
+    totalActiveDocuments < 0 ||
+    !Number.isSafeInteger(submittedDocuments) ||
+    submittedDocuments < 0 ||
+    submittedDocuments > totalActiveDocuments
+  ) {
+    return err(reportingFailure("INTERNAL_SERVER_ERROR", "Reporting projection is invalid."));
+  }
+  return ok({totalActiveDocuments, submittedDocuments});
 }
 
 function pendingDocumentFromRow(row: Document): Result<PendingDocumentView, ReportingFailure> {

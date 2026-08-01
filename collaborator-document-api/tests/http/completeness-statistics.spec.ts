@@ -258,7 +258,7 @@ function collaboratorDocumentRow(
   return {
     _id: new ObjectId(hexadecimalId("66a64ab05bd7213b90d9c000", offset)),
     collaboratorId,
-    documentTypeId,
+    documentTypeId: hexadecimalId(documentTypeId, offset),
     status,
     currentVersion: status === "SUBMITTED" ? 1 : null,
     versions: status === "SUBMITTED" ? [{version: 1, submittedAt: now}] : [],
