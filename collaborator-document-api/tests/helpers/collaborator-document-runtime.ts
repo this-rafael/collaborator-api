@@ -2,8 +2,11 @@ import {err, ok, type Result} from "neverthrow";
 
 import {
   activeCollaboratorDocumentFixture,
+  documentVersionFixture,
   linkPendingFixture,
-  type CollaboratorDocumentFixture
+  type CollaboratorDocumentFixture,
+  type DocumentVersionFixture,
+  type DocumentVersionMetadataFixture
 } from "./collaborator-document-fixtures.js";
 
 export type CollaboratorDocumentRuntimeFailureCode =
@@ -15,8 +18,10 @@ export type CollaboratorDocumentRuntimeFailureCode =
   | "COLLABORATOR_NOT_FOUND"
   | "DOCUMENT_TYPE_DELETED"
   | "DOCUMENT_TYPE_NOT_FOUND"
+  | "DOCUMENT_HISTORY_LIMIT_REACHED"
   | "INTERNAL_SERVER_ERROR"
-  | "SERVICE_UNAVAILABLE";
+  | "SERVICE_UNAVAILABLE"
+  | "VALIDATION_ERROR";
 
 export type CollaboratorDocumentRuntimeFailure = Readonly<{
   kind: "application";
@@ -27,6 +32,12 @@ export type CollaboratorDocumentRuntimeFailure = Readonly<{
 export type CollaboratorDocumentCreateInput = Readonly<{
   collaboratorId: string;
   documentTypeId: string;
+}>;
+
+export type DocumentVersionAppendInput = Readonly<{
+  id: string;
+  metadata: DocumentVersionMetadataFixture;
+  submittedAt: Date;
 }>;
 
 export type ParentStatus = "ACTIVE";
@@ -57,6 +68,12 @@ export interface CollaboratorDocumentUnlinkRepository {
     unlinkedAt: Date,
     updatedAt: Date
   ): Promise<Result<void, CollaboratorDocumentRuntimeFailure>>;
+}
+
+export interface CollaboratorDocumentVersionRepository {
+  appendVersion(
+    input: DocumentVersionAppendInput
+  ): Promise<Result<DocumentVersionFixture, CollaboratorDocumentRuntimeFailure>>;
 }
 
 const runtimeFailure = (
@@ -195,6 +212,57 @@ export class CollaboratorDocumentUnlinkRepositoryStub implements CollaboratorDoc
           runtimeFailure("SERVICE_UNAVAILABLE", "Collaborator document persistence is unavailable.")
         )
       )
+    );
+  }
+}
+
+export class CollaboratorDocumentVersionRepositoryStub implements CollaboratorDocumentVersionRepository {
+  readonly calls: DocumentVersionAppendInput[] = [];
+
+  constructor(
+    private readonly result: Promise<
+      Result<DocumentVersionFixture, CollaboratorDocumentRuntimeFailure>
+    > = Promise.resolve(ok(documentVersionFixture()))
+  ) {}
+
+  async appendVersion(
+    input: DocumentVersionAppendInput
+  ): Promise<Result<DocumentVersionFixture, CollaboratorDocumentRuntimeFailure>> {
+    this.calls.push(input);
+    return this.result;
+  }
+
+  static success(
+    fixture: DocumentVersionFixture = documentVersionFixture()
+  ): CollaboratorDocumentVersionRepositoryStub {
+    return new CollaboratorDocumentVersionRepositoryStub(Promise.resolve(ok(fixture)));
+  }
+
+  static notFound(): CollaboratorDocumentVersionRepositoryStub {
+    return CollaboratorDocumentVersionRepositoryStub.failure("COLLABORATOR_DOCUMENT_NOT_FOUND");
+  }
+
+  static alreadyUnlinked(): CollaboratorDocumentVersionRepositoryStub {
+    return CollaboratorDocumentVersionRepositoryStub.failure("COLLABORATOR_DOCUMENT_UNLINKED");
+  }
+
+  static deleted(): CollaboratorDocumentVersionRepositoryStub {
+    return CollaboratorDocumentVersionRepositoryStub.failure("COLLABORATOR_DOCUMENT_DELETED");
+  }
+
+  static historyLimitReached(): CollaboratorDocumentVersionRepositoryStub {
+    return CollaboratorDocumentVersionRepositoryStub.failure("DOCUMENT_HISTORY_LIMIT_REACHED");
+  }
+
+  static unavailable(): CollaboratorDocumentVersionRepositoryStub {
+    return CollaboratorDocumentVersionRepositoryStub.failure("SERVICE_UNAVAILABLE");
+  }
+
+  private static failure(
+    code: CollaboratorDocumentRuntimeFailureCode
+  ): CollaboratorDocumentVersionRepositoryStub {
+    return new CollaboratorDocumentVersionRepositoryStub(
+      Promise.resolve(err(runtimeFailure(code)))
     );
   }
 }

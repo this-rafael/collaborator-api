@@ -14,6 +14,30 @@ export interface CollaboratorDocumentFixture {
   versionCount: number;
 }
 
+export interface DocumentVersionMetadataFixture {
+  originalName: string;
+  mimeType: string | null;
+  sizeBytes: number | null;
+  storageKey: string | null;
+  notes: string | null;
+}
+
+export interface DocumentVersionFixture {
+  version: number;
+  submittedAt: string;
+  metadata: DocumentVersionMetadataFixture;
+}
+
+export type DocumentVersionCreateBody = Readonly<{
+  metadata: Readonly<{
+    originalName: string;
+    mimeType?: string | null;
+    sizeBytes?: number | null;
+    storageKey?: string | null;
+    notes?: string | null;
+  }>;
+}>;
+
 export const activeCollaboratorDocumentFixture = (
   overrides: Partial<CollaboratorDocumentFixture> = {}
 ): CollaboratorDocumentFixture => ({
@@ -123,6 +147,80 @@ export const invalidCollaboratorDocumentBodies = {
   invalidCollaboratorId: validCollaboratorDocumentBody({collaboratorId: "not-an-object-id"}),
   invalidDocumentTypeId: validCollaboratorDocumentBody({documentTypeId: "not-an-object-id"}),
   extraProperty: {...validCollaboratorDocumentBody(), unexpected: true}
+};
+
+export const documentVersionMetadataFixture = (
+  overrides: Partial<DocumentVersionMetadataFixture> = {}
+): DocumentVersionMetadataFixture => ({
+  originalName: "aso-ana-souza.pdf",
+  mimeType: "application/pdf",
+  sizeBytes: 248_193,
+  storageKey: "collaborators/66a64ab05bd7213b90d9b001/aso/v1.pdf",
+  notes: "Documento ocupacional enviado",
+  ...overrides
+});
+
+export const documentVersionFixture = (
+  overrides: Partial<DocumentVersionFixture> = {}
+): DocumentVersionFixture => ({
+  version: 1,
+  submittedAt: "2026-07-30T12:30:00.000Z",
+  metadata: documentVersionMetadataFixture(),
+  ...overrides
+});
+
+export const validDocumentVersionBody = (
+  overrides: Partial<DocumentVersionCreateBody["metadata"]> = {}
+): DocumentVersionCreateBody => ({
+  metadata: {
+    ...documentVersionMetadataFixture(),
+    ...overrides
+  }
+});
+
+export const minimalDocumentVersionBody = (): DocumentVersionCreateBody => ({
+  metadata: {originalName: "aso.pdf"}
+});
+
+export const nullDocumentVersionBody = (): DocumentVersionCreateBody => ({
+  metadata: {
+    originalName: "aso.pdf",
+    mimeType: null,
+    sizeBytes: null,
+    storageKey: null,
+    notes: null
+  }
+});
+
+export const boundaryDocumentVersionBodies = {
+  minimumOriginalName: validDocumentVersionBody({originalName: "a", sizeBytes: 0}),
+  maximumFields: validDocumentVersionBody({
+    originalName: "a".repeat(512),
+    mimeType: "m".repeat(255),
+    sizeBytes: 0,
+    storageKey: "s".repeat(1024),
+    notes: "n".repeat(4000)
+  })
+};
+
+export const invalidDocumentVersionBodies = {
+  missingMetadata: {},
+  missingOriginalName: {metadata: {}},
+  emptyOriginalName: validDocumentVersionBody({originalName: ""}),
+  longOriginalName: validDocumentVersionBody({originalName: "a".repeat(513)}),
+  nonTextOriginalName: {metadata: {...documentVersionMetadataFixture(), originalName: 42}},
+  longMimeType: validDocumentVersionBody({mimeType: "m".repeat(256)}),
+  nonTextMimeType: {metadata: {...documentVersionMetadataFixture(), mimeType: 42}},
+  negativeSizeBytes: validDocumentVersionBody({sizeBytes: -1}),
+  decimalSizeBytes: validDocumentVersionBody({sizeBytes: 1.5}),
+  longStorageKey: validDocumentVersionBody({storageKey: "s".repeat(1025)}),
+  nonTextStorageKey: {metadata: {...documentVersionMetadataFixture(), storageKey: 42}},
+  longNotes: validDocumentVersionBody({notes: "n".repeat(4001)}),
+  nonTextNotes: {metadata: {...documentVersionMetadataFixture(), notes: 42}},
+  additionalBodyProperty: {...validDocumentVersionBody(), unexpected: true},
+  additionalMetadataProperty: {
+    metadata: {...documentVersionMetadataFixture(), unexpected: true}
+  }
 };
 
 export const pendingDocumentTypeLinkFixture = (
