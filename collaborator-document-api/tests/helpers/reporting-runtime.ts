@@ -4,8 +4,10 @@ import {vi} from "vitest";
 import {
   completenessCountsFixture,
   pendingDocumentFixture,
+  pendingDocumentTypeStatisticFixture,
   type CompletenessCountsFixture,
-  type PendingDocumentPageFixture
+  type PendingDocumentPageFixture,
+  type PendingDocumentTypeStatisticsPageFixture
 } from "./reporting-fixtures.js";
 
 export type ReportingFailureCode = "INTERNAL_SERVER_ERROR" | "SERVICE_UNAVAILABLE";
@@ -17,6 +19,10 @@ export interface ReportingFailureStub {
 
 type PendingDocumentListResult = Result<PendingDocumentPageFixture, ReportingFailureStub>;
 type CompletenessCountsResult = Result<CompletenessCountsFixture, ReportingFailureStub>;
+type PendingDocumentTypeStatisticsResult = Result<
+  PendingDocumentTypeStatisticsPageFixture,
+  ReportingFailureStub
+>;
 
 export class PendingDocumentsRepositoryStub {
   readonly list = vi.fn();
@@ -90,6 +96,49 @@ export class CompletenessStatisticsRepositoryStub {
   }
 }
 
+export class PendingDocumentTypeStatisticsRepositoryStub {
+  readonly listPendingDocumentTypeStatistics = vi.fn();
+
+  constructor(result: PendingDocumentTypeStatisticsResult = ok(defaultStatisticsPage())) {
+    this.listPendingDocumentTypeStatistics.mockResolvedValue(result);
+  }
+
+  static success(
+    page: PendingDocumentTypeStatisticsPageFixture = defaultStatisticsPage()
+  ): PendingDocumentTypeStatisticsRepositoryStub {
+    return new PendingDocumentTypeStatisticsRepositoryStub(ok(page));
+  }
+
+  static empty(): PendingDocumentTypeStatisticsRepositoryStub {
+    return PendingDocumentTypeStatisticsRepositoryStub.success({items: [], hasNext: false});
+  }
+
+  static internalError(): PendingDocumentTypeStatisticsRepositoryStub {
+    return PendingDocumentTypeStatisticsRepositoryStub.failure(
+      "INTERNAL_SERVER_ERROR",
+      "database internals must not leak"
+    );
+  }
+
+  static unavailable(): PendingDocumentTypeStatisticsRepositoryStub {
+    return PendingDocumentTypeStatisticsRepositoryStub.failure(
+      "SERVICE_UNAVAILABLE",
+      "reporting dependency unavailable"
+    );
+  }
+
+  private static failure(
+    code: ReportingFailureCode,
+    message: string
+  ): PendingDocumentTypeStatisticsRepositoryStub {
+    return new PendingDocumentTypeStatisticsRepositoryStub(err({code, message}));
+  }
+}
+
 function defaultPage(): PendingDocumentPageFixture {
   return {items: [pendingDocumentFixture()], hasNext: false};
+}
+
+function defaultStatisticsPage(): PendingDocumentTypeStatisticsPageFixture {
+  return {items: [pendingDocumentTypeStatisticFixture()], hasNext: false};
 }
