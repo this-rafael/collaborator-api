@@ -7,6 +7,11 @@ import type {HealthStatus} from "../../presentation/http/schemas/health-status.j
  * serviços externos.
  */
 export class GetLivenessQuery {
+  /**
+   * Executa a verificação de liveness.
+   *
+   * @returns Sempre `{status: "ok"}`, indicando que o processo está vivo.
+   */
   execute(): HealthStatus {
     return {status: "ok"};
   }

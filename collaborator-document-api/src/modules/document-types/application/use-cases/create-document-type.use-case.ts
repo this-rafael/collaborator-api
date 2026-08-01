@@ -13,12 +13,26 @@ import type {DocumentTypeRepository} from "../../domain/repositories/document-ty
 
 /** Caso de uso para criação de um tipo de documento. */
 export class CreateDocumentTypeUseCase {
+  /**
+   * @param repository - Repositório usado para persistir o novo tipo.
+   * @param clock - Relógio que fornece o instante corrente.
+   * @param ids - Gerador de identificadores únicos.
+   */
   constructor(
     private readonly repository: Pick<DocumentTypeRepository, "create">,
     private readonly clock: Clock,
     private readonly ids: IdGenerator
   ) {}
 
+  /**
+   * Cria e persiste um novo tipo de documento.
+   *
+   * @param input - Dados primitivos de criação (nome, código e descrição).
+   * @returns Result com `DocumentTypeOutput` em sucesso; em falha,
+   * `DocumentTypeFailure` com códigos `VALIDATION_ERROR` (dados inválidos),
+   * `DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE` (código já usado entre ativos),
+   * `INTERNAL_SERVER_ERROR` (falha ao obter id/relógio) ou `SERVICE_UNAVAILABLE`.
+   */
   async execute(
     input: CreateDocumentTypeInput
   ): Promise<Result<DocumentTypeOutput, DocumentTypeFailure>> {

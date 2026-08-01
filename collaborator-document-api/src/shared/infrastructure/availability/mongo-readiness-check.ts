@@ -12,8 +12,21 @@ import type {ReadinessCheck} from "../../application/ports/readiness-check.js";
  */
 @Injectable()
 export class MongoReadinessCheck implements ReadinessCheck {
+  /**
+   * @param mongooseService - Serviço do Ts.ED que fornece a conexão Mongoose
+   *   ativa para o ping de readiness.
+   */
   constructor(private readonly mongooseService: MongooseService) {}
 
+  /**
+   * Verifica o readiness pingando o MongoDB (`admin().ping()`).
+   *
+   * @returns `true` quando a conexão está aberta e o ping responde; `false` em
+   *   qualquer falha. Em ambiente de teste, respeita `HEALTH_TEST_READINESS`
+   *   (`available`/`unavailable`) para forçar o resultado.
+   * @remarks Qualquer exceção do driver é capturada e convertida em `false`,
+   *   nunca propagada.
+   */
   async isReady(): Promise<boolean> {
     if (process.env.NODE_ENV === "test") {
       const forced = process.env.HEALTH_TEST_READINESS;

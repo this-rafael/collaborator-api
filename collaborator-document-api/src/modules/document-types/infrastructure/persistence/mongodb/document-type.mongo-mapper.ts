@@ -17,7 +17,13 @@ export type DocumentTypeMongoWrite = DocumentTypeMongoDocument & Readonly<{_id: 
 export type DocumentTypeMongoRead = Partial<DocumentTypeMongoDocument> &
   Readonly<{_id?: {toString(): string}; id?: string}>;
 
-/** Normaliza o nome para indexação: remove acentos, colapsa espaços, minúsculas pt-BR. */
+/**
+ * Normaliza o nome para indexação e busca: remove acentos, colapsa espaços,
+ * apara as bordas e aplica caixa baixa pt-BR.
+ *
+ * @param value - Nome exibível do tipo de documento.
+ * @returns Nome normalizado para uso em `nameNormalized`.
+ */
 export const normalizeDocumentTypeName = (value: string): string =>
   value
     .normalize("NFD")
@@ -26,7 +32,15 @@ export const normalizeDocumentTypeName = (value: string): string =>
     .trim()
     .toLocaleLowerCase("pt-BR");
 
-/** Converte o agregado de domínio para documento Mongo de escrita. */
+/**
+ * Converte o agregado de domínio no documento Mongo de escrita, derivando o
+ * `_id` do identificador e o `nameNormalized` do nome.
+ *
+ * @param documentType - Agregado de tipo de documento a persistir.
+ * @returns Result com o documento de escrita em sucesso; em falha,
+ * `DocumentTypeFailure` com código `INTERNAL_SERVER_ERROR` quando o id gerado
+ * não é um ObjectId válido.
+ */
 export const documentTypeToMongoDocument = (
   documentType: DocumentType
 ): Result<DocumentTypeMongoWrite, DocumentTypeFailure> => {
@@ -52,7 +66,15 @@ export const documentTypeToMongoDocument = (
   });
 };
 
-/** Reconstrói o agregado de domínio a partir de um documento Mongo lido. */
+/**
+ * Reconstrói o agregado de domínio a partir de um documento Mongo lido,
+ * revalidando os dados persistidos.
+ *
+ * @param value - Documento Mongo lido (formato de leitura parcial).
+ * @returns Result com o `DocumentType` reconstituído em sucesso; em falha,
+ * `DocumentTypeFailure` com código `INTERNAL_SERVER_ERROR` quando os dados
+ * persistidos são inválidos ou inconsistentes.
+ */
 export const documentTypeFromMongoDocument = (
   value: DocumentTypeMongoRead
 ): Result<DocumentType, DocumentTypeFailure> => {

@@ -1,3 +1,12 @@
+/**
+ * Aggregate root do vínculo entre colaborador e tipo de documento.
+ *
+ * @remarks
+ * Concentra as invariantes de domínio do módulo: ciclo de vida do vínculo
+ * (PENDING com `currentVersion=0` ou SUBMITTED), histórico de versões embutidas
+ * e regras de reconstituição a partir da persistência. Todas as construções
+ * retornam `Result` e nunca lançam falhas de negócio.
+ */
 import {err, ok, type Result} from "neverthrow";
 
 import {
@@ -8,10 +17,23 @@ import {DocumentStatus, type DocumentStatusValue} from "../value-objects/documen
 
 const objectIdPattern = /^[a-f\d]{24}$/i;
 
-/** Versão documental embutida (histórico). */
+/**
+ * Versão documental embutida no histórico do vínculo.
+ *
+ * @remarks
+ * Cada versão é um subdocumento imutável identificado pelo número sequencial em
+ * `version`. Aceita campos adicionais para acomodar metadados de envio.
+ */
 export type DocumentVersionProps = Readonly<{version: number; [key: string]: unknown}>;
 
-/** Estado imutável do agregado de vínculo documental. */
+/**
+ * Estado imutável (snapshot) do agregado de vínculo documental.
+ *
+ * @remarks
+ * Representa a fotografia completa do vínculo, incluindo status, versão atual,
+ * histórico de versões e marcos temporais do ciclo de vida (`linkedAt`,
+ * `unlinkedAt`, `deletedAt`).
+ */
 export type CollaboratorDocumentProps = Readonly<{
   id: string;
   collaboratorId: string;
@@ -27,25 +49,53 @@ export type CollaboratorDocumentProps = Readonly<{
   deletedAt: Date | null;
 }>;
 
-/** Dados brutos para iniciar um ciclo PENDING. */
+/**
+ * Dados brutos, ainda não validados, para iniciar um ciclo PENDING.
+ *
+ * @remarks
+ * Os campos são tipados como `unknown` porque a validação (formato de ObjectId)
+ * é responsabilidade do próprio agregado em {@link CollaboratorDocument.createPendingCycle}.
+ */
 export type CreatePendingCycleProps = Readonly<{
   id: unknown;
   collaboratorId: unknown;
   documentTypeId: unknown;
 }>;
 
-/** Aggregate root de vínculo colaborador ↔ tipo de documento. */
+/**
+ * Aggregate root do vínculo colaborador ↔ tipo de documento.
+ *
+ * @remarks
+ * Instâncias só podem ser obtidas por meio das fábricas estáticas
+ * {@link CollaboratorDocument.createPendingCycle} (criação/revinculação) e
+ * {@link CollaboratorDocument.reconstitute} (hidratação da persistência). O
+ * estado interno é sempre congelado, garantindo imutabilidade.
+ */
 export class CollaboratorDocument {
   private constructor(private readonly state: CollaboratorDocumentProps) {}
 
+  /** Snapshot imutável (congelado) do estado atual do vínculo. */
   get props(): CollaboratorDocumentProps {
     return freezeProps(this.state);
   }
 
+  /** Identificador (ObjectId em minúsculas) do vínculo. */
   get id(): string {
     return this.state.id;
   }
 
+  /**
+   * Inicia um novo ciclo de vínculo no status PENDING com `currentVersion=0`.
+   *
+   * @param input - Identificadores brutos do vínculo (id, colaborador e tipo de documento) a validar.
+   * @param now - Instante corrente usado para `linkedAt`, `createdAt` e `updatedAt`.
+   * @returns Result com o agregado criado em sucesso; em falha,
+   * CollaboratorDocumentDomainFailure com código VALIDATION_ERROR quando algum
+   * identificador não é um ObjectId válido ou `now` não é uma data válida.
+   * @remarks
+   * A revinculação após o encerramento de um ciclo anterior é modelada como a
+   * criação de um NOVO documento lógico, sempre iniciando em PENDING.
+   */
   static createPendingCycle(
     input: CreatePendingCycleProps,
     now: Date
@@ -98,6 +148,17 @@ export class CollaboratorDocument {
     );
   }
 
+  /**
+   * Reconstrói o agregado a partir de um estado previamente persistido.
+   *
+   * @param props - Estado completo do vínculo carregado da persistência.
+   * @returns Result com o agregado reidratado em sucesso; em falha,
+   * CollaboratorDocumentDomainFailure com código VALIDATION_ERROR quando o
+   * status, o id, as datas, `currentVersion` ou `versions` são inconsistentes.
+   * @remarks
+   * Diferente de {@link CollaboratorDocument.createPendingCycle}, não aplica
+   * regras de criação: apenas revalida invariantes estruturais do estado.
+   */
   static reconstitute(
     props: CollaboratorDocumentProps
   ): Result<CollaboratorDocument, CollaboratorDocumentDomainFailure> {

@@ -34,13 +34,25 @@ export type CollaboratorApplicationFailure = Readonly<{
 /** União de todas as falhas possíveis do módulo de colaboradores. */
 export type CollaboratorFailure = CollaboratorDomainFailure | CollaboratorApplicationFailure;
 
-/** Construtor de falha de domínio para colaboradores. */
+/**
+ * Construtor de falha de domínio para colaboradores.
+ *
+ * @param code - Código estável da falha de domínio.
+ * @param message - Mensagem legível descrevendo a falha.
+ * @returns Objeto imutável de falha de domínio (`kind: "domain"`).
+ */
 export const collaboratorDomainFailure = (
   code: CollaboratorDomainFailureCode,
   message: string
 ): CollaboratorDomainFailure => ({kind: "domain", code, message});
 
-/** Construtor de falha de aplicação para colaboradores. */
+/**
+ * Construtor de falha de aplicação para colaboradores.
+ *
+ * @param code - Código estável da falha de aplicação.
+ * @param message - Mensagem legível descrevendo a falha.
+ * @returns Objeto imutável de falha de aplicação (`kind: "application"`).
+ */
 export const collaboratorApplicationFailure = (
   code: CollaboratorApplicationFailureCode,
   message: string

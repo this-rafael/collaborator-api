@@ -11,11 +11,25 @@ import type {DocumentTypeRepository} from "../../domain/repositories/document-ty
 
 /** Caso de uso para atualização de um tipo de documento ativo. */
 export class UpdateDocumentTypeUseCase {
+  /**
+   * @param repository - Repositório usado para localizar e atualizar o tipo.
+   * @param clock - Relógio que fornece o instante corrente.
+   */
   constructor(
     private readonly repository: Pick<DocumentTypeRepository, "findById" | "updateActive">,
     private readonly clock: Clock
   ) {}
 
+  /**
+   * Atualiza um tipo de documento ativo aplicando um patch parcial.
+   *
+   * @param input - Identificador do tipo e conjunto parcial de campos a alterar.
+   * @returns Result com `DocumentTypeOutput` em sucesso; em falha,
+   * `DocumentTypeFailure` com códigos `DOCUMENT_TYPE_NOT_FOUND`,
+   * `DOCUMENT_TYPE_DELETED` (tipo já excluído), `VALIDATION_ERROR` (patch inválido),
+   * `DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE`, `INTERNAL_SERVER_ERROR` (relógio
+   * indisponível) ou `SERVICE_UNAVAILABLE`.
+   */
   async execute(
     input: UpdateDocumentTypeInput
   ): Promise<Result<DocumentTypeOutput, DocumentTypeFailure>> {

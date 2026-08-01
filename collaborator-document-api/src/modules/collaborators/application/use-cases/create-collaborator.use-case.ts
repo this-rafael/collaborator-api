@@ -13,12 +13,26 @@ import type {CollaboratorRepository} from "../../domain/repositories/collaborato
 
 /** Cria e persiste um agregado com identificador e relógio injetados. */
 export class CreateCollaboratorUseCase {
+  /**
+   * @param repository - Porta de persistência restrita à operação de criação.
+   * @param clock - Relógio injetado usado para carimbar as datas do agregado.
+   * @param ids - Gerador de identificadores para o novo colaborador.
+   */
   constructor(
     private readonly repository: Pick<CollaboratorRepository, "create">,
     private readonly clock: Clock,
     private readonly ids: IdGenerator
   ) {}
 
+  /**
+   * Executa a criação do colaborador.
+   *
+   * @param input - Dados primitivos do colaborador (nome, cpf e e-mail).
+   * @returns Result com o `CollaboratorOutput` criado em sucesso; em falha,
+   * `CollaboratorFailure` com códigos como `VALIDATION_ERROR` (dados inválidos),
+   * `INTERNAL_SERVER_ERROR` (falha ao gerar id ou obter o relógio),
+   * `DUPLICATE_ACTIVE_CPF`, `DUPLICATE_ACTIVE_EMAIL` ou `SERVICE_UNAVAILABLE`.
+   */
   async execute(
     input: CreateCollaboratorInput
   ): Promise<Result<CollaboratorOutput, CollaboratorFailure>> {

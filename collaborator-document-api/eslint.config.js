@@ -2,6 +2,7 @@ import eslint from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier";
 import globals from "globals";
 import tseslint from "typescript-eslint";
+import tsdoc from "eslint-plugin-tsdoc";
 
 export default tseslint.config(
   {
@@ -26,6 +27,15 @@ export default tseslint.config(
           varsIgnorePattern: "^_"
         }
       ]
+    }
+  },
+  {
+    files: ["src/**/*.ts"],
+    plugins: {
+      tsdoc
+    },
+    rules: {
+      "tsdoc/syntax": "error"
     }
   }
 );

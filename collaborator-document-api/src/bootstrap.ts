@@ -79,6 +79,7 @@ export async function startApplication(env: BootstrapEnv) {
  *
  * @param platform - Objeto com método `stop` retornado por
  *   `startApplication`.
+ * @returns Promessa resolvida quando a plataforma é encerrada.
  */
 export async function stopApplication(platform: {stop: () => Promise<unknown>}) {
   await platform.stop();

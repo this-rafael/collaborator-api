@@ -1,3 +1,10 @@
+/**
+ * Adaptador MongoDB do repositório de colaboradores.
+ *
+ * Implementa a porta de domínio traduzindo erros do driver em falhas do módulo,
+ * garantindo a unicidade de CPF e e-mail apenas entre colaboradores ativos e
+ * participando das transações coordenadas pela aplicação.
+ */
 import {Injectable} from "@tsed/di";
 import {MongooseService} from "@tsed/mongoose";
 import {err, ok, type Result} from "neverthrow";

@@ -16,7 +16,13 @@ const MAX_ATTEMPTS = 3;
 /** Categorias relevantes de erro retornado pelo driver MongoDB. */
 export type MongoTransactionErrorKind = "TRANSIENT" | "UNKNOWN_COMMIT" | "OTHER";
 
-/** Classifica labels de erro sem expor o tipo técnico à aplicação. */
+/**
+ * Classifica labels de erro sem expor o tipo técnico à aplicação.
+ *
+ * @param error - Erro capturado do driver/Mongoose.
+ * @returns A categoria da falha: `TRANSIENT` (transação transitória, elegível
+ *   a retry), `UNKNOWN_COMMIT` (resultado de commit desconhecido) ou `OTHER`.
+ */
 export function classifyMongoTransactionError(error: unknown): MongoTransactionErrorKind {
   const candidate = error as {hasErrorLabel?: (label: string) => boolean};
   if (candidate?.hasErrorLabel?.("TransientTransactionError")) return "TRANSIENT";
@@ -35,12 +41,29 @@ export function classifyMongoTransactionError(error: unknown): MongoTransactionE
 export class MongoTransactionManager implements TransactionManager {
   private retries = 0;
 
+  /**
+   * @param mongooseService - Serviço do Ts.ED que fornece a conexão Mongoose
+   *   usada para abrir sessões transacionais.
+   */
   constructor(private readonly mongooseService: MongooseService) {}
 
+  /** Total acumulado de retries de transação (transitórios e de commit). */
   get mongoTransactionRetriesTotal(): number {
     return this.retries;
   }
 
+  /**
+   * Executa uma unidade de trabalho em uma transação MongoDB, com retry
+   * automático para erros transitórios e de commit desconhecido.
+   *
+   * @typeParam T - Tipo do valor de sucesso produzido pelo trabalho.
+   * @typeParam E - Tipo de falha de domínio/aplicação retornado pelo trabalho.
+   * @param work - Função que recebe o contexto opaco de transação e retorna um
+   *   `Result`; o rollback é aplicado automaticamente quando ela falha.
+   * @returns Result com o valor de sucesso do trabalho; em falha, o erro `E`
+   *   original ou uma TransactionFailure com códigos SERVICE_UNAVAILABLE ou
+   *   INTERNAL_SERVER_ERROR quando o controle transacional falha.
+   */
   execute<T, E>(
     work: (context: TransactionContext) => Promise<Result<T, E>>
   ): Promise<Result<T, E | TransactionFailure>> {

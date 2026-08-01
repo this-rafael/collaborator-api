@@ -1,3 +1,10 @@
+/**
+ * Contratos de saída da aplicação de colaboradores.
+ *
+ * Definem a representação primitiva exposta pela aplicação e o mapeamento a
+ * partir do agregado, impedindo que Value Objects vazem para as camadas
+ * externas.
+ */
 import type {Collaborator} from "../../domain/entities/collaborator.js";
 
 /** Representação primitiva de um colaborador na fronteira da aplicação. */
@@ -18,7 +25,13 @@ export type ListCollaboratorsOutput = Readonly<{
   filters: Readonly<{name?: string; cpf?: string; email?: string}>;
 }>;
 
-/** Converte o agregado sem deixar Value Objects atravessarem a aplicação. */
+/**
+ * Converte o agregado sem deixar Value Objects atravessarem a aplicação.
+ *
+ * @param collaborator - Agregado de colaborador a ser projetado.
+ * @returns Objeto imutável `CollaboratorOutput` com valores primitivos e datas
+ * serializadas em ISO 8601 (`deletedAt` fica `null` quando o colaborador está ativo).
+ */
 export const collaboratorToOutput = (collaborator: Collaborator): CollaboratorOutput => {
   const {id, name, cpf, email, createdAt, updatedAt, deletedAt} = collaborator.props;
   return Object.freeze({

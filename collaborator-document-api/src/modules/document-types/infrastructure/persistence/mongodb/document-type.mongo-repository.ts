@@ -30,19 +30,53 @@ const unavailable = (): DocumentTypeFailure =>
     "Document type persistence is unavailable."
   );
 
-/** Implementação Mongo do repositório de tipos de documento. */
+/**
+ * Implementação MongoDB (adaptador de saída) do repositório de tipos de documento.
+ *
+ * @remarks
+ * Todas as operações capturam erros de infraestrutura e os traduzem em
+ * `DocumentTypeFailure` via `Result`, sem lançar erros de negócio.
+ */
 @Injectable()
 export class MongoDocumentTypeRepository implements DocumentTypeRepository {
+  /**
+   * @param mongoose - Serviço Ts.ED que expõe a conexão Mongoose ativa.
+   */
   constructor(private readonly mongoose: MongooseService) {}
 
+  /**
+   * Persiste um novo tipo de documento.
+   *
+   * @param documentType - Agregado já validado a ser persistido.
+   * @returns Result com o tipo persistido em sucesso; em falha,
+   * `DocumentTypeFailure` com códigos `DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE`,
+   * `SERVICE_UNAVAILABLE` ou `INTERNAL_SERVER_ERROR`.
+   */
   create(documentType: DocumentType): Promise<Result<DocumentType, DocumentTypeFailure>> {
     return this.createSafely(documentType);
   }
 
+  /**
+   * Recupera um tipo de documento pelo identificador.
+   *
+   * @param id - Identificador (ObjectId em formato string) do tipo.
+   * @returns Result com o tipo encontrado em sucesso; em falha,
+   * `DocumentTypeFailure` com códigos `VALIDATION_ERROR` (id inválido),
+   * `DOCUMENT_TYPE_NOT_FOUND`, `SERVICE_UNAVAILABLE` ou `INTERNAL_SERVER_ERROR`.
+   */
   findById(id: string): Promise<Result<DocumentType, DocumentTypeFailure>> {
     return this.findByIdSafely(id);
   }
 
+  /**
+   * Lista tipos de documento ativos com filtros e paginação keyset por `_id`.
+   *
+   * @param input - Parâmetros da listagem (`filters` opcionais por nome/código,
+   *   `afterId` cursor opcional, `limit` quantidade máxima).
+   * @returns Result com a página de resultados em sucesso; em falha,
+   * `DocumentTypeFailure` com códigos `INVALID_QUERY_PARAMETER` (cursor inválido),
+   * `SERVICE_UNAVAILABLE` ou `INTERNAL_SERVER_ERROR`.
+   */
   listActive(input: {
     filters: {name?: string; code?: string};
     afterId?: string;
@@ -51,10 +85,28 @@ export class MongoDocumentTypeRepository implements DocumentTypeRepository {
     return this.listActiveSafely(input);
   }
 
+  /**
+   * Atualiza um tipo de documento ativo.
+   *
+   * @param documentType - Agregado já atualizado a ser persistido.
+   * @returns Result com o tipo atualizado em sucesso; em falha,
+   * `DocumentTypeFailure` com códigos `DOCUMENT_TYPE_NOT_FOUND`,
+   * `DOCUMENT_TYPE_DELETED`, `DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE`,
+   * `SERVICE_UNAVAILABLE` ou `INTERNAL_SERVER_ERROR`.
+   */
   updateActive(documentType: DocumentType): Promise<Result<DocumentType, DocumentTypeFailure>> {
     return this.updateActiveSafely(documentType);
   }
 
+  /**
+   * Aplica soft delete a um tipo de documento ativo dentro de uma transação.
+   *
+   * @param documentType - Agregado a ser marcado como excluído.
+   * @param context - Contexto transacional que fornece a sessão Mongo.
+   * @returns Result com `true` quando um documento foi efetivamente marcado
+   * (`false` se nada foi alterado) em sucesso; em falha, `DocumentTypeFailure`
+   * com códigos `SERVICE_UNAVAILABLE` ou `INTERNAL_SERVER_ERROR`.
+   */
   softDeleteActive(
     documentType: DocumentType,
     context: TransactionContext

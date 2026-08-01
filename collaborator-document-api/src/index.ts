@@ -10,8 +10,10 @@ import {loadEnv} from "./config/env.js";
  *
  * Carrega as variáveis de ambiente, inicializa a plataforma
  * (Ts.ED + Express + Mongoose) e registra os handlers de
- * desligamento gracioso (SIGINT/SIGTERM). Retorna 0 em caso
- * de sucesso ou 1 se a inicialização falhar.
+ * desligamento gracioso (SIGINT/SIGTERM).
+ *
+ * @returns Código de saída do processo: `0` em caso de
+ *   inicialização bem-sucedida ou `1` se o bootstrap falhar.
  */
 export async function main(): Promise<number> {
   try {

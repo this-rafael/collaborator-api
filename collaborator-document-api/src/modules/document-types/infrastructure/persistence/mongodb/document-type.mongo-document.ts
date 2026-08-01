@@ -2,12 +2,19 @@ import {Schema, type Connection, type Model} from "mongoose";
 
 /** Documento Mongo persistido pelo módulo document-types. */
 export type DocumentTypeMongoDocument = {
+  /** Nome exibível do tipo de documento. */
   name: string;
+  /** Nome normalizado (sem acentos, minúsculas) usado para busca e ordenação. */
   nameNormalized: string;
+  /** Código estável e único entre os tipos ativos. */
   code: string;
+  /** Descrição, ou `null` quando ausente. */
   description: string | null;
+  /** Instante de criação. */
   createdAt: Date;
+  /** Instante da última atualização. */
   updatedAt: Date;
+  /** Instante do soft delete; `null` enquanto ativo. */
   deletedAt: Date | null;
 };
 
@@ -25,7 +32,13 @@ export const documentTypeMongoSchema = new Schema<DocumentTypeMongoDocument>(
   {collection: "document_types", timestamps: false}
 );
 
-/** Obtém o model da conexão que foi injetada pela composição da aplicação. */
+/**
+ * Obtém (ou registra sob demanda) o model Mongoose de tipos de documento a
+ * partir da conexão injetada pela composição da aplicação.
+ *
+ * @param connection - Conexão Mongoose ativa.
+ * @returns Model Mongoose para a coleção `document_types`.
+ */
 export const getDocumentTypeMongoModel = (
   connection: Connection
 ): Model<DocumentTypeMongoDocument> =>

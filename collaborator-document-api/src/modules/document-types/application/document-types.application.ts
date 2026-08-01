@@ -11,23 +11,38 @@ import {UpdateDocumentTypeUseCase} from "./use-cases/update-document-type.use-ca
 
 /** Dependências abstratas necessárias para compor o módulo fora da apresentação. */
 export type DocumentTypesApplicationDependencies = Readonly<{
+  /** Repositório de persistência do agregado de tipo de documento. */
   repository: DocumentTypeRepository;
+  /** Porta de exclusão em cascata dos documentos vinculados. */
   documents: CollaboratorDocumentsByTypePort;
+  /** Gerenciador de transações que envolve operações atômicas. */
   transactions: TransactionManager;
+  /** Relógio que fornece o instante corrente. */
   clock: Clock;
+  /** Gerador de identificadores únicos. */
   ids: IdGenerator;
 }>;
 
 /** Fachada framework-neutral pronta para ser injetada pelo composition root. */
 export type DocumentTypesApplication = Readonly<{
+  /** Caso de uso de criação de tipo de documento. */
   create: CreateDocumentTypeUseCase;
+  /** Caso de uso de consulta por identificador. */
   get: GetDocumentTypeUseCase;
+  /** Caso de uso de listagem paginada. */
   list: ListDocumentTypesUseCase;
+  /** Caso de uso de atualização. */
   update: UpdateDocumentTypeUseCase;
+  /** Caso de uso de exclusão lógica em cascata. */
   delete: DeleteDocumentTypeUseCase;
 }>;
 
-/** Compõe os casos de uso a partir das dependências injetadas. */
+/**
+ * Compõe a fachada de casos de uso do módulo a partir das dependências injetadas.
+ *
+ * @param dependencies - Portas e serviços necessários aos casos de uso.
+ * @returns Fachada imutável (`DocumentTypesApplication`) com os casos de uso prontos.
+ */
 export const createDocumentTypesApplication = (
   dependencies: DocumentTypesApplicationDependencies
 ): DocumentTypesApplication =>

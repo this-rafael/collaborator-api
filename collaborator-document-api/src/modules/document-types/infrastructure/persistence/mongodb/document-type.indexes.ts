@@ -24,11 +24,24 @@ export const documentTypeIndexes: readonly IndexDescription[] = [
   }
 ];
 
-/** Garante a existência dos índices de tipos de documento no MongoDB. */
+/**
+ * Garante a existência dos índices normativos da coleção de tipos de documento
+ * no MongoDB.
+ */
 @Injectable()
 export class DocumentTypeIndexProvisioner {
+  /**
+   * @param mongoose - Serviço Ts.ED que expõe a conexão Mongoose ativa.
+   */
   constructor(private readonly mongoose: MongooseService) {}
 
+  /**
+   * Cria (ou garante) os índices da coleção de tipos de documento.
+   *
+   * @returns Result com os nomes dos índices criados em sucesso; em falha,
+   * `DocumentTypeFailure` com código `SERVICE_UNAVAILABLE` (conexão indisponível)
+   * ou `INTERNAL_SERVER_ERROR` (erro ao criar índices).
+   */
   ensure(): Promise<Result<readonly string[], DocumentTypeFailure>> {
     return this.ensureSafely();
   }
@@ -59,7 +72,14 @@ export class DocumentTypeIndexProvisioner {
   }
 }
 
-/** Atalho para garantir índices sem instanciar o provisioner. */
+/**
+ * Atalho funcional para garantir os índices sem instanciar o provisioner
+ * manualmente.
+ *
+ * @param mongoose - Serviço Ts.ED que expõe a conexão Mongoose ativa.
+ * @returns Result com os nomes dos índices criados em sucesso; em falha,
+ * `DocumentTypeFailure` com código `SERVICE_UNAVAILABLE` ou `INTERNAL_SERVER_ERROR`.
+ */
 export const ensureDocumentTypeIndexes = (
   mongoose: MongooseService
 ): Promise<Result<readonly string[], DocumentTypeFailure>> =>

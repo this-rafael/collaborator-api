@@ -1,3 +1,9 @@
+/**
+ * Contratos de entrada da aplicação de colaboradores.
+ *
+ * Representam os dados primitivos que atravessam a fronteira da aplicação,
+ * livres de detalhes de HTTP ou de persistência, consumidos pelos casos de uso.
+ */
 /** Dados primitivos aceitos para criar um colaborador. */
 export type CreateCollaboratorInput = Readonly<{
   name: unknown;

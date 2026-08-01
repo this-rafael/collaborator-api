@@ -1,3 +1,10 @@
+/**
+ * Composition root framework-neutral do módulo collaborator-documents.
+ *
+ * @remarks
+ * Reúne as dependências abstratas (portas) e monta os casos de uso, sem acoplar
+ * a nenhum framework de injeção.
+ */
 import type {Clock} from "../../../shared/application/ports/clock.js";
 import type {IdGenerator} from "../../../shared/application/ports/id-generator.js";
 import type {CollaboratorDocumentRepository} from "./ports/collaborator-document-repository.port.js";
@@ -11,7 +18,7 @@ import {ListCollaboratorDocumentsUseCase} from "./use-cases/list-collaborator-do
 import {SoftDeleteCollaboratorDocumentsUseCase} from "./use-cases/soft-delete-collaborator-documents.use-case.js";
 import {UnlinkCollaboratorDocumentUseCase} from "./use-cases/unlink-collaborator-document.use-case.js";
 
-/** Dependências abstratas do composition root do módulo. */
+/** Dependências abstratas (portas) do composition root do módulo. */
 export type CollaboratorDocumentsApplicationDependencies = Readonly<{
   repository: CollaboratorDocumentRepository;
   collaborators: CollaboratorStatusReader;

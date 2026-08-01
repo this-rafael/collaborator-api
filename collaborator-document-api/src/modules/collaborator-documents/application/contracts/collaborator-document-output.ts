@@ -1,7 +1,20 @@
+/**
+ * Contrato de saída (DTO) do vínculo documental na fronteira da aplicação.
+ *
+ * @remarks
+ * Converte o agregado de domínio em uma representação primitiva e serializável
+ * (datas em ISO 8601), consumida pelas camadas de infraestrutura e apresentação.
+ */
 import type {CollaboratorDocument} from "../../domain/aggregates/collaborator-document.js";
 import type {DocumentStatusValue} from "../../domain/value-objects/document-status.js";
 
-/** Representação primitiva do vínculo na fronteira da aplicação. */
+/**
+ * Representação primitiva e imutável do vínculo na fronteira da aplicação.
+ *
+ * @remarks
+ * Datas são expressas como strings ISO 8601 (ou `null`) e `versionCount` é
+ * derivado do tamanho de `versions`.
+ */
 export type CollaboratorDocumentOutput = Readonly<{
   id: string;
   collaboratorId: string;
@@ -18,7 +31,12 @@ export type CollaboratorDocumentOutput = Readonly<{
   versionCount: number;
 }>;
 
-/** Converte o agregado para saída primitiva. */
+/**
+ * Converte o agregado de domínio para a saída primitiva da aplicação.
+ *
+ * @param document - Agregado de vínculo documental a serializar.
+ * @returns Saída imutável com datas em ISO 8601 e `versionCount` derivado.
+ */
 export const collaboratorDocumentToOutput = (
   document: CollaboratorDocument
 ): CollaboratorDocumentOutput => {

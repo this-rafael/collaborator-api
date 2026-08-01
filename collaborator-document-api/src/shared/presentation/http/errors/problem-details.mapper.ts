@@ -160,6 +160,18 @@ const DEFAULT_PROBLEM = {
  * Falhas desconhecidas são mapeadas para 500.
  */
 export class ProblemDetailsMapper {
+  /**
+   * Converte uma falha em um documento Problem Details com o status HTTP e os
+   * metadados adequados.
+   *
+   * @param failure - Falha de domínio/aplicação (com `code`, `message` e,
+   *   opcionalmente, `errors` de campo).
+   * @param ctx - Contexto da resposta: `instance` (caminho da requisição) e
+   *   `traceId` para correlação.
+   * @returns Objeto com o `problem` (ProblemDetails) e, quando aplicável,
+   *   `retryAfter` (segundos) para o código RATE_LIMIT_EXCEEDED. Códigos
+   *   desconhecidos são mapeados para HTTP 500 (INTERNAL_SERVER_ERROR).
+   */
   fromFailure(
     failure: FailureLike,
     ctx: {instance: string; traceId: string}

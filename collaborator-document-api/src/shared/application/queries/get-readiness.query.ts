@@ -14,8 +14,19 @@ const READINESS_UNAVAILABLE = "A dependência necessária está temporariamente 
  * `ApplicationFailure` com código `SERVICE_UNAVAILABLE`.
  */
 export class GetReadinessQuery {
+  /**
+   * @param readiness - Porta que verifica a saúde das dependências críticas.
+   */
   constructor(private readonly readiness: ReadinessCheck) {}
 
+  /**
+   * Executa a verificação de readiness, tolerando exceções da dependência
+   * (que são tratadas como "não pronto").
+   *
+   * @returns Result com `{status: "ok"}` em sucesso; em falha,
+   *   ApplicationFailure com código SERVICE_UNAVAILABLE quando a dependência
+   *   está indisponível.
+   */
   async execute(): Promise<Result<HealthStatus, ApplicationFailure>> {
     let ready: boolean;
     try {

@@ -1,3 +1,9 @@
+/**
+ * Fachada de aplicação do módulo de colaboradores.
+ *
+ * Reúne as dependências abstratas e compõe os casos de uso framework-neutral,
+ * servindo de ponto único de montagem para o composition root.
+ */
 import type {Clock} from "../../../shared/application/ports/clock.js";
 import type {IdGenerator} from "../../../shared/application/ports/id-generator.js";
 import type {TransactionManager} from "../../../shared/application/ports/transaction-manager.js";
@@ -27,7 +33,13 @@ export type CollaboratorsApplication = Readonly<{
   delete: DeleteCollaboratorUseCase;
 }>;
 
-/** Compõe os casos de uso a partir das dependências injetadas. */
+/**
+ * Compõe os casos de uso a partir das dependências injetadas.
+ *
+ * @param dependencies - Portas e serviços necessários (repositório, documentos,
+ * transações, relógio e gerador de ids).
+ * @returns Fachada imutável `CollaboratorsApplication` com os casos de uso prontos para uso.
+ */
 export const createCollaboratorsApplication = (
   dependencies: CollaboratorsApplicationDependencies
 ): CollaboratorsApplication =>

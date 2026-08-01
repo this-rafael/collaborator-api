@@ -5,5 +5,10 @@
  *   controlado em testes.
  */
 export interface Clock {
+  /**
+   * Obtém o instante atual.
+   *
+   * @returns A data/hora corrente no momento da chamada.
+   */
   now(): Date;
 }

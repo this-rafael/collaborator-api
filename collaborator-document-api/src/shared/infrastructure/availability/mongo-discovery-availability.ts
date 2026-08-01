@@ -9,6 +9,11 @@ import type {DiscoveryAvailability} from "../../application/ports/discovery-avai
  *   banco.
  */
 export class MongoDiscoveryAvailability implements DiscoveryAvailability {
+  /**
+   * Verifica se o módulo de discovery pode atender requisições.
+   *
+   * @returns Sempre `true` na implementação atual (verificação real pendente).
+   */
   async isAvailable(): Promise<boolean> {
     return true;
   }

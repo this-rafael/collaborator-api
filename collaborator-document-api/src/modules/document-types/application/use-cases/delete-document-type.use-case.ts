@@ -15,6 +15,12 @@ import type {CollaboratorDocumentsByTypePort} from "../ports/collaborator-docume
 
 /** Caso de uso para exclusão lógica de um tipo de documento e seus vínculos. */
 export class DeleteDocumentTypeUseCase {
+  /**
+   * @param repository - Repositório usado para localizar e excluir o tipo.
+   * @param documents - Porta que aplica a exclusão em cascata dos vínculos.
+   * @param transactions - Gerenciador transacional que envolve exclusão e cascata.
+   * @param clock - Relógio que fornece o instante corrente.
+   */
   constructor(
     private readonly repository: Pick<DocumentTypeRepository, "findById" | "softDeleteActive">,
     private readonly documents: CollaboratorDocumentsByTypePort,
@@ -22,6 +28,19 @@ export class DeleteDocumentTypeUseCase {
     private readonly clock: Clock
   ) {}
 
+  /**
+   * Aplica soft delete a um tipo de documento e, em cascata, aos vínculos
+   * relacionados, tudo dentro de uma única transação.
+   *
+   * @param input - Identificador do tipo de documento a excluir.
+   * @returns Result com `void` em sucesso (idempotente: retorna sucesso se o tipo
+   * já estiver excluído). Em falha, `DocumentTypeFailure` com códigos
+   * `DOCUMENT_TYPE_NOT_FOUND`, `INTERNAL_SERVER_ERROR` (relógio indisponível) ou
+   * `SERVICE_UNAVAILABLE`, ou ainda `TransactionFailure` da transação.
+   * @remarks
+   * A exclusão em cascata dos documentos vinculados participa da mesma transação
+   * da exclusão do tipo, garantindo atomicidade.
+   */
   async execute(
     input: DocumentTypeIdInput
   ): Promise<Result<void, DocumentTypeFailure | TransactionFailure>> {

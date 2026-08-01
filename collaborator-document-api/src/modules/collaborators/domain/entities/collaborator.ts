@@ -1,3 +1,10 @@
+/**
+ * Aggregate root de colaborador e seus contratos de estado.
+ *
+ * Reúne o estado imutável, as regras de transição (criação, atualização e soft
+ * delete) e a reconstituição a partir da persistência. Todas as regras de
+ * negócio esperadas são sinalizadas via `Result`, nunca por exceções.
+ */
 import {err, ok, type Result} from "neverthrow";
 
 import {collaboratorAlreadyDeletedFailure} from "../errors/collaborator-already-deleted.failure.js";
@@ -44,18 +51,30 @@ export type UpdateCollaboratorProps = Readonly<{
 export class Collaborator {
   private constructor(private readonly state: CollaboratorProps) {}
 
+  /** Cópia congelada do estado interno, com novas instâncias de `Date`. */
   get props(): CollaboratorProps {
     return freezeProps(this.state);
   }
 
+  /** Identificador único do colaborador. */
   get id(): string {
     return this.state.id;
   }
 
+  /** Data da exclusão lógica (soft delete), ou `null` quando ainda ativo. */
   get deletedAt(): Date | null {
     return this.state.deletedAt ? new Date(this.state.deletedAt) : null;
   }
 
+  /**
+   * Cria um novo agregado ativo validando identificador, relógio e Value Objects.
+   *
+   * @param input - Dados brutos do colaborador (id, nome, cpf e e-mail).
+   * @param now - Instante corrente usado para `createdAt` e `updatedAt`.
+   * @returns Result com o `Collaborator` criado em caso de sucesso; em falha,
+   * `CollaboratorDomainFailure` com código `VALIDATION_ERROR` quando o id é
+   * vazio, `now` é inválido ou algum Value Object (nome, cpf, e-mail) não valida.
+   */
   static create(
     input: CreateCollaboratorProps,
     now: Date
@@ -89,7 +108,17 @@ export class Collaborator {
     );
   }
 
-  /** Reconstitui dados persistidos, preservando as mesmas invariantes de criação. */
+  /**
+   * Reconstitui dados persistidos, preservando as mesmas invariantes de criação.
+   *
+   * @param props - Estado já materializado (com Value Objects e datas) vindo da persistência.
+   * @returns Result com o `Collaborator` reconstituído em caso de sucesso; em
+   * falha, `CollaboratorDomainFailure` com código `VALIDATION_ERROR` quando os
+   * Value Objects não são do tipo esperado ou as datas são inválidas.
+   * @remarks
+   * Ao contrário de `create`, aceita `deletedAt` preenchido para restaurar um
+   * colaborador excluído logicamente, além de preservar o `updatedAt` original.
+   */
   static reconstitute(props: CollaboratorProps): Result<Collaborator, CollaboratorDomainFailure> {
     if (
       !props ||
@@ -120,6 +149,19 @@ export class Collaborator {
     );
   }
 
+  /**
+   * Aplica uma alteração parcial retornando uma nova instância do agregado.
+   *
+   * @param patch - Campos a atualizar (nome, cpf e/ou e-mail); ao menos um deve estar presente.
+   * @param now - Instante corrente usado para atualizar `updatedAt`.
+   * @returns Result com o novo `Collaborator` em caso de sucesso; em falha,
+   * `CollaboratorDomainFailure` com código `COLLABORATOR_DELETED` quando o
+   * colaborador já foi excluído, ou `VALIDATION_ERROR` quando `now` é inválido,
+   * o patch não é um objeto válido, está vazio, contém campos desconhecidos ou
+   * algum Value Object informado não valida.
+   * @remarks
+   * O agregado é imutável: a instância original permanece inalterada.
+   */
   update(
     patch: UpdateCollaboratorProps,
     now: Date
@@ -158,6 +200,17 @@ export class Collaborator {
     );
   }
 
+  /**
+   * Marca o colaborador como excluído logicamente (soft delete).
+   *
+   * @param now - Instante corrente usado para `deletedAt` e `updatedAt`.
+   * @returns Result com um novo `Collaborator` já excluído em caso de sucesso;
+   * em falha, `CollaboratorDomainFailure` com código `VALIDATION_ERROR` quando
+   * `now` é inválido.
+   * @remarks
+   * Operação idempotente: se o colaborador já estiver excluído, retorna a
+   * própria instância sem alterar as datas.
+   */
   softDelete(now: Date): Result<Collaborator, CollaboratorDomainFailure> {
     if (!isValidDate(now)) {
       return err(collaboratorDomainFailure("VALIDATION_ERROR", "now must be a valid date"));

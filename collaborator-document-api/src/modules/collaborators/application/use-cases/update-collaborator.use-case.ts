@@ -11,11 +11,25 @@ import type {CollaboratorRepository} from "../../domain/repositories/collaborato
 
 /** Atualiza o agregado de forma imutável antes de persistir a transição. */
 export class UpdateCollaboratorUseCase {
+  /**
+   * @param repository - Porta de persistência restrita à busca e à atualização de ativos.
+   * @param clock - Relógio injetado usado para carimbar a data de atualização.
+   */
   constructor(
     private readonly repository: Pick<CollaboratorRepository, "findById" | "updateActive">,
     private readonly clock: Clock
   ) {}
 
+  /**
+   * Executa a atualização parcial do colaborador.
+   *
+   * @param input - Identificador do colaborador e o patch com os campos a alterar.
+   * @returns Result com o `CollaboratorOutput` atualizado em sucesso; em falha,
+   * `CollaboratorFailure` com códigos como `COLLABORATOR_NOT_FOUND`,
+   * `COLLABORATOR_DELETED`, `VALIDATION_ERROR`, `INTERNAL_SERVER_ERROR`
+   * (relógio indisponível), `DUPLICATE_ACTIVE_CPF`, `DUPLICATE_ACTIVE_EMAIL` ou
+   * `SERVICE_UNAVAILABLE`.
+   */
   async execute(
     input: UpdateCollaboratorInput
   ): Promise<Result<CollaboratorOutput, CollaboratorFailure>> {

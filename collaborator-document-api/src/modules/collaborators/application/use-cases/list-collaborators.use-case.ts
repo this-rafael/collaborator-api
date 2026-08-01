@@ -19,7 +19,15 @@ import type {
   CollaboratorRepository
 } from "../../domain/repositories/collaborator.repository.js";
 
-/** Normaliza filtros sem permitir detalhes HTTP ou banco na camada de aplicação. */
+/**
+ * Normaliza filtros sem permitir detalhes HTTP ou banco na camada de aplicação.
+ *
+ * @param input - Filtros brutos de listagem (nome, cpf e/ou e-mail).
+ * @returns Result com os filtros normalizados em sucesso (nome sem acentos e em
+ * minúsculas, e-mail aparado em minúsculas); em falha, `CollaboratorFailure`
+ * com código `INVALID_QUERY_PARAMETER` quando a entrada não é objeto, o cpf não
+ * tem 11 dígitos ou o e-mail é inválido.
+ */
 export function normalizeCollaboratorFilters(
   input: CollaboratorListFiltersInput
 ): Result<CollaboratorListFilters, CollaboratorFailure> {
@@ -54,8 +62,20 @@ export function normalizeCollaboratorFilters(
 
 /** Lista colaboradores ativos usando paginação keyset já validada pela aplicação. */
 export class ListCollaboratorsUseCase {
+  /**
+   * @param repository - Porta de persistência restrita à listagem de ativos.
+   */
   constructor(private readonly repository: Pick<CollaboratorRepository, "listActive">) {}
 
+  /**
+   * Executa a listagem paginada de colaboradores ativos.
+   *
+   * @param input - Filtros, `limit` (1 a 100) e cursor `afterId` opcional.
+   * @returns Result com a página `ListCollaboratorsOutput` em sucesso; em falha,
+   * `CollaboratorFailure` com código `INVALID_QUERY_PARAMETER` (limite ou filtro
+   * inválido) ou códigos de infraestrutura como `SERVICE_UNAVAILABLE` e
+   * `INTERNAL_SERVER_ERROR`.
+   */
   async execute(
     input: ListCollaboratorsInput
   ): Promise<Result<ListCollaboratorsOutput, CollaboratorFailure>> {

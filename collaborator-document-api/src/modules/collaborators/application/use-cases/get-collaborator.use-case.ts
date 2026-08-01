@@ -7,8 +7,19 @@ import type {CollaboratorRepository} from "../../domain/repositories/collaborato
 
 /** Consulta um colaborador, incluindo o histórico soft-deletado quando existir. */
 export class GetCollaboratorUseCase {
+  /**
+   * @param repository - Porta de persistência restrita à busca por identificador.
+   */
   constructor(private readonly repository: Pick<CollaboratorRepository, "findById">) {}
 
+  /**
+   * Executa a consulta do colaborador por identificador.
+   *
+   * @param input - Identificador do colaborador a consultar.
+   * @returns Result com o `CollaboratorOutput` em sucesso (ativo ou já excluído);
+   * em falha, `CollaboratorFailure` com códigos como `VALIDATION_ERROR`,
+   * `COLLABORATOR_NOT_FOUND`, `SERVICE_UNAVAILABLE` ou `INTERNAL_SERVER_ERROR`.
+   */
   async execute(
     input: CollaboratorIdInput
   ): Promise<Result<CollaboratorOutput, CollaboratorFailure>> {

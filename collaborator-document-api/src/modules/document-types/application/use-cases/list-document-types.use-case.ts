@@ -18,7 +18,15 @@ import type {
   DocumentTypeRepository
 } from "../../domain/repositories/document-type.repository.js";
 
-/** Normaliza filtros de listagem removendo acentos e padronizando o nome. */
+/**
+ * Normaliza filtros de listagem: padroniza o nome (colapsa espaços, remove
+ * acentos e aplica caixa baixa pt-BR) e valida o código quando informado.
+ *
+ * @param input - Filtros brutos vindos da fronteira da aplicação.
+ * @returns Result com os filtros normalizados em sucesso; em falha,
+ * `DocumentTypeFailure` com código `INVALID_QUERY_PARAMETER` quando o objeto de
+ * filtros é inválido ou o código não é canônico.
+ */
 export function normalizeDocumentTypeFilters(
   input: DocumentTypeListFiltersInput
 ): Result<DocumentTypeListFilters, DocumentTypeFailure> {
@@ -59,8 +67,19 @@ export function normalizeDocumentTypeFilters(
 
 /** Caso de uso para listagem paginada de tipos de documento ativos. */
 export class ListDocumentTypesUseCase {
+  /**
+   * @param repository - Repositório usado para listar os tipos ativos.
+   */
   constructor(private readonly repository: Pick<DocumentTypeRepository, "listActive">) {}
 
+  /**
+   * Lista tipos de documento ativos com filtros normalizados e paginação keyset.
+   *
+   * @param input - Filtros, limite (1 a 100) e cursor opcional da listagem.
+   * @returns Result com `ListDocumentTypesOutput` em sucesso; em falha,
+   * `DocumentTypeFailure` com código `INVALID_QUERY_PARAMETER` (limite ou filtros
+   * inválidos) ou `SERVICE_UNAVAILABLE`.
+   */
   async execute(
     input: ListDocumentTypesInput
   ): Promise<Result<ListDocumentTypesOutput, DocumentTypeFailure>> {

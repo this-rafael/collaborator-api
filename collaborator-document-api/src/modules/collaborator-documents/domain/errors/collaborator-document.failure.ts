@@ -42,13 +42,26 @@ export type CollaboratorDocumentApplicationFailure = Readonly<{
 export type CollaboratorDocumentFailure =
   CollaboratorDocumentDomainFailure | CollaboratorDocumentApplicationFailure;
 
-/** Construtor de falha de domínio. */
+/**
+ * Cria uma falha de domínio discriminada.
+ *
+ * @param code - Código da falha de domínio (ex.: VALIDATION_ERROR).
+ * @param message - Mensagem legível descrevendo a violação de invariante.
+ * @returns Falha de domínio pronta para uso em um `Result`.
+ */
 export const collaboratorDocumentDomainFailure = (
   code: CollaboratorDocumentDomainFailureCode,
   message: string
 ): CollaboratorDocumentDomainFailure => ({kind: "domain", code, message});
 
-/** Construtor de falha de aplicação. */
+/**
+ * Cria uma falha de aplicação discriminada.
+ *
+ * @param code - Código da falha de aplicação (ex.: NOT_FOUND, ACTIVE_LINK_ALREADY_EXISTS).
+ * @param message - Mensagem legível descrevendo o problema.
+ * @param errors - Lista opcional de erros por campo; omitida quando vazia.
+ * @returns Falha de aplicação pronta para uso em um `Result`.
+ */
 export const collaboratorDocumentApplicationFailure = (
   code: CollaboratorDocumentApplicationFailureCode,
   message: string,

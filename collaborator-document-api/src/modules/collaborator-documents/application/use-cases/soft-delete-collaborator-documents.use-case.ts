@@ -1,3 +1,6 @@
+/**
+ * Caso de uso da cascata de soft delete de vínculos por colaborador.
+ */
 import {err, type Result} from "neverthrow";
 
 import type {TransactionContext} from "../../../../shared/application/ports/transaction-manager.js";
@@ -11,8 +14,15 @@ import type {CollaboratorDocumentRepository} from "../ports/collaborator-documen
 /**
  * API pública mínima do módulo collaborator-documents para a cascata de
  * exclusão. O módulo dono da coleção mantém a sua própria persistência.
+ *
+ * @remarks
+ * Executada dentro da transação iniciada pelo módulo que exclui o colaborador,
+ * garantindo atomicidade entre a exclusão do pai e a de seus vínculos.
  */
 export class SoftDeleteCollaboratorDocumentsUseCase {
+  /**
+   * @param repository - Porta de persistência (apenas `softDeleteActiveByCollaboratorId`).
+   */
   constructor(
     private readonly repository: Pick<
       CollaboratorDocumentRepository,
@@ -20,6 +30,14 @@ export class SoftDeleteCollaboratorDocumentsUseCase {
     >
   ) {}
 
+  /**
+   * Propaga o soft delete aos vínculos ativos do colaborador informado.
+   *
+   * @param input - Identificador do colaborador e instante de exclusão (ISO 8601).
+   * @param context - Contexto transacional compartilhado com a exclusão do pai.
+   * @returns Result vazio em sucesso; em falha, CollaboratorDocumentsFailure com
+   * código INTERNAL_SERVER_ERROR (entrada inválida) ou SERVICE_UNAVAILABLE.
+   */
   async execute(
     input: SoftDeleteCollaboratorDocumentsInput,
     context: TransactionContext

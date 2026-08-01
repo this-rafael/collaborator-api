@@ -20,8 +20,11 @@ export type LogLevel = (typeof logLevels)[number];
  * Configuração de rate limiting para as rotas da API.
  */
 export type RateLimitConfig = Readonly<{
+  /** Máximo de requisições de leitura permitidas na janela. */
   readLimit: number;
+  /** Máximo de requisições de escrita permitidas na janela. */
   writeLimit: number;
+  /** Tamanho da janela deslizante de contagem, em milissegundos. */
   windowMs: number;
 }>;
 
@@ -29,6 +32,7 @@ export type RateLimitConfig = Readonly<{
  * Configuração de CORS: lista de origens permitidas.
  */
 export type CorsConfig = Readonly<{
+  /** Origens (Origin) autorizadas a acessar a API. */
   allowlist: readonly string[];
 }>;
 
@@ -36,7 +40,9 @@ export type CorsConfig = Readonly<{
  * Configuração do endpoint de documentação OpenAPI.
  */
 export type OpenApiConfig = Readonly<{
+  /** Caminho HTTP onde o documento OpenAPI é publicado. */
   path: string;
+  /** Versão da especificação OpenAPI (ex.: `3.1.0`). */
   specVersion: string;
 }>;
 
@@ -47,13 +53,21 @@ export type OpenApiConfig = Readonly<{
  * @remarks Objeto imutável gerado por {@link loadEnv}.
  */
 export type AppEnv = Readonly<{
+  /** Ambiente de execução ativo (development, test ou production). */
   nodeEnv: NodeEnvironment;
+  /** Porta TCP em que o servidor HTTP escuta. */
   port: number;
+  /** URI de conexão do MongoDB, já validada. */
   mongodbUri: string;
+  /** Segredo HMAC usado para assinar cursores de paginação. */
   cursorHmacSecret: string;
+  /** Nível de verbosidade do logger. */
   logLevel: LogLevel;
+  /** Configuração de CORS derivada de `CORS_ALLOWLIST`. */
   cors: CorsConfig;
+  /** Limites de taxa aplicados às rotas de leitura e escrita. */
   rateLimit: RateLimitConfig;
+  /** Configuração do endpoint OpenAPI. */
   openapi: OpenApiConfig;
 }>;
 
@@ -62,6 +76,12 @@ export type AppEnv = Readonly<{
  * obrigatórias estão ausentes ou com formato inválido.
  */
 export class EnvironmentValidationError extends Error {
+  /**
+   * Cria o erro agregando todas as mensagens de validação.
+   *
+   * @param issues - Lista das inconsistências detectadas nas
+   *   variáveis de ambiente, uma mensagem por problema.
+   */
   constructor(readonly issues: readonly string[]) {
     super(`Invalid application environment: ${issues.join("; ")}`);
     this.name = "EnvironmentValidationError";
@@ -141,11 +161,11 @@ function validateRateLimits(
  *   `replicaSet` para URLs `mongodb:`.
  * - `LOG_LEVEL` deve estar em `logLevels`.
  * - `RATE_LIMIT_GET` e `RATE_LIMIT_WRITE` devem ser inteiros não negativos.
- * - `RATE_LIMIT_WINDOW_MS` deve ser >= 1000.
+ * - `RATE_LIMIT_WINDOW_MS` deve ser \>= 1000.
  *
  * @param source - Fonte das variáveis (default `process.env`).
- * @returns Configuração tipada da aplicação.
- * @throws {EnvironmentValidationError} Se houver um ou mais
+ * @returns Configuração tipada e imutável da aplicação (`AppEnv`).
+ * @throws EnvironmentValidationError Se houver um ou mais
  *   problemas de validação.
  */
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {

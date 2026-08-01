@@ -39,11 +39,25 @@ function canonicalize(value: unknown): string {
  * de trace).
  */
 export class EtagService {
+  /**
+   * Calcula a ETag fraca de um payload semântico.
+   *
+   * @param payload - Valor a ser hasheado; campos de trace são ignorados na
+   *   canonicalização para manter a ETag estável.
+   * @returns ETag no formato `W/"sha256:<hex>"`.
+   */
   compute(payload: unknown): string {
     const hash = createHash("sha256").update(canonicalize(payload)).digest("hex");
     return `W/"sha256:${hash}"`;
   }
 
+  /**
+   * Compara a ETag do servidor com a informada pelo cliente.
+   *
+   * @param serverTag - ETag calculada pelo servidor.
+   * @param clientTag - ETag recebida no cabeçalho `If-None-Match`.
+   * @returns `true` quando as ETags são idênticas (recurso não modificado).
+   */
   matches(serverTag: string, clientTag: string): boolean {
     return serverTag === clientTag;
   }

@@ -1,3 +1,9 @@
+/**
+ * Mapeamento entre o agregado de colaborador e os documentos MongoDB.
+ *
+ * Isola os detalhes do driver, revalidando os dados na leitura para que estados
+ * inválidos na persistência não atravessem para o domínio.
+ */
 import {err, ok, type Result} from "neverthrow";
 import {Types} from "mongoose";
 
@@ -18,14 +24,26 @@ export type CollaboratorMongoWrite = CollaboratorMongoDocument & Readonly<{_id: 
 export type CollaboratorMongoRead = Partial<CollaboratorMongoDocument> &
   Readonly<{_id?: {toString(): string}; id?: string}>;
 
-/** Normaliza nome para busca case/diacritic-insensitive. */
+/**
+ * Normaliza nome para busca case/diacritic-insensitive.
+ *
+ * @param value - Nome original do colaborador.
+ * @returns Nome sem acentos e em minúsculas (locale pt-BR), usado no campo indexado de busca.
+ */
 export const normalizeCollaboratorName = (value: string): string =>
   value
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .toLocaleLowerCase("pt-BR");
 
-/** Converte agregado em documento de escrita, sem deixar detalhes Mongo no domínio. */
+/**
+ * Converte agregado em documento de escrita, sem deixar detalhes Mongo no domínio.
+ *
+ * @param collaborator - Agregado a ser projetado para gravação.
+ * @returns Result com o `CollaboratorMongoWrite` pronto para inserção/atualização
+ * em sucesso; em falha, `CollaboratorFailure` com código `INTERNAL_SERVER_ERROR`
+ * quando o id gerado não é um ObjectId válido.
+ */
 export const collaboratorToMongoDocument = (
   collaborator: Collaborator
 ): Result<CollaboratorMongoWrite, CollaboratorFailure> => {
@@ -51,7 +69,14 @@ export const collaboratorToMongoDocument = (
   });
 };
 
-/** Reconstitui o agregado validando novamente dados recebidos da persistência. */
+/**
+ * Reconstitui o agregado validando novamente dados recebidos da persistência.
+ *
+ * @param value - Linha lean lida da coleção MongoDB.
+ * @returns Result com o `Collaborator` reconstituído em sucesso; em falha,
+ * `CollaboratorFailure` com código `INTERNAL_SERVER_ERROR` quando os dados
+ * persistidos são inconsistentes ou não satisfazem as invariantes do domínio.
+ */
 export const collaboratorFromMongoDocument = (
   value: CollaboratorMongoRead
 ): Result<Collaborator, CollaboratorFailure> => {

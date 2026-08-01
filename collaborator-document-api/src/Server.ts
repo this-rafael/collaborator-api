@@ -103,6 +103,12 @@ export class Server {
    *
    * Falhar aqui é intencional: iniciar sem as unicidades parciais permitiria
    * dados incompatíveis com o contrato do módulo.
+   *
+   * @returns Promessa resolvida quando todos os índices provisionados estão
+   *   garantidos.
+   * @throws Error quando o provisionamento de qualquer índice
+   *   (colaboradores, tipos de documento ou vínculos) falha; a mensagem
+   *   inclui o `code` da falha subjacente.
    */
   async $beforeListen(): Promise<void> {
     if (this.provisionCollaboratorIndexes) {

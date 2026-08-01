@@ -15,6 +15,12 @@ import type {CollaboratorDocumentsPort} from "../ports/collaborator-documents.po
 
 /** Exclui colaborador e seus vínculos por meio de portas públicas e transação opaca. */
 export class DeleteCollaboratorUseCase {
+  /**
+   * @param repository - Porta de persistência restrita à busca e ao soft delete.
+   * @param documents - Porta que propaga o soft delete aos documentos vinculados.
+   * @param transactions - Gerenciador de transações que garante atomicidade da cascata.
+   * @param clock - Relógio injetado usado para carimbar a data de exclusão.
+   */
   constructor(
     private readonly repository: Pick<CollaboratorRepository, "findById" | "softDeleteActive">,
     private readonly documents: CollaboratorDocumentsPort,
@@ -22,6 +28,18 @@ export class DeleteCollaboratorUseCase {
     private readonly clock: Clock
   ) {}
 
+  /**
+   * Executa a exclusão lógica do colaborador e a cascata sobre seus vínculos.
+   *
+   * @param input - Identificador do colaborador a excluir.
+   * @returns Result vazio (`void`) em sucesso, inclusive quando o colaborador já
+   * estava excluído (operação idempotente); em falha, `CollaboratorFailure` com
+   * códigos como `COLLABORATOR_NOT_FOUND`, `INTERNAL_SERVER_ERROR` ou
+   * `SERVICE_UNAVAILABLE`, ou uma `TransactionFailure`.
+   * @remarks
+   * O soft delete do colaborador e a exclusão dos documentos relacionados
+   * ocorrem na mesma transação MongoDB, preservando a consistência.
+   */
   async execute(
     input: CollaboratorIdInput
   ): Promise<Result<void, CollaboratorFailure | TransactionFailure>> {

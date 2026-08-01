@@ -32,8 +32,19 @@ const discoveryLinks = {
  * HAL de todos os recursos disponíveis.
  */
 export class DiscoverApiQuery {
+  /**
+   * @param availability - Porta que informa se o backend de discovery
+   *   (MongoDB) está disponível.
+   */
   constructor(private readonly availability: DiscoveryAvailability) {}
 
+  /**
+   * Monta a representação raiz da API com os links HAL de todos os recursos.
+   *
+   * @returns Result com o documento `ApiRoot` em sucesso; em falha,
+   *   ApplicationFailure com código SERVICE_UNAVAILABLE quando o MongoDB está
+   *   indisponível.
+   */
   async execute(): Promise<Result<ApiRoot, ApplicationFailure>> {
     const available = await this.availability.isAvailable();
     if (!available) {

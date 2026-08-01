@@ -7,8 +7,19 @@ import type {DocumentTypeRepository} from "../../domain/repositories/document-ty
 
 /** Caso de uso para consulta de um tipo de documento por identificador. */
 export class GetDocumentTypeUseCase {
+  /**
+   * @param repository - Repositório usado para localizar o tipo por id.
+   */
   constructor(private readonly repository: Pick<DocumentTypeRepository, "findById">) {}
 
+  /**
+   * Recupera um tipo de documento pelo identificador.
+   *
+   * @param input - Identificador do tipo de documento.
+   * @returns Result com `DocumentTypeOutput` em sucesso; em falha,
+   * `DocumentTypeFailure` com códigos `DOCUMENT_TYPE_NOT_FOUND` (inexistente)
+   * ou `SERVICE_UNAVAILABLE`.
+   */
   async execute(
     input: DocumentTypeIdInput
   ): Promise<Result<DocumentTypeOutput, DocumentTypeFailure>> {
