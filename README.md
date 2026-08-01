@@ -20,6 +20,22 @@ Uma API REST para administrar o ciclo documental de colaboradores: catálogo de 
 
 </div>
 
+## Documentação interativa
+
+> **Explore antes de ler o código:** o portal publicado reúne o contrato OpenAPI, a referência TypeDoc e o grafo navegável da arquitetura.
+>
+> [🚀 Abrir documentação interativa](https://this-rafael.github.io/collaborator-api/) · [OpenAPI](https://this-rafael.github.io/collaborator-api/openapi/) · [TypeDoc](https://this-rafael.github.io/collaborator-api/reference/) · [Arquitetura](https://this-rafael.github.io/collaborator-api/architecture/)
+
+<div align="center">
+  <a href="https://this-rafael.github.io/collaborator-api/">
+    <img
+      src="docs/assets/documentation-portal.png"
+      alt="Página inicial do portal da Collaborator Document API, com links para OpenAPI, TypeDoc e arquitetura"
+      width="960"
+    />
+  </a>
+</div>
+
 ---
 
 ## Conteúdo
@@ -32,6 +48,7 @@ Uma API REST para administrar o ciclo documental de colaboradores: catálogo de 
 - [Consistência e concorrência](#consistência-e-concorrência)
 - [Execução local](#execução-local)
 - [Qualidade](#qualidade)
+- [Documentação interativa](#documentação-interativa)
 - [Portal de documentação](#portal-de-documentação)
 - [Evolução com TDD](#evolução-com-tdd)
 - [Autor](#autor)
@@ -280,16 +297,6 @@ O portal é gerado de forma reproduzível e publicado pelo GitHub Pages quando `
 | OpenAPI     | Contrato Redoc com exemplos HAL e Problem Details | [Abrir](https://this-rafael.github.io/collaborator-api/openapi/)      |
 | TypeDoc     | Referência navegável dos símbolos TypeScript      | [Abrir](https://this-rafael.github.io/collaborator-api/reference/)    |
 | Arquitetura | Grafo de conhecimento interativo em português     | [Abrir](https://this-rafael.github.io/collaborator-api/architecture/) |
-
-<div align="center">
-  <a href="https://this-rafael.github.io/collaborator-api/">
-    <img
-      src="docs/assets/documentation-portal.png"
-      alt="Página inicial do portal da Collaborator Document API, com links para OpenAPI, TypeDoc e arquitetura"
-      width="960"
-    />
-  </a>
-</div>
 
 ## Evolução com TDD
 
