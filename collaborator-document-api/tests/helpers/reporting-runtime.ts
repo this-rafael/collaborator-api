@@ -1,7 +1,12 @@
 import {err, ok, type Result} from "neverthrow";
 import {vi} from "vitest";
 
-import {pendingDocumentFixture, type PendingDocumentPageFixture} from "./reporting-fixtures.js";
+import {
+  completenessCountsFixture,
+  pendingDocumentFixture,
+  type CompletenessCountsFixture,
+  type PendingDocumentPageFixture
+} from "./reporting-fixtures.js";
 
 export type ReportingFailureCode = "INTERNAL_SERVER_ERROR" | "SERVICE_UNAVAILABLE";
 
@@ -11,6 +16,7 @@ export interface ReportingFailureStub {
 }
 
 type PendingDocumentListResult = Result<PendingDocumentPageFixture, ReportingFailureStub>;
+type CompletenessCountsResult = Result<CompletenessCountsFixture, ReportingFailureStub>;
 
 export class PendingDocumentsRepositoryStub {
   readonly list = vi.fn();
@@ -46,6 +52,41 @@ export class PendingDocumentsRepositoryStub {
     message: string
   ): PendingDocumentsRepositoryStub {
     return new PendingDocumentsRepositoryStub(err({code, message}));
+  }
+}
+
+export class CompletenessStatisticsRepositoryStub {
+  readonly getCounts = vi.fn();
+
+  constructor(result: CompletenessCountsResult = ok(completenessCountsFixture())) {
+    this.getCounts.mockResolvedValue(result);
+  }
+
+  static success(
+    counts: CompletenessCountsFixture = completenessCountsFixture()
+  ): CompletenessStatisticsRepositoryStub {
+    return new CompletenessStatisticsRepositoryStub(ok(counts));
+  }
+
+  static internalError(): CompletenessStatisticsRepositoryStub {
+    return CompletenessStatisticsRepositoryStub.failure(
+      "INTERNAL_SERVER_ERROR",
+      "database internals must not leak"
+    );
+  }
+
+  static unavailable(): CompletenessStatisticsRepositoryStub {
+    return CompletenessStatisticsRepositoryStub.failure(
+      "SERVICE_UNAVAILABLE",
+      "reporting dependency unavailable"
+    );
+  }
+
+  private static failure(
+    code: ReportingFailureCode,
+    message: string
+  ): CompletenessStatisticsRepositoryStub {
+    return new CompletenessStatisticsRepositoryStub(err({code, message}));
   }
 }
 
