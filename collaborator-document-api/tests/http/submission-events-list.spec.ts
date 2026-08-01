@@ -15,7 +15,6 @@ import {
 
 const path = "/api/v1/submission-events";
 const collaboratorOne = "66a64ab05bd7213b90d9b001";
-const typeOne = "66a64ab05bd7213b90d9b010";
 const documentOne = "66a64ab05bd7213b90d9c001";
 const documentTwo = "66a64ab05bd7213b90d9c002";
 const documentThree = "66a64ab05bd7213b90d9c003";
@@ -344,7 +343,7 @@ function collaboratorDocumentRow(
   return {
     _id: new ObjectId(id),
     collaboratorId: new ObjectId(collaboratorOne),
-    documentTypeId: new ObjectId(typeOne),
+    documentTypeId: new ObjectId(id),
     status: "SUBMITTED",
     currentVersion: latest.version,
     versions,

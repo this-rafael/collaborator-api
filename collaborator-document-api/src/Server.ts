@@ -23,6 +23,7 @@ import {CompletenessStatisticsController} from "./modules/reporting/presentation
 import {LatestSubmissionsController} from "./modules/reporting/presentation/http/controllers/latest-submissions.controller.js";
 import {PendingDocumentTypeStatisticsController} from "./modules/reporting/presentation/http/controllers/pending-document-type-statistics.controller.js";
 import {PendingDocumentsController} from "./modules/reporting/presentation/http/controllers/pending-documents.controller.js";
+import {SubmissionEventsController} from "./modules/reporting/presentation/http/controllers/submission-events.controller.js";
 import {MongoReadinessCheck} from "./shared/infrastructure/availability/mongo-readiness-check.js";
 import {globalErrorMiddleware} from "./shared/presentation/http/filters/global-error.filter.js";
 import {requestIdMiddleware} from "./shared/presentation/http/middlewares/request-id.middleware.js";
@@ -70,6 +71,7 @@ const corsMiddleware = cors({
       DocumentTypesController,
       CollaboratorDocumentsController,
       LatestSubmissionsController,
+      SubmissionEventsController,
       PendingDocumentsController,
       PendingDocumentTypeStatisticsController,
       CompletenessStatisticsController
