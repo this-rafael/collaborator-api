@@ -36,6 +36,41 @@ export const getDocumentVersionContractPath = resolve(
   "contracts",
   "get-document-version.openapi.yaml"
 );
+export const listPendingDocumentsContractPath = resolve(
+  repoRoot,
+  "specs",
+  "025-list-pending-documents",
+  "contracts",
+  "list-pending-documents.openapi.yaml"
+);
+export const getCompletenessStatisticsContractPath = resolve(
+  repoRoot,
+  "specs",
+  "026-get-completeness-statistics",
+  "contracts",
+  "get-completeness-statistics.openapi.yaml"
+);
+export const listPendingDocumentTypeStatisticsContractPath = resolve(
+  repoRoot,
+  "specs",
+  "027-list-pending-document-type-statistics",
+  "contracts",
+  "list-pending-document-type-statistics.openapi.yaml"
+);
+export const listLatestSubmissionsContractPath = resolve(
+  repoRoot,
+  "specs",
+  "028-list-latest-submissions",
+  "contracts",
+  "list-latest-submissions.openapi.yaml"
+);
+export const listSubmissionEventsContractPath = resolve(
+  repoRoot,
+  "specs",
+  "029-list-submission-events",
+  "contracts",
+  "list-submission-events.openapi.yaml"
+);
 
 export type JsonScalar = string | number | boolean | null;
 export type JsonValue = JsonScalar | JsonObject | JsonArray;
@@ -521,8 +556,16 @@ export const expectedFunctionalOperationIds = [
   "deleteDocumentType",
   "listCollaboratorDocuments",
   "createCollaboratorDocument",
+  "listDocumentVersions",
+  "createDocumentVersion",
+  "getDocumentVersion",
   "getCollaboratorDocument",
-  "unlinkCollaboratorDocument"
+  "unlinkCollaboratorDocument",
+  "listLatestSubmissions",
+  "listSubmissionEvents",
+  "listPendingDocuments",
+  "listPendingDocumentTypeStatistics",
+  "getCompletenessStatistics"
 ] as const;
 
 export function selectDiscoverySlice(yaml: ParsedYaml): DiscoverySlice {
@@ -684,3 +727,41 @@ export const loadGetDocumentVersionSliceFromContract = (): OperationSlice =>
     "/api/v1/collaborator-documents/{id}/versions/{version}",
     "get"
   );
+
+export const loadListPendingDocumentsSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(listPendingDocumentsContractPath, "/api/v1/pending-documents", "get");
+
+export const loadListPendingDocumentsSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/pending-documents", "get");
+
+export const loadGetCompletenessStatisticsSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(
+    getCompletenessStatisticsContractPath,
+    "/api/v1/statistics/completeness",
+    "get"
+  );
+
+export const loadGetCompletenessStatisticsSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/statistics/completeness", "get");
+
+export const loadListPendingDocumentTypeStatisticsSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(
+    listPendingDocumentTypeStatisticsContractPath,
+    "/api/v1/statistics/pending-document-types",
+    "get"
+  );
+
+export const loadListPendingDocumentTypeStatisticsSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/statistics/pending-document-types", "get");
+
+export const loadListLatestSubmissionsSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(listLatestSubmissionsContractPath, "/api/v1/submissions/latest", "get");
+
+export const loadListLatestSubmissionsSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/submissions/latest", "get");
+
+export const loadListSubmissionEventsSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(listSubmissionEventsContractPath, "/api/v1/submission-events", "get");
+
+export const loadListSubmissionEventsSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/submission-events", "get");

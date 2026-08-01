@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+docs/
+.git/
+.scannerwork/
+.serena/
+.vitest/
+Dockerfile*
+.dockerignore
+*.log*
+.env*

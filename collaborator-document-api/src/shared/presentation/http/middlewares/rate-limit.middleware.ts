@@ -68,7 +68,7 @@ export class RateLimitMiddleware {
       const traceId = getRequestTraceId(req);
       const {problem} = this.mapper.fromFailure(
         {code: "RATE_LIMIT_EXCEEDED"},
-        {instance: "/api/v1", traceId}
+        {instance: req.path, traceId}
       );
 
       res.status(429);
