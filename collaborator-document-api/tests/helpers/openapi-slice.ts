@@ -36,6 +36,13 @@ export const getDocumentVersionContractPath = resolve(
   "contracts",
   "get-document-version.openapi.yaml"
 );
+export const listPendingDocumentsContractPath = resolve(
+  repoRoot,
+  "specs",
+  "025-list-pending-documents",
+  "contracts",
+  "list-pending-documents.openapi.yaml"
+);
 
 export type JsonScalar = string | number | boolean | null;
 export type JsonValue = JsonScalar | JsonObject | JsonArray;
@@ -684,3 +691,9 @@ export const loadGetDocumentVersionSliceFromContract = (): OperationSlice =>
     "/api/v1/collaborator-documents/{id}/versions/{version}",
     "get"
   );
+
+export const loadListPendingDocumentsSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(listPendingDocumentsContractPath, "/api/v1/pending-documents", "get");
+
+export const loadListPendingDocumentsSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/pending-documents", "get");

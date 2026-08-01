@@ -47,6 +47,11 @@ export function serverSettings(env: BootstrapEnv) {
       rateLimit,
       provisionIndexes: true
     },
+    reporting: {
+      cursorHmacSecret: env.cursorHmacSecret ?? testCursorHmacSecret,
+      rateLimit,
+      provisionIndexes: true
+    },
     mongoose: [
       {
         id: "default",

@@ -17,6 +17,9 @@ import {CollaboratorDocumentsController} from "./modules/collaborator-documents/
 import {DocumentTypesModule} from "./modules/document-types/document-types.module.js";
 import {DocumentTypeIndexProvisioner} from "./modules/document-types/infrastructure/persistence/mongodb/document-type.indexes.js";
 import {DocumentTypesController} from "./modules/document-types/presentation/http/controllers/document-types.controller.js";
+import {ReportingModule} from "./modules/reporting/reporting.module.js";
+import {PendingDocumentsIndexProvisioner} from "./modules/reporting/infrastructure/persistence/mongodb/pending-documents.indexes.js";
+import {PendingDocumentsController} from "./modules/reporting/presentation/http/controllers/pending-documents.controller.js";
 import {MongoReadinessCheck} from "./shared/infrastructure/availability/mongo-readiness-check.js";
 import {globalErrorMiddleware} from "./shared/presentation/http/filters/global-error.filter.js";
 import {requestIdMiddleware} from "./shared/presentation/http/middlewares/request-id.middleware.js";
@@ -62,13 +65,15 @@ const corsMiddleware = cors({
       ApiRootController,
       CollaboratorsController,
       DocumentTypesController,
-      CollaboratorDocumentsController
+      CollaboratorDocumentsController,
+      PendingDocumentsController
     ]
   },
   imports: [
     CollaboratorsModule,
     DocumentTypesModule,
     CollaboratorDocumentsModule,
+    ReportingModule,
     MongoReadinessCheck
   ],
   middlewares: [
@@ -92,10 +97,14 @@ export class Server {
   @Constant<boolean>("collaboratorDocuments.provisionIndexes", true)
   private readonly provisionCollaboratorDocumentIndexes!: boolean;
 
+  @Constant<boolean>("reporting.provisionIndexes", false)
+  private readonly provisionReportingIndexes!: boolean;
+
   constructor(
     private readonly collaboratorIndexes: CollaboratorIndexProvisioner,
     private readonly documentTypeIndexes: DocumentTypeIndexProvisioner,
-    private readonly collaboratorDocumentIndexes: CollaboratorDocumentIndexProvisioner
+    private readonly collaboratorDocumentIndexes: CollaboratorDocumentIndexProvisioner,
+    private readonly pendingDocumentIndexes: PendingDocumentsIndexProvisioner
   ) {}
 
   /**
@@ -127,6 +136,12 @@ export class Server {
       const result = await this.collaboratorDocumentIndexes.ensure();
       if (result.isErr()) {
         throw new Error(`COLLABORATOR_DOCUMENT_INDEX_PROVISIONING_FAILED:${result.error.code}`);
+      }
+    }
+    if (this.provisionReportingIndexes) {
+      const result = await this.pendingDocumentIndexes.ensure();
+      if (result.isErr()) {
+        throw new Error(`REPORTING_INDEX_PROVISIONING_FAILED:${result.error.code}`);
       }
     }
   }
