@@ -6,9 +6,16 @@ import {BodyParams, HeaderParams, PathParams, QueryParams} from "@tsed/platform-
 import {Req, Res} from "@tsed/platform-http";
 import {
   ContentType,
+  Default,
   Delete,
   Description,
+  Enum,
   Get,
+  getJsonMethodStore,
+  Integer,
+  Maximum,
+  Minimum,
+  MinLength,
   OperationId,
   Post,
   Returns,
@@ -28,12 +35,18 @@ import {ProblemDetails} from "../../../../../shared/presentation/http/schemas/pr
 import {CreateCollaboratorDocumentDto} from "../dtos/create-collaborator-document.dto.js";
 import {CreateDocumentVersionDto} from "../dtos/create-document-version.dto.js";
 import {collaboratorDocumentPresenter} from "../presenters/collaborator-document.presenter.js";
-import {documentVersionPresenter} from "../presenters/document-version.presenter.js";
+import {
+  documentVersionCollectionPresenter,
+  documentVersionPresenter
+} from "../presenters/document-version.presenter.js";
 import {
   CollaboratorDocumentCollectionResponse,
   CollaboratorDocumentResponse
 } from "../schemas/collaborator-document-response.schema.js";
-import {DocumentVersionResponse} from "../schemas/document-version-response.schema.js";
+import {
+  DocumentVersionCollectionResponse,
+  DocumentVersionResponse
+} from "../schemas/document-version-response.schema.js";
 import type {DocumentVersionMetadata} from "../../../application/contracts/document-version-output.js";
 
 type HttpFailure = Readonly<{
@@ -278,6 +291,108 @@ export class CollaboratorDocumentsController {
     res.status(200).type("application/hal+json").json(body);
   }
 
+  @Get("/:id/versions")
+  @WithoutResponseContent(304)
+  @OperationId("listDocumentVersions")
+  @Tags("Document Versions")
+  @Summary("Listar versões do documento")
+  @Description(
+    "Ordena o histórico pelo número da versão em ordem decrescente por padrão ou crescente quando solicitado."
+  )
+  @ContentType("application/hal+json")
+  @(Returns(200, DocumentVersionCollectionResponse)
+    .ContentType("application/hal+json")
+    .Header("ETag", {$ref: "#/components/headers/ETag"} as never)
+    .Description("Página de versões do documento."))
+  @(Returns(304).Description("Representação inalterada."))
+  @(Returns(400, ProblemDetails).ContentType("application/problem+json"))
+  @(Returns(404, ProblemDetails).ContentType("application/problem+json"))
+  @(Returns(429, ProblemDetails)
+    .ContentType("application/problem+json")
+    .Header("Retry-After", {$ref: "#/components/headers/RetryAfter"} as never))
+  @(Returns(500, ProblemDetails).ContentType("application/problem+json"))
+  @(Returns(503, ProblemDetails).ContentType("application/problem+json"))
+  async listVersions(
+    @PathParams("id") id: string,
+    @QueryParams({expression: "order", useType: String, useValidation: false})
+    @Enum("desc", "asc")
+    @Default("desc")
+    rawOrder: string | undefined,
+    @QueryParams({expression: "limit", useType: String, useValidation: false})
+    @Integer()
+    @Minimum(1)
+    @Maximum(100)
+    @Default(20)
+    rawLimit: string | undefined,
+    @QueryParams({expression: "cursor", useType: String, useValidation: false})
+    @MinLength(1)
+    rawCursor: string | undefined,
+    @HeaderParams({expression: "If-None-Match", useType: String, useValidation: false})
+    ifNoneMatch: string | undefined,
+    @Res() res: Response
+  ): Promise<void> {
+    const traceId = getRequestTraceId(res.req!);
+    if (!(await this.runtime.rateLimiter("listDocumentVersions", "read").handle(res.req!, res)))
+      return;
+    if (!isObjectId(id)) return this.writeProblem(res, invalidObjectIdFailure(), traceId);
+
+    const parsed = parseVersionListQuery(rawOrder, rawLimit, rawCursor);
+    if (parsed.isErr()) return this.writeProblem(res, parsed.error, traceId);
+    const {order, limit, cursor} = parsed.value;
+    const context = {
+      operationId: "listDocumentVersions",
+      filtersHash: createHash("sha256")
+        .update(JSON.stringify({documentId: id}))
+        .digest("hex"),
+      order: `version:${order}`,
+      limit
+    };
+    const decoded = cursor ? this.runtime.cursorCodec.decode(cursor, context) : undefined;
+    if (decoded?.isErr()) return this.writeProblem(res, invalidCursorFailure(), traceId);
+
+    const afterVersion = decoded?.isOk() ? Number(decoded.value.position.id) : undefined;
+    if (afterVersion !== undefined && (!Number.isInteger(afterVersion) || afterVersion < 1)) {
+      return this.writeProblem(res, invalidCursorFailure(), traceId);
+    }
+
+    const result = await this.runtime.application.listVersions.execute({
+      id,
+      order,
+      limit,
+      afterVersion
+    });
+    result.match(
+      (page) => {
+        const selfQuery = new URLSearchParams({order, limit: String(limit)});
+        if (cursor) selfQuery.set("cursor", cursor);
+        const baseHref = `/api/v1/collaborator-documents/${id}/versions`;
+        const self = `${baseHref}?${selfQuery.toString()}`;
+        const lastVersion = page.items.at(-1)?.version;
+        const next =
+          page.hasNext && lastVersion !== undefined
+            ? versionListNextHref(
+                baseHref,
+                selfQuery,
+                this.runtime.cursorCodec.encode({
+                  ...context,
+                  position: {id: String(lastVersion)}
+                })
+              )
+            : undefined;
+        const body = documentVersionCollectionPresenter(id, page, {self, next});
+        const etag = this.etag.compute(body);
+        if (ifNoneMatch && this.etag.matches(etag, ifNoneMatch)) {
+          this.notModified(res);
+          return;
+        }
+
+        res.setHeader("ETag", etag);
+        res.status(200).type("application/hal+json").json(body);
+      },
+      (failure) => this.writeProblem(res, failure, traceId)
+    );
+  }
+
   @Get("/:id")
   @OperationId("getCollaboratorDocument")
   @Tags("Collaborator Documents")
@@ -396,6 +511,18 @@ function listNextHref(query: URLSearchParams, cursor: string): string {
   return `/api/v1/collaborator-documents?${nextQuery.toString()}`;
 }
 
+function versionListNextHref(baseHref: string, query: URLSearchParams, cursor: string): string {
+  const nextQuery = new URLSearchParams(query);
+  nextQuery.set("cursor", cursor);
+  return `${baseHref}?${nextQuery.toString()}`;
+}
+
+function WithoutResponseContent(status: number): MethodDecorator {
+  return (target, propertyKey) => {
+    getJsonMethodStore(target, propertyKey).operation.getResponseOf(status).delete("content");
+  };
+}
+
 function invalidObjectIdFailure(): HttpFailure {
   return {
     code: "INVALID_OBJECT_ID",
@@ -417,6 +544,19 @@ function invalidQueryFailure(field: string): HttpFailure {
         field,
         code: "INVALID_QUERY_PARAMETER",
         message: "Informe um parâmetro de consulta válido."
+      }
+    ]
+  };
+}
+
+function invalidCursorFailure(): HttpFailure {
+  return {
+    code: "INVALID_QUERY_PARAMETER",
+    errors: [
+      {
+        field: "cursor",
+        code: "INVALID_CURSOR",
+        message: "O cursor informado é inválido, expirado ou incompatível."
       }
     ]
   };
@@ -653,4 +793,28 @@ function parseListQuery(
   }
 
   return ok({limit, cursor, filters});
+}
+
+type ParsedVersionListQuery = Readonly<{
+  order: "asc" | "desc";
+  limit: number;
+  cursor: string | undefined;
+}>;
+
+function parseVersionListQuery(
+  rawOrder: string | undefined,
+  rawLimit: string | undefined,
+  rawCursor: string | undefined
+): Result<ParsedVersionListQuery, HttpFailure> {
+  const order = rawOrder === undefined || rawOrder === "" ? "desc" : rawOrder;
+  const limit = rawLimit === undefined || rawLimit === "" ? 20 : Number(rawLimit);
+  const cursor = rawCursor === undefined ? undefined : queryValue(rawCursor);
+
+  if (order !== "asc" && order !== "desc") return err(invalidQueryFailure("order"));
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return err(invalidQueryFailure("limit"));
+  }
+  if (rawCursor !== undefined && !cursor) return err(invalidQueryFailure("cursor"));
+
+  return ok({order, limit, cursor});
 }

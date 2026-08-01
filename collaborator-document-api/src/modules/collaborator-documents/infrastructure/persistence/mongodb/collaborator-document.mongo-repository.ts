@@ -13,6 +13,7 @@ import {
 } from "../../../application/contracts/soft-delete-collaborator-documents.input.js";
 import type {CollaboratorDocumentOutput} from "../../../application/contracts/collaborator-document-output.js";
 import type {
+  DocumentVersionListPage,
   DocumentVersionMetadata,
   DocumentVersionOutput
 } from "../../../application/contracts/document-version-output.js";
@@ -86,6 +87,15 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
     limit: number;
   }): Promise<Result<CollaboratorDocumentListPage, CollaboratorDocumentFailure>> {
     return this.listSafely(input);
+  }
+
+  listVersions(input: {
+    id: string;
+    order: "asc" | "desc";
+    limit: number;
+    afterVersion?: number;
+  }): Promise<Result<DocumentVersionListPage, CollaboratorDocumentFailure>> {
+    return this.listVersionsSafely(input);
   }
 
   unlinkActive(
@@ -318,6 +328,66 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
         items.push(mapped.value);
       }
       return ok({items, hasNext});
+    } catch (error) {
+      return err(mapMongoFailure(error));
+    }
+  }
+
+  private async listVersionsSafely(input: {
+    id: string;
+    order: "asc" | "desc";
+    limit: number;
+    afterVersion?: number;
+  }): Promise<Result<DocumentVersionListPage, CollaboratorDocumentFailure>> {
+    try {
+      const model = this.model();
+      if (!model) return err(unavailable());
+      if (!Types.ObjectId.isValid(input.id)) {
+        return err(
+          collaboratorDocumentApplicationFailure(
+            "COLLABORATOR_DOCUMENT_NOT_FOUND",
+            "Collaborator document was not found."
+          )
+        );
+      }
+
+      const row = await model.findById(input.id).select({currentVersion: 1, versions: 1}).lean();
+      if (!row) {
+        return err(
+          collaboratorDocumentApplicationFailure(
+            "COLLABORATOR_DOCUMENT_NOT_FOUND",
+            "Collaborator document was not found."
+          )
+        );
+      }
+      if (
+        !Number.isInteger(row.currentVersion) ||
+        row.currentVersion < 0 ||
+        !Array.isArray(row.versions)
+      ) {
+        return err(invalidVersionPersistenceData());
+      }
+
+      const versions: DocumentVersionOutput[] = [];
+      for (const value of row.versions) {
+        const mapped = documentVersionOutput(value);
+        if (mapped.isErr()) return err(mapped.error);
+        versions.push(mapped.value);
+      }
+      const ordered = versions.sort((left, right) => {
+        return input.order === "asc" ? left.version - right.version : right.version - left.version;
+      });
+      const afterVersion = input.afterVersion;
+      const afterAnchor =
+        afterVersion === undefined
+          ? ordered
+          : ordered.filter((value) =>
+              input.order === "asc" ? value.version > afterVersion : value.version < afterVersion
+            );
+      const hasNext = afterAnchor.length > input.limit;
+      const items = hasNext ? afterAnchor.slice(0, input.limit) : afterAnchor;
+
+      return ok({items, currentVersion: row.currentVersion, hasNext});
     } catch (error) {
       return err(mapMongoFailure(error));
     }

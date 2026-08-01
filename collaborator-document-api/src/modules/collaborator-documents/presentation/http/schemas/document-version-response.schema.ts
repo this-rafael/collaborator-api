@@ -1,5 +1,6 @@
 import {
   AdditionalProperties,
+  CollectionOf,
   Format,
   Integer,
   MaxLength,
@@ -71,4 +72,44 @@ export class DocumentVersionResponse {
   @Required()
   @Property(DocumentVersionHalLinks)
   _links!: DocumentVersionHalLinks;
+}
+
+@AdditionalProperties(false)
+class DocumentVersionCollectionEmbedded {
+  @Required()
+  @CollectionOf(DocumentVersionResponse)
+  versions!: DocumentVersionResponse[];
+}
+
+@AdditionalProperties({$ref: "#/components/schemas/HalLink"})
+class DocumentVersionCollectionLinks {
+  @Required()
+  @Property(HalLink)
+  self!: HalLink;
+
+  @Property(HalLink)
+  next?: HalLink;
+}
+
+/** Schema OpenAPI da coleção HAL paginada de versões. */
+@AdditionalProperties(false)
+@Name("VersionCollection")
+export class DocumentVersionCollectionResponse {
+  @Required()
+  @Integer()
+  @Minimum(0)
+  count!: number;
+
+  @Required()
+  @Integer()
+  @Minimum(0)
+  currentVersion!: number;
+
+  @Required()
+  @Property(DocumentVersionCollectionEmbedded)
+  _embedded!: DocumentVersionCollectionEmbedded;
+
+  @Required()
+  @Property(DocumentVersionCollectionLinks)
+  _links!: DocumentVersionCollectionLinks;
 }
