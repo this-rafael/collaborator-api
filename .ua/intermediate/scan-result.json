@@ -1,0 +1,419 @@
+{
+  "name": "collaborator-document-api",
+  "description": "API REST para gerenciar a documentação de colaboradores, com consistência transacional, histórico de versões e contratos HTTP explícitos.",
+  "languages": [
+    "config",
+    "dockerfile",
+    "javascript",
+    "json",
+    "markdown",
+    "mts",
+    "typescript",
+    "unknown",
+    "yaml"
+  ],
+  "frameworks": [
+    "Express",
+    "Vitest",
+    "Docker",
+    "Docker Compose"
+  ],
+  "files": [
+    {
+      "path": ".nvmrc",
+      "language": "unknown",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".ua/.understandignore",
+      "language": "unknown",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".ua/config.json",
+      "language": "json",
+      "sizeLines": 3,
+      "fileCategory": "config"
+    },
+    {
+      "path": "collaborator-document-api/.env.example",
+      "language": "config",
+      "sizeLines": 4,
+      "fileCategory": "config"
+    },
+    {
+      "path": "collaborator-document-api/.nvmrc",
+      "language": "unknown",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/.prettierignore",
+      "language": "unknown",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/.swcrc",
+      "language": "unknown",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/docker-compose.yml",
+      "language": "yaml",
+      "sizeLines": 87,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "collaborator-document-api/docker/mongo/init-replica-set.js",
+      "language": "javascript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/Dockerfile",
+      "language": "dockerfile",
+      "sizeLines": 34,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "collaborator-document-api/docs/foundation.md",
+      "language": "markdown",
+      "sizeLines": 24,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "collaborator-document-api/eslint.config.js",
+      "language": "javascript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/lefthook.yml",
+      "language": "yaml",
+      "sizeLines": 12,
+      "fileCategory": "config"
+    },
+    {
+      "path": "collaborator-document-api/package.json",
+      "language": "json",
+      "sizeLines": 81,
+      "fileCategory": "config"
+    },
+    {
+      "path": "collaborator-document-api/pnpm-workspace.yaml",
+      "language": "yaml",
+      "sizeLines": 7,
+      "fileCategory": "config"
+    },
+    {
+      "path": "collaborator-document-api/README.md",
+      "language": "markdown",
+      "sizeLines": 85,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "collaborator-document-api/scripts/check-runtime.d.mts",
+      "language": "mts",
+      "sizeLines": 4,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/scripts/check-runtime.mjs",
+      "language": "javascript",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/scripts/smoke-built-app.mjs",
+      "language": "javascript",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/scripts/verify-test-runner.mjs",
+      "language": "javascript",
+      "sizeLines": 13,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/src/bootstrap.ts",
+      "language": "typescript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/src/config/env.ts",
+      "language": "typescript",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/src/config/index.ts",
+      "language": "typescript",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/src/controllers/health.controller.ts",
+      "language": "typescript",
+      "sizeLines": 14,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/src/index.ts",
+      "language": "typescript",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/src/Server.ts",
+      "language": "typescript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/src/shared/application/application-failure.ts",
+      "language": "typescript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/src/shared/domain/domain-failure.ts",
+      "language": "typescript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "language": "typescript",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "language": "typescript",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/src/shared/result.ts",
+      "language": "typescript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/contract/health.contract.spec.ts",
+      "language": "typescript",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/fixtures/intentional-failure.spec.ts",
+      "language": "typescript",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/fixtures/vitest.failure.config.ts",
+      "language": "typescript",
+      "sizeLines": 3,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/helpers/clock.ts",
+      "language": "typescript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/helpers/database.ts",
+      "language": "typescript",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/helpers/failures.ts",
+      "language": "typescript",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/helpers/fixtures.ts",
+      "language": "typescript",
+      "sizeLines": 4,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/helpers/mongo-container.global.ts",
+      "language": "typescript",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/http/health.spec.ts",
+      "language": "typescript",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "language": "typescript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/unit/env.spec.ts",
+      "language": "typescript",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/unit/mongo-managers.spec.ts",
+      "language": "typescript",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/unit/runtime.spec.ts",
+      "language": "typescript",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "language": "typescript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "collaborator-document-api/tsconfig.build.json",
+      "language": "json",
+      "sizeLines": 9,
+      "fileCategory": "config"
+    },
+    {
+      "path": "collaborator-document-api/tsconfig.json",
+      "language": "json",
+      "sizeLines": 26,
+      "fileCategory": "config"
+    },
+    {
+      "path": "collaborator-document-api/vitest.config.ts",
+      "language": "typescript",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "lefthook.yml",
+      "language": "yaml",
+      "sizeLines": 17,
+      "fileCategory": "config"
+    },
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "sizeLines": 972,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "TEXTO_BASE_DESAFIO.md",
+      "language": "markdown",
+      "sizeLines": 86,
+      "fileCategory": "docs"
+    }
+  ],
+  "totalFiles": 51,
+  "filteredByIgnore": 0,
+  "estimatedComplexity": "moderate",
+  "importMap": {
+    ".nvmrc": [],
+    ".ua/.understandignore": [],
+    ".ua/config.json": [],
+    "collaborator-document-api/.env.example": [],
+    "collaborator-document-api/.nvmrc": [],
+    "collaborator-document-api/.prettierignore": [],
+    "collaborator-document-api/.swcrc": [],
+    "collaborator-document-api/docker-compose.yml": [],
+    "collaborator-document-api/docker/mongo/init-replica-set.js": [],
+    "collaborator-document-api/Dockerfile": [],
+    "collaborator-document-api/docs/foundation.md": [],
+    "collaborator-document-api/eslint.config.js": [],
+    "collaborator-document-api/lefthook.yml": [],
+    "collaborator-document-api/package.json": [],
+    "collaborator-document-api/pnpm-workspace.yaml": [],
+    "collaborator-document-api/README.md": [],
+    "collaborator-document-api/scripts/check-runtime.d.mts": [],
+    "collaborator-document-api/scripts/check-runtime.mjs": [],
+    "collaborator-document-api/scripts/smoke-built-app.mjs": [],
+    "collaborator-document-api/scripts/verify-test-runner.mjs": [],
+    "collaborator-document-api/src/bootstrap.ts": [
+      "collaborator-document-api/src/config/env.ts",
+      "collaborator-document-api/src/Server.ts"
+    ],
+    "collaborator-document-api/src/config/env.ts": [],
+    "collaborator-document-api/src/config/index.ts": [],
+    "collaborator-document-api/src/controllers/health.controller.ts": [],
+    "collaborator-document-api/src/index.ts": [
+      "collaborator-document-api/src/bootstrap.ts",
+      "collaborator-document-api/src/config/env.ts"
+    ],
+    "collaborator-document-api/src/Server.ts": [
+      "collaborator-document-api/src/controllers/health.controller.ts",
+      "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts"
+    ],
+    "collaborator-document-api/src/shared/application/application-failure.ts": [],
+    "collaborator-document-api/src/shared/domain/domain-failure.ts": [],
+    "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts": [],
+    "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts": [],
+    "collaborator-document-api/src/shared/result.ts": [],
+    "collaborator-document-api/tests/contract/health.contract.spec.ts": [
+      "collaborator-document-api/src/Server.ts"
+    ],
+    "collaborator-document-api/tests/fixtures/intentional-failure.spec.ts": [],
+    "collaborator-document-api/tests/fixtures/vitest.failure.config.ts": [],
+    "collaborator-document-api/tests/helpers/clock.ts": [],
+    "collaborator-document-api/tests/helpers/database.ts": [],
+    "collaborator-document-api/tests/helpers/failures.ts": [],
+    "collaborator-document-api/tests/helpers/fixtures.ts": [],
+    "collaborator-document-api/tests/helpers/mongo-container.global.ts": [],
+    "collaborator-document-api/tests/http/health.spec.ts": [
+      "collaborator-document-api/src/Server.ts"
+    ],
+    "collaborator-document-api/tests/integration/mongodb.spec.ts": [
+      "collaborator-document-api/src/bootstrap.ts",
+      "collaborator-document-api/src/Server.ts",
+      "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "collaborator-document-api/tests/helpers/database.ts"
+    ],
+    "collaborator-document-api/tests/unit/env.spec.ts": [
+      "collaborator-document-api/src/config/env.ts"
+    ],
+    "collaborator-document-api/tests/unit/mongo-managers.spec.ts": [
+      "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts"
+    ],
+    "collaborator-document-api/tests/unit/runtime.spec.ts": [
+      "collaborator-document-api/scripts/check-runtime.mjs"
+    ],
+    "collaborator-document-api/tests/unit/shared-foundation.spec.ts": [
+      "collaborator-document-api/src/shared/application/application-failure.ts",
+      "collaborator-document-api/src/shared/domain/domain-failure.ts",
+      "collaborator-document-api/src/shared/result.ts",
+      "collaborator-document-api/tests/helpers/clock.ts",
+      "collaborator-document-api/tests/helpers/failures.ts",
+      "collaborator-document-api/tests/helpers/fixtures.ts"
+    ],
+    "collaborator-document-api/tsconfig.build.json": [],
+    "collaborator-document-api/tsconfig.json": [],
+    "collaborator-document-api/vitest.config.ts": [],
+    "lefthook.yml": [],
+    "README.md": [],
+    "TEXTO_BASE_DESAFIO.md": []
+  }
+}

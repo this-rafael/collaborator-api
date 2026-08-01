@@ -80,4 +80,20 @@ describe("Creating a document version through the application", () => {
     if (result.isErr()) expect(result.error.code).toBe("INTERNAL_SERVER_ERROR");
     expect(repository.calls).toEqual([]);
   });
+
+  it("maps an unexpected repository rejection to a modeled internal error", async () => {
+    const module = await import(createVersionUseCaseModule);
+    const repository = {
+      appendVersion: async () => {
+        throw new Error("unexpected persistence rejection");
+      }
+    };
+
+    const result = await new module.CreateDocumentVersionUseCase(repository, {
+      now: () => now
+    }).execute({id, metadata});
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("INTERNAL_SERVER_ERROR");
+  });
 });

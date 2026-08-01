@@ -1,0 +1,4495 @@
+openapi: 3.1.0
+info:
+  title: Collaborator Document API
+  version: 1.0.0
+  summary: API REST com HATEOAS para gestão documental de colaboradores.
+  description: 'API orientada a recursos para colaboradores, tipos de documento, vínculos documentais, versões e estatísticas.
+
+
+    Representações de sucesso usam HAL (`application/hal+json`) e erros usam Problem Details (`application/problem+json`).
+    A presença de um link em `_links` comunica que uma navegação ou transição está disponível no estado atual. A ausência
+    do link comunica que a ação não deve ser oferecida pelo cliente.
+
+
+    O escopo atual não possui autenticação. O MongoDB deve operar em replica set porque o soft delete de colaboradores e tipos
+    propaga para vínculos por transação. O envio de versões é atômico no próprio documento e aceita reenvios concorrentes,
+    criando versões sequenciais distintas.
+
+
+    O contrato contém 23 operações funcionais sob `/api/v1` e dois endpoints operacionais de saúde fora dessa base. Todos
+    os GETs funcionais usam ETag fraco semântico; os endpoints de saúde não usam HAL, ETag ou rate limit.'
+  contact:
+    name: Rafael Pereira
+    url: https://github.com/this-rafael/collaborator-api
+  license:
+    name: Proprietary
+servers:
+- url: https://api.example.com
+  description: Servidor de exemplo
+- url: http://localhost:3000
+  description: Desenvolvimento local
+tags:
+- name: Discovery
+  description: Descoberta dos recursos e relações da API.
+- name: Collaborators
+  description: Cadastro e ciclo de vida de colaboradores.
+- name: Document Types
+  description: Catálogo de tipos de documento.
+- name: Collaborator Documents
+  description: Vínculos documentais e ciclos de vinculação.
+- name: Document Versions
+  description: Histórico e envio atômico de versões.
+- name: Queries
+  description: Consultas projetadas para pendências.
+- name: Statistics
+  description: Indicadores agregados de completude e pendências.
+- name: Submissions
+  description: Últimos envios e eventos históricos.
+- name: Health
+  description: Liveness e readiness operacionais, fora da API de negócio.
+security: []
+paths:
+  /health/live:
+    get:
+      tags:
+      - Health
+      summary: Verificar liveness do processo
+      operationId: getLiveness
+      description: Verifica somente se o processo está operacional. Não consulta MongoDB e não aplica HAL, ETag ou rate limit.
+      responses:
+        '200':
+          description: Processo operacional.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              example:
+                status: ok
+  /health/ready:
+    get:
+      tags:
+      - Health
+      summary: Verificar readiness da aplicação
+      operationId: getReadiness
+      description: Verifica a conexão MongoDB e se o ambiente está apto a executar as operações exigidas. Não aplica HAL,
+        ETag ou rate limit.
+      responses:
+        '200':
+          description: Aplicação apta a receber tráfego.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              example:
+                status: ok
+        '503':
+          description: A aplicação não está apta porque uma dependência necessária está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              example:
+                type: https://api.example.com/problems/service-unavailable
+                title: Serviço temporariamente indisponível
+                status: 503
+                detail: A aplicação ainda não está apta a receber tráfego.
+                instance: /health/ready
+                code: SERVICE_UNAVAILABLE
+                traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1:
+    get:
+      tags:
+      - Discovery
+      summary: Descobrir os recursos da API
+      operationId: discoverApi
+      description: Retorna os pontos de entrada disponíveis para os consumidores da API.
+      parameters:
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Pontos de entrada e relações disponíveis.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/ApiRoot'
+              example:
+                name: Collaborator Document API
+                version: '1'
+                _links:
+                  self:
+                    href: /api/v1
+                  collaborators:
+                    href: /api/v1/collaborators{?cursor,limit,name,cpf,email}
+                    templated: true
+                  document-types:
+                    href: /api/v1/document-types{?cursor,limit,name,code}
+                    templated: true
+                  collaborator-documents:
+                    href: /api/v1/collaborator-documents{?cursor,limit,collaboratorId,documentTypeId,status,lifecycle}
+                    templated: true
+                  pending-documents:
+                    href: /api/v1/pending-documents{?cursor,limit,collaboratorName,cpf,documentTypeName,documentTypeCode}
+                    templated: true
+                  completeness:
+                    href: /api/v1/statistics/completeness
+                  pending-document-types:
+                    href: /api/v1/statistics/pending-document-types{?cursor,limit}
+                    templated: true
+                  latest-submissions:
+                    href: /api/v1/submissions/latest{?cursor,limit}
+                    templated: true
+                  submission-events:
+                    href: /api/v1/submission-events{?cursor,limit}
+                    templated: true
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para descobrir os recursos da API foi excedido. Aguarde antes de tentar
+                      novamente.
+                    instance: /api/v1
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao descobrir os recursos da API.
+                    instance: /api/v1
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível descobrir os recursos da API porque o MongoDB ou outra dependência necessária
+                      está indisponível.
+                    instance: /api/v1
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/collaborators:
+    post:
+      tags:
+      - Collaborators
+      summary: Criar colaborador
+      operationId: createCollaborator
+      description: Cria um colaborador ativo com CPF e e-mail únicos entre registros ativos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollaboratorCreateRequest'
+            example:
+              name: Ana Souza
+              cpf: '12345678909'
+              email: ana.souza@example.com
+      responses:
+        '201':
+          description: Colaborador criado.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/Collaborator'
+              example:
+                id: 66a64ab05bd7213b90d9b001
+                name: Ana Souza
+                cpf: '12345678909'
+                email: ana.souza@example.com
+                createdAt: '2026-07-27T12:00:00.000Z'
+                updatedAt: '2026-07-27T12:00:00.000Z'
+                deletedAt: null
+                _links:
+                  self:
+                    href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+                  collection:
+                    href: /api/v1/collaborators
+                  update:
+                    href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+                    method: PATCH
+                  delete:
+                    href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+                    method: DELETE
+                  documents:
+                    href: /api/v1/collaborator-documents?collaboratorId=66a64ab05bd7213b90d9b001
+                  link-document:
+                    href: /api/v1/collaborator-documents
+                    method: POST
+          links:
+            GetCollaborator:
+              operationId: getCollaborator
+              parameters:
+                id: $response.body#/id
+            UpdateCollaborator:
+              operationId: updateCollaborator
+              parameters:
+                id: $response.body#/id
+            DeleteCollaborator:
+              operationId: deleteCollaborator
+              parameters:
+                id: $response.body#/id
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                malformedJson:
+                  summary: JSON inválido
+                  value:
+                    type: https://api.example.com/problems/malformed-json
+                    title: Corpo JSON malformado
+                    status: 400
+                    detail: Não foi possível interpretar o corpo JSON enviado para criar o colaborador.
+                    instance: /api/v1/collaborators
+                    code: MALFORMED_JSON
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '409':
+          description: A operação conflita com uma restrição de unicidade ou com o estado atual do recurso.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                duplicateCpf:
+                  summary: CPF duplicado entre colaboradores ativos
+                  value:
+                    type: https://api.example.com/problems/duplicate-active-cpf
+                    title: CPF já cadastrado
+                    status: 409
+                    detail: Já existe um colaborador ativo cadastrado com o CPF 12345678909.
+                    instance: /api/v1/collaborators
+                    code: DUPLICATE_ACTIVE_CPF
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: cpf
+                      code: DUPLICATE_ACTIVE_CPF
+                      message: O CPF já pertence a outro colaborador ativo.
+                duplicateEmail:
+                  summary: E-mail duplicado entre colaboradores ativos
+                  value:
+                    type: https://api.example.com/problems/duplicate-active-email
+                    title: E-mail já cadastrado
+                    status: 409
+                    detail: Já existe um colaborador ativo cadastrado com o e-mail ana.souza@example.com.
+                    instance: /api/v1/collaborators
+                    code: DUPLICATE_ACTIVE_EMAIL
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: email
+                      code: DUPLICATE_ACTIVE_EMAIL
+                      message: O e-mail já pertence a outro colaborador ativo.
+        '415':
+          description: O Content-Type enviado não é suportado por esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unsupportedMediaType:
+                  summary: Content-Type incompatível com a operação
+                  value:
+                    type: https://api.example.com/problems/unsupported-media-type
+                    title: Tipo de mídia não suportado
+                    status: 415
+                    detail: O corpo usado para criar o colaborador deve ser enviado com Content-Type application/json.
+                    instance: /api/v1/collaborators
+                    code: UNSUPPORTED_MEDIA_TYPE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '422':
+          description: O corpo foi interpretado, mas contém dados inválidos para o recurso.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                validationError:
+                  summary: Falha de validação do recurso
+                  value:
+                    type: https://api.example.com/problems/validation-error
+                    title: Dados inválidos
+                    status: 422
+                    detail: Os dados informados para o colaborador violam as regras de validação.
+                    instance: /api/v1/collaborators
+                    code: VALIDATION_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: name
+                      code: REQUIRED
+                      message: O nome do colaborador é obrigatório.
+                    - field: cpf
+                      code: INVALID_CPF
+                      message: O CPF do colaborador deve conter 11 dígitos válidos.
+                    - field: email
+                      code: INVALID_EMAIL
+                      message: O e-mail do colaborador deve possuir formato válido.
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para criar o colaborador foi excedido. Aguarde antes de tentar novamente.
+                    instance: /api/v1/collaborators
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao criar o colaborador.
+                    instance: /api/v1/collaborators
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível criar o colaborador porque o MongoDB ou outra dependência necessária está indisponível.
+                    instance: /api/v1/collaborators
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+    get:
+      tags:
+      - Collaborators
+      summary: Listar colaboradores ativos
+      operationId: listCollaborators
+      description: Todos os filtros informados são combinados por AND. Ordenação total por _id ASC.
+      parameters:
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/IfNoneMatch'
+      - name: name
+        in: query
+        schema:
+          type: string
+        description: Busca por substring após trim e colapso de espaços, sem diferenciar caixa ou acentos.
+      - name: cpf
+        in: query
+        schema:
+          type: string
+          pattern: ^\d{11}$
+        description: Busca exata pelo CPF normalizado com 11 dígitos.
+      - name: email
+        in: query
+        schema:
+          type: string
+          format: email
+        description: Busca exata sem diferenciar maiúsculas de minúsculas.
+      responses:
+        '200':
+          description: Página de colaboradores ativos.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/CollaboratorCollection'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidQueryParameter:
+                  summary: Filtro ou cursor inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-query-parameter
+                    title: Parâmetro de consulta inválido
+                    status: 400
+                    detail: Um ou mais parâmetros usados para listar colaboradores são inválidos.
+                    instance: /api/v1/collaborators
+                    code: INVALID_QUERY_PARAMETER
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: cursor
+                      code: INVALID_CURSOR
+                      message: O cursor informado é inválido ou expirou.
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para listar colaboradores foi excedido. Aguarde antes de tentar novamente.
+                    instance: /api/v1/collaborators
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao listar colaboradores.
+                    instance: /api/v1/collaborators
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível listar colaboradores porque o MongoDB ou outra dependência necessária está indisponível.
+                    instance: /api/v1/collaborators
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/collaborators/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Identificador do colaborador.
+      schema:
+        $ref: '#/components/schemas/ObjectId'
+      example: 66a64ab05bd7213b90d9b001
+    get:
+      tags:
+      - Collaborators
+      summary: Consultar colaborador
+      operationId: getCollaborator
+      description: Retorna representação ativa ou histórica. Colaborador excluído não oferece links de alteração, exclusão
+        ou criação de vínculo.
+      parameters:
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Colaborador encontrado.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/Collaborator'
+              example:
+                id: 66a64ab05bd7213b90d9b001
+                name: Ana Souza
+                cpf: '12345678909'
+                email: ana.souza@example.com
+                createdAt: '2026-07-27T12:00:00.000Z'
+                updatedAt: '2026-07-27T12:00:00.000Z'
+                deletedAt: null
+                _links:
+                  self:
+                    href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+                  collection:
+                    href: /api/v1/collaborators
+                  update:
+                    href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+                    method: PATCH
+                  delete:
+                    href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+                    method: DELETE
+                  documents:
+                    href: /api/v1/collaborator-documents?collaboratorId=66a64ab05bd7213b90d9b001
+                  link-document:
+                    href: /api/v1/collaborator-documents
+                    method: POST
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidObjectId:
+                  summary: ObjectId inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-object-id
+                    title: Identificador inválido
+                    status: 400
+                    detail: O identificador informado para colaborador não possui o formato ObjectId esperado.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: INVALID_OBJECT_ID
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: id
+                      code: INVALID_OBJECT_ID
+                      message: Informe um ObjectId hexadecimal com 24 caracteres.
+        '404':
+          description: Um recurso necessário para esta operação não foi encontrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorNotFound:
+                  summary: Colaborador inexistente
+                  value:
+                    type: https://api.example.com/problems/collaborator-not-found
+                    title: Colaborador não encontrado
+                    status: 404
+                    detail: Nenhum colaborador foi encontrado com o identificador 66a64ab05bd7213b90d9b001.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: COLLABORATOR_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para consultar o colaborador foi excedido. Aguarde antes de tentar novamente.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao consultar o colaborador.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível consultar o colaborador porque o MongoDB ou outra dependência necessária está
+                      indisponível.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+    patch:
+      tags:
+      - Collaborators
+      summary: Alterar colaborador ativo
+      operationId: updateCollaborator
+      description: Altera os campos informados de um colaborador que ainda está ativo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollaboratorPatchRequest'
+            example:
+              name: Ana Beatriz Souza
+              email: ana.beatriz@example.com
+      responses:
+        '200':
+          description: Colaborador atualizado.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/Collaborator'
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidObjectId:
+                  summary: ObjectId inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-object-id
+                    title: Identificador inválido
+                    status: 400
+                    detail: O identificador informado para colaborador não possui o formato ObjectId esperado.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: INVALID_OBJECT_ID
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: id
+                      code: INVALID_OBJECT_ID
+                      message: Informe um ObjectId hexadecimal com 24 caracteres.
+        '404':
+          description: Um recurso necessário para esta operação não foi encontrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorNotFound:
+                  summary: Colaborador inexistente
+                  value:
+                    type: https://api.example.com/problems/collaborator-not-found
+                    title: Colaborador não encontrado
+                    status: 404
+                    detail: Nenhum colaborador foi encontrado com o identificador 66a64ab05bd7213b90d9b001.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: COLLABORATOR_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '409':
+          description: A operação conflita com uma restrição de unicidade ou com o estado atual do recurso.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                duplicateCpf:
+                  summary: CPF duplicado entre colaboradores ativos
+                  value:
+                    type: https://api.example.com/problems/duplicate-active-cpf
+                    title: CPF já cadastrado
+                    status: 409
+                    detail: Já existe um colaborador ativo cadastrado com o CPF 12345678909.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: DUPLICATE_ACTIVE_CPF
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: cpf
+                      code: DUPLICATE_ACTIVE_CPF
+                      message: O CPF já pertence a outro colaborador ativo.
+                duplicateEmail:
+                  summary: E-mail duplicado entre colaboradores ativos
+                  value:
+                    type: https://api.example.com/problems/duplicate-active-email
+                    title: E-mail já cadastrado
+                    status: 409
+                    detail: Já existe um colaborador ativo cadastrado com o e-mail ana.souza@example.com.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: DUPLICATE_ACTIVE_EMAIL
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: email
+                      code: DUPLICATE_ACTIVE_EMAIL
+                      message: O e-mail já pertence a outro colaborador ativo.
+        '410':
+          description: O recurso foi removido logicamente ou o vínculo foi encerrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorDeleted:
+                  summary: Colaborador removido logicamente
+                  value:
+                    type: https://api.example.com/problems/collaborator-deleted
+                    title: Colaborador removido
+                    status: 410
+                    detail: O colaborador 66a64ab05bd7213b90d9b001 foi removido logicamente e não pode ser atualizado.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: COLLABORATOR_DELETED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '415':
+          description: O Content-Type enviado não é suportado por esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unsupportedMediaType:
+                  summary: Content-Type incompatível com a operação
+                  value:
+                    type: https://api.example.com/problems/unsupported-media-type
+                    title: Tipo de mídia não suportado
+                    status: 415
+                    detail: O corpo usado para atualizar o colaborador deve ser enviado com Content-Type application/json.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: UNSUPPORTED_MEDIA_TYPE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '422':
+          description: O corpo foi interpretado, mas contém dados inválidos para o recurso.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                validationError:
+                  summary: Falha de validação do recurso
+                  value:
+                    type: https://api.example.com/problems/validation-error
+                    title: Dados inválidos
+                    status: 422
+                    detail: Os dados informados para o colaborador violam as regras de validação.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: VALIDATION_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: name
+                      code: REQUIRED
+                      message: O nome do colaborador é obrigatório.
+                    - field: cpf
+                      code: INVALID_CPF
+                      message: O CPF do colaborador deve conter 11 dígitos válidos.
+                    - field: email
+                      code: INVALID_EMAIL
+                      message: O e-mail do colaborador deve possuir formato válido.
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para atualizar o colaborador foi excedido. Aguarde antes de tentar novamente.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao atualizar o colaborador.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível atualizar o colaborador porque o MongoDB ou outra dependência necessária está
+                      indisponível.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+    delete:
+      tags:
+      - Collaborators
+      summary: Excluir colaborador logicamente
+      operationId: deleteCollaborator
+      description: Operação idempotente. Preenche collaborators.deletedAt e, na mesma transação, collaborator_documents.deletedAt
+        dos vínculos ativos. Repetições retornam 204, preservam o deletedAt original e não executam nova cascata.
+      responses:
+        '204':
+          description: Operação concluída. Resposta sem corpo.
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidObjectId:
+                  summary: ObjectId inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-object-id
+                    title: Identificador inválido
+                    status: 400
+                    detail: O identificador informado para colaborador não possui o formato ObjectId esperado.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: INVALID_OBJECT_ID
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: id
+                      code: INVALID_OBJECT_ID
+                      message: Informe um ObjectId hexadecimal com 24 caracteres.
+        '404':
+          description: Um recurso necessário para esta operação não foi encontrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorNotFound:
+                  summary: Colaborador inexistente
+                  value:
+                    type: https://api.example.com/problems/collaborator-not-found
+                    title: Colaborador não encontrado
+                    status: 404
+                    detail: Nenhum colaborador foi encontrado com o identificador 66a64ab05bd7213b90d9b001.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: COLLABORATOR_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para remover logicamente o colaborador foi excedido. Aguarde antes de
+                      tentar novamente.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao remover logicamente o colaborador.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível remover logicamente o colaborador porque o MongoDB ou outra dependência necessária
+                      está indisponível.
+                    instance: /api/v1/collaborators/66a64ab05bd7213b90d9b003
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/document-types:
+    post:
+      tags:
+      - Document Types
+      summary: Criar tipo de documento
+      operationId: createDocumentType
+      description: Cria um tipo de documento ativo com código único entre registros ativos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentTypeCreateRequest'
+      responses:
+        '201':
+          description: Tipo de documento criado.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/DocumentType'
+              example:
+                id: 66a64ab05bd7213b90d9b010
+                name: Atestado de Saúde Ocupacional
+                code: ASO
+                description: Documento de aptidão ocupacional
+                createdAt: '2026-07-27T12:00:00.000Z'
+                updatedAt: '2026-07-27T12:00:00.000Z'
+                deletedAt: null
+                _links:
+                  self:
+                    href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+                  collection:
+                    href: /api/v1/document-types
+                  update:
+                    href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+                    method: PATCH
+                  delete:
+                    href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+                    method: DELETE
+                  documents:
+                    href: /api/v1/collaborator-documents?documentTypeId=66a64ab05bd7213b90d9b010
+                  pending-documents:
+                    href: /api/v1/pending-documents?documentTypeCode=ASO
+          links:
+            GetDocumentType:
+              operationId: getDocumentType
+              parameters:
+                id: $response.body#/id
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                malformedJson:
+                  summary: JSON inválido
+                  value:
+                    type: https://api.example.com/problems/malformed-json
+                    title: Corpo JSON malformado
+                    status: 400
+                    detail: Não foi possível interpretar o corpo JSON enviado para criar o tipo de documento.
+                    instance: /api/v1/document-types
+                    code: MALFORMED_JSON
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '409':
+          description: A operação conflita com uma restrição de unicidade ou com o estado atual do recurso.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                duplicateCode:
+                  summary: Código duplicado entre tipos ativos
+                  value:
+                    type: https://api.example.com/problems/duplicate-active-document-type-code
+                    title: Código de tipo de documento já cadastrado
+                    status: 409
+                    detail: Já existe um tipo de documento ativo com o código ASO.
+                    instance: /api/v1/document-types
+                    code: DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: code
+                      code: DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE
+                      message: O código já pertence a outro tipo de documento ativo.
+        '415':
+          description: O Content-Type enviado não é suportado por esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unsupportedMediaType:
+                  summary: Content-Type incompatível com a operação
+                  value:
+                    type: https://api.example.com/problems/unsupported-media-type
+                    title: Tipo de mídia não suportado
+                    status: 415
+                    detail: O corpo usado para criar o tipo de documento deve ser enviado com Content-Type application/json.
+                    instance: /api/v1/document-types
+                    code: UNSUPPORTED_MEDIA_TYPE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '422':
+          description: O corpo foi interpretado, mas contém dados inválidos para o recurso.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                validationError:
+                  summary: Falha de validação do recurso
+                  value:
+                    type: https://api.example.com/problems/validation-error
+                    title: Dados inválidos
+                    status: 422
+                    detail: Os dados informados para o tipo de documento violam as regras de validação.
+                    instance: /api/v1/document-types
+                    code: VALIDATION_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: name
+                      code: REQUIRED
+                      message: O nome do tipo de documento é obrigatório.
+                    - field: code
+                      code: INVALID_FORMAT
+                      message: O código deve usar letras maiúsculas, números e underscore.
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para criar o tipo de documento foi excedido. Aguarde antes de tentar novamente.
+                    instance: /api/v1/document-types
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao criar o tipo de documento.
+                    instance: /api/v1/document-types
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível criar o tipo de documento porque o MongoDB ou outra dependência necessária está
+                      indisponível.
+                    instance: /api/v1/document-types
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+    get:
+      tags:
+      - Document Types
+      summary: Listar tipos de documento ativos
+      operationId: listDocumentTypes
+      description: Todos os filtros informados são combinados por AND. Ordenação total por _id ASC.
+      parameters:
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/IfNoneMatch'
+      - name: name
+        in: query
+        schema:
+          type: string
+        description: Busca por substring após trim e colapso de espaços, sem diferenciar caixa ou acentos.
+      - name: code
+        in: query
+        schema:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+        description: Busca exata após normalização do código em maiúsculas.
+      responses:
+        '200':
+          description: Página de tipos de documento ativos.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/DocumentTypeCollection'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidQueryParameter:
+                  summary: Filtro ou cursor inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-query-parameter
+                    title: Parâmetro de consulta inválido
+                    status: 400
+                    detail: Um ou mais parâmetros usados para listar tipos de documento são inválidos.
+                    instance: /api/v1/document-types
+                    code: INVALID_QUERY_PARAMETER
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: cursor
+                      code: INVALID_CURSOR
+                      message: O cursor informado é inválido ou expirou.
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para listar tipos de documento foi excedido. Aguarde antes de tentar novamente.
+                    instance: /api/v1/document-types
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao listar tipos de documento.
+                    instance: /api/v1/document-types
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível listar tipos de documento porque o MongoDB ou outra dependência necessária está
+                      indisponível.
+                    instance: /api/v1/document-types
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/document-types/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Identificador do tipo de documento.
+      schema:
+        $ref: '#/components/schemas/ObjectId'
+      example: 66a64ab05bd7213b90d9b001
+    get:
+      tags:
+      - Document Types
+      summary: Consultar tipo de documento
+      operationId: getDocumentType
+      description: Retorna representação ativa ou histórica.
+      parameters:
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Tipo de documento encontrado.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/DocumentType'
+              example:
+                id: 66a64ab05bd7213b90d9b010
+                name: Atestado de Saúde Ocupacional
+                code: ASO
+                description: Documento de aptidão ocupacional
+                createdAt: '2026-07-27T12:00:00.000Z'
+                updatedAt: '2026-07-27T12:00:00.000Z'
+                deletedAt: null
+                _links:
+                  self:
+                    href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+                  collection:
+                    href: /api/v1/document-types
+                  update:
+                    href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+                    method: PATCH
+                  delete:
+                    href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+                    method: DELETE
+                  documents:
+                    href: /api/v1/collaborator-documents?documentTypeId=66a64ab05bd7213b90d9b010
+                  pending-documents:
+                    href: /api/v1/pending-documents?documentTypeCode=ASO
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidObjectId:
+                  summary: ObjectId inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-object-id
+                    title: Identificador inválido
+                    status: 400
+                    detail: O identificador informado para tipo de documento não possui o formato ObjectId esperado.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: INVALID_OBJECT_ID
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: id
+                      code: INVALID_OBJECT_ID
+                      message: Informe um ObjectId hexadecimal com 24 caracteres.
+        '404':
+          description: Um recurso necessário para esta operação não foi encontrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                documentTypeNotFound:
+                  summary: Tipo de documento inexistente
+                  value:
+                    type: https://api.example.com/problems/document-type-not-found
+                    title: Tipo de documento não encontrado
+                    status: 404
+                    detail: Nenhum tipo de documento foi encontrado com o identificador 66a64ab05bd7213b90d9b002.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: DOCUMENT_TYPE_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para consultar o tipo de documento foi excedido. Aguarde antes de tentar
+                      novamente.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao consultar o tipo de documento.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível consultar o tipo de documento porque o MongoDB ou outra dependência necessária
+                      está indisponível.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+    patch:
+      tags:
+      - Document Types
+      summary: Alterar tipo de documento ativo
+      operationId: updateDocumentType
+      description: Altera os campos informados de um tipo de documento que ainda está ativo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentTypePatchRequest'
+            example:
+              name: ASO
+              description: Atestado ocupacional vigente
+      responses:
+        '200':
+          description: Tipo de documento atualizado.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/DocumentType'
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidObjectId:
+                  summary: ObjectId inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-object-id
+                    title: Identificador inválido
+                    status: 400
+                    detail: O identificador informado para tipo de documento não possui o formato ObjectId esperado.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: INVALID_OBJECT_ID
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: id
+                      code: INVALID_OBJECT_ID
+                      message: Informe um ObjectId hexadecimal com 24 caracteres.
+        '404':
+          description: Um recurso necessário para esta operação não foi encontrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                documentTypeNotFound:
+                  summary: Tipo de documento inexistente
+                  value:
+                    type: https://api.example.com/problems/document-type-not-found
+                    title: Tipo de documento não encontrado
+                    status: 404
+                    detail: Nenhum tipo de documento foi encontrado com o identificador 66a64ab05bd7213b90d9b002.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: DOCUMENT_TYPE_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '409':
+          description: A operação conflita com uma restrição de unicidade ou com o estado atual do recurso.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                duplicateCode:
+                  summary: Código duplicado entre tipos ativos
+                  value:
+                    type: https://api.example.com/problems/duplicate-active-document-type-code
+                    title: Código de tipo de documento já cadastrado
+                    status: 409
+                    detail: Já existe um tipo de documento ativo com o código ASO.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: code
+                      code: DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE
+                      message: O código já pertence a outro tipo de documento ativo.
+        '410':
+          description: O recurso foi removido logicamente ou o vínculo foi encerrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                documentTypeDeleted:
+                  summary: Tipo de documento removido logicamente
+                  value:
+                    type: https://api.example.com/problems/document-type-deleted
+                    title: Tipo de documento removido
+                    status: 410
+                    detail: O tipo de documento 66a64ab05bd7213b90d9b002 foi removido logicamente e não pode ser atualizado.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: DOCUMENT_TYPE_DELETED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '415':
+          description: O Content-Type enviado não é suportado por esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unsupportedMediaType:
+                  summary: Content-Type incompatível com a operação
+                  value:
+                    type: https://api.example.com/problems/unsupported-media-type
+                    title: Tipo de mídia não suportado
+                    status: 415
+                    detail: O corpo usado para atualizar o tipo de documento deve ser enviado com Content-Type application/json.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: UNSUPPORTED_MEDIA_TYPE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '422':
+          description: O corpo foi interpretado, mas contém dados inválidos para o recurso.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                validationError:
+                  summary: Falha de validação do recurso
+                  value:
+                    type: https://api.example.com/problems/validation-error
+                    title: Dados inválidos
+                    status: 422
+                    detail: Os dados informados para o tipo de documento violam as regras de validação.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: VALIDATION_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: name
+                      code: REQUIRED
+                      message: O nome do tipo de documento é obrigatório.
+                    - field: code
+                      code: INVALID_FORMAT
+                      message: O código deve usar letras maiúsculas, números e underscore.
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para atualizar o tipo de documento foi excedido. Aguarde antes de tentar
+                      novamente.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao atualizar o tipo de documento.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível atualizar o tipo de documento porque o MongoDB ou outra dependência necessária
+                      está indisponível.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+    delete:
+      tags:
+      - Document Types
+      summary: Excluir tipo de documento logicamente
+      operationId: deleteDocumentType
+      description: Operação idempotente. Preenche document_types.deletedAt e, na mesma transação, collaborator_documents.deletedAt
+        dos vínculos ativos relacionados. Repetições retornam 204, preservam o deletedAt original e não executam nova cascata.
+      responses:
+        '204':
+          description: Operação concluída. Resposta sem corpo.
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidObjectId:
+                  summary: ObjectId inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-object-id
+                    title: Identificador inválido
+                    status: 400
+                    detail: O identificador informado para tipo de documento não possui o formato ObjectId esperado.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: INVALID_OBJECT_ID
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: id
+                      code: INVALID_OBJECT_ID
+                      message: Informe um ObjectId hexadecimal com 24 caracteres.
+        '404':
+          description: Um recurso necessário para esta operação não foi encontrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                documentTypeNotFound:
+                  summary: Tipo de documento inexistente
+                  value:
+                    type: https://api.example.com/problems/document-type-not-found
+                    title: Tipo de documento não encontrado
+                    status: 404
+                    detail: Nenhum tipo de documento foi encontrado com o identificador 66a64ab05bd7213b90d9b002.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: DOCUMENT_TYPE_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para remover logicamente o tipo de documento foi excedido. Aguarde antes
+                      de tentar novamente.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao remover logicamente o tipo de documento.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível remover logicamente o tipo de documento porque o MongoDB ou outra dependência
+                      necessária está indisponível.
+                    instance: /api/v1/document-types/66a64ab05bd7213b90d9b003
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/collaborator-documents:
+    post:
+      tags:
+      - Collaborator Documents
+      summary: Criar vínculo documental
+      operationId: createCollaboratorDocument
+      description: Cria um novo ciclo em PENDING, versão 0. Também é usado para revinculação após encerramento de um ciclo
+        anterior.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollaboratorDocumentCreateRequest'
+      responses:
+        '201':
+          description: Vínculo documental criado.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/CollaboratorDocument'
+              example:
+                id: 66a64ab05bd7213b90d9b100
+                collaboratorId: 66a64ab05bd7213b90d9b001
+                documentTypeId: 66a64ab05bd7213b90d9b010
+                status: PENDING
+                currentVersion: 0
+                lastSubmittedAt: null
+                linkedAt: '2026-07-27T13:00:00.000Z'
+                unlinkedAt: null
+                createdAt: '2026-07-27T13:00:00.000Z'
+                updatedAt: '2026-07-27T13:00:00.000Z'
+                deletedAt: null
+                _links:
+                  self:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100
+                  collaborator:
+                    href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+                  document-type:
+                    href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+                  versions:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions
+                  submit-version:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions
+                    method: POST
+                  unlink:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100
+                    method: DELETE
+          links:
+            GetCollaboratorDocument:
+              operationId: getCollaboratorDocument
+              parameters:
+                id: $response.body#/id
+            SubmitVersion:
+              operationId: createDocumentVersion
+              parameters:
+                id: $response.body#/id
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                malformedJson:
+                  summary: JSON inválido
+                  value:
+                    type: https://api.example.com/problems/malformed-json
+                    title: Corpo JSON malformado
+                    status: 400
+                    detail: Não foi possível interpretar o corpo JSON enviado para vincular o tipo de documento ao colaborador.
+                    instance: /api/v1/collaborator-documents
+                    code: MALFORMED_JSON
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '404':
+          description: Um recurso necessário para esta operação não foi encontrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorNotFound:
+                  summary: Colaborador do vínculo inexistente
+                  value:
+                    type: https://api.example.com/problems/collaborator-not-found
+                    title: Colaborador não encontrado
+                    status: 404
+                    detail: Não é possível criar o vínculo porque o colaborador 66a64ab05bd7213b90d9b001 não existe.
+                    instance: /api/v1/collaborator-documents
+                    code: COLLABORATOR_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                documentTypeNotFound:
+                  summary: Tipo de documento do vínculo inexistente
+                  value:
+                    type: https://api.example.com/problems/document-type-not-found
+                    title: Tipo de documento não encontrado
+                    status: 404
+                    detail: Não é possível criar o vínculo porque o tipo de documento 66a64ab05bd7213b90d9b002 não existe.
+                    instance: /api/v1/collaborator-documents
+                    code: DOCUMENT_TYPE_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '409':
+          description: A operação conflita com uma restrição de unicidade ou com o estado atual do recurso.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                activeLinkAlreadyExists:
+                  summary: Vínculo ativo duplicado
+                  value:
+                    type: https://api.example.com/problems/active-link-already-exists
+                    title: Vínculo documental ativo já existente
+                    status: 409
+                    detail: O colaborador 66a64ab05bd7213b90d9b001 já possui um vínculo ativo com o tipo de documento 66a64ab05bd7213b90d9b002.
+                    instance: /api/v1/collaborator-documents
+                    code: ACTIVE_LINK_ALREADY_EXISTS
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: documentTypeId
+                      code: DUPLICATE_ACTIVE_LINK
+                      message: Já existe um vínculo ativo para esta combinação de colaborador e tipo de documento.
+        '410':
+          description: O recurso foi removido logicamente ou o vínculo foi encerrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorDeleted:
+                  summary: Colaborador do vínculo removido
+                  value:
+                    type: https://api.example.com/problems/collaborator-deleted
+                    title: Colaborador removido
+                    status: 410
+                    detail: Não é possível criar o vínculo porque o colaborador 66a64ab05bd7213b90d9b001 foi removido logicamente.
+                    instance: /api/v1/collaborator-documents
+                    code: COLLABORATOR_DELETED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                documentTypeDeleted:
+                  summary: Tipo de documento do vínculo removido
+                  value:
+                    type: https://api.example.com/problems/document-type-deleted
+                    title: Tipo de documento removido
+                    status: 410
+                    detail: Não é possível criar o vínculo porque o tipo de documento 66a64ab05bd7213b90d9b002 foi removido
+                      logicamente.
+                    instance: /api/v1/collaborator-documents
+                    code: DOCUMENT_TYPE_DELETED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '415':
+          description: O Content-Type enviado não é suportado por esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unsupportedMediaType:
+                  summary: Content-Type incompatível com a operação
+                  value:
+                    type: https://api.example.com/problems/unsupported-media-type
+                    title: Tipo de mídia não suportado
+                    status: 415
+                    detail: O corpo usado para vincular o tipo de documento ao colaborador deve ser enviado com Content-Type
+                      application/json.
+                    instance: /api/v1/collaborator-documents
+                    code: UNSUPPORTED_MEDIA_TYPE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '422':
+          description: O corpo foi interpretado, mas contém dados inválidos para o recurso.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                validationError:
+                  summary: Falha de validação do recurso
+                  value:
+                    type: https://api.example.com/problems/validation-error
+                    title: Dados inválidos
+                    status: 422
+                    detail: Os dados do vínculo documental são inválidos.
+                    instance: /api/v1/collaborator-documents
+                    code: VALIDATION_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: collaboratorId
+                      code: REQUIRED
+                      message: O identificador do colaborador é obrigatório.
+                    - field: documentTypeId
+                      code: REQUIRED
+                      message: O identificador do tipo de documento é obrigatório.
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para vincular o tipo de documento ao colaborador foi excedido. Aguarde
+                      antes de tentar novamente.
+                    instance: /api/v1/collaborator-documents
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao vincular o tipo de documento ao colaborador.
+                    instance: /api/v1/collaborator-documents
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível vincular o tipo de documento ao colaborador porque o MongoDB ou outra dependência
+                      necessária está indisponível.
+                    instance: /api/v1/collaborator-documents
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+    get:
+      tags:
+      - Collaborator Documents
+      summary: Listar vínculos documentais
+      operationId: listCollaboratorDocuments
+      description: 'Todos os filtros informados são combinados por AND. Por padrão, retorna somente vínculos ativos:
+        deletedAt=null e unlinkedAt=null. Lifecycle usa a precedência deleted > unlinked > active; all inclui cada registro
+        uma única vez. Ordenação total por _id ASC.'
+      parameters:
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/IfNoneMatch'
+      - name: collaboratorId
+        in: query
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      - name: documentTypeId
+        in: query
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      - name: status
+        in: query
+        schema:
+          $ref: '#/components/schemas/DocumentStatus'
+      - name: lifecycle
+        in: query
+        schema:
+          $ref: '#/components/schemas/DocumentLifecycle'
+      responses:
+        '200':
+          description: Página de vínculos documentais.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/CollaboratorDocumentCollection'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidQueryParameter:
+                  summary: Filtro ou cursor inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-query-parameter
+                    title: Parâmetro de consulta inválido
+                    status: 400
+                    detail: Um ou mais parâmetros usados para listar vínculos documentais são inválidos.
+                    instance: /api/v1/collaborator-documents
+                    code: INVALID_QUERY_PARAMETER
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: cursor
+                      code: INVALID_CURSOR
+                      message: O cursor informado é inválido ou expirou.
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para listar vínculos documentais foi excedido. Aguarde antes de tentar
+                      novamente.
+                    instance: /api/v1/collaborator-documents
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao listar vínculos documentais.
+                    instance: /api/v1/collaborator-documents
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível listar vínculos documentais porque o MongoDB ou outra dependência necessária
+                      está indisponível.
+                    instance: /api/v1/collaborator-documents
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/collaborator-documents/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Identificador do vínculo documental.
+      schema:
+        $ref: '#/components/schemas/ObjectId'
+      example: 66a64ab05bd7213b90d9b001
+    get:
+      tags:
+      - Collaborator Documents
+      summary: Consultar vínculo documental
+      operationId: getCollaboratorDocument
+      description: Retorna vínculos ativos, desvinculados ou removidos logicamente. Links de escrita dependem do estado atual.
+      parameters:
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Vínculo documental encontrado.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/CollaboratorDocument'
+              example:
+                id: 66a64ab05bd7213b90d9b100
+                collaboratorId: 66a64ab05bd7213b90d9b001
+                documentTypeId: 66a64ab05bd7213b90d9b010
+                status: SUBMITTED
+                currentVersion: 2
+                lastSubmittedAt: '2026-07-27T14:30:00.000Z'
+                linkedAt: '2026-07-27T13:00:00.000Z'
+                unlinkedAt: null
+                createdAt: '2026-07-27T13:00:00.000Z'
+                updatedAt: '2026-07-27T14:30:00.000Z'
+                deletedAt: null
+                _links:
+                  self:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100
+                  collaborator:
+                    href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+                  document-type:
+                    href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+                  versions:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions
+                  current-version:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions/2
+                  resubmit-version:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions
+                    method: POST
+                  unlink:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100
+                    method: DELETE
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidObjectId:
+                  summary: ObjectId inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-object-id
+                    title: Identificador inválido
+                    status: 400
+                    detail: O identificador informado para vínculo documental não possui o formato ObjectId esperado.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003
+                    code: INVALID_OBJECT_ID
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: id
+                      code: INVALID_OBJECT_ID
+                      message: Informe um ObjectId hexadecimal com 24 caracteres.
+        '404':
+          description: Um recurso necessário para esta operação não foi encontrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorDocumentNotFound:
+                  summary: Vínculo documental inexistente
+                  value:
+                    type: https://api.example.com/problems/collaborator-document-not-found
+                    title: Vínculo documental não encontrado
+                    status: 404
+                    detail: Nenhum vínculo documental foi encontrado com o identificador 66a64ab05bd7213b90d9b003.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003
+                    code: COLLABORATOR_DOCUMENT_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para consultar o vínculo documental foi excedido. Aguarde antes de tentar
+                      novamente.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao consultar o vínculo documental.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível consultar o vínculo documental porque o MongoDB ou outra dependência necessária
+                      está indisponível.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+    delete:
+      tags:
+      - Collaborator Documents
+      summary: Desvincular documento
+      operationId: unlinkCollaboratorDocument
+      description: Idempotente somente em efeito. A primeira chamada preenche unlinkedAt e updatedAt e retorna 204. Repetições
+        retornam 410 COLLABORATOR_DOCUMENT_UNLINKED sem alterar estado, timestamps ou versões.
+      responses:
+        '204':
+          description: Operação concluída. Resposta sem corpo.
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidObjectId:
+                  summary: ObjectId inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-object-id
+                    title: Identificador inválido
+                    status: 400
+                    detail: O identificador informado para vínculo documental não possui o formato ObjectId esperado.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003
+                    code: INVALID_OBJECT_ID
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: id
+                      code: INVALID_OBJECT_ID
+                      message: Informe um ObjectId hexadecimal com 24 caracteres.
+        '404':
+          description: Um recurso necessário para esta operação não foi encontrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorDocumentNotFound:
+                  summary: Vínculo documental inexistente
+                  value:
+                    type: https://api.example.com/problems/collaborator-document-not-found
+                    title: Vínculo documental não encontrado
+                    status: 404
+                    detail: Nenhum vínculo documental foi encontrado com o identificador 66a64ab05bd7213b90d9b003.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003
+                    code: COLLABORATOR_DOCUMENT_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '410':
+          description: O recurso foi removido logicamente ou o vínculo foi encerrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorDocumentUnlinked:
+                  summary: Vínculo já desvinculado
+                  value:
+                    type: https://api.example.com/problems/collaborator-document-unlinked
+                    title: Vínculo documental encerrado
+                    status: 410
+                    detail: O vínculo documental 66a64ab05bd7213b90d9b003 foi desvinculado e não aceita novos envios ou nova
+                      desvinculação.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003
+                    code: COLLABORATOR_DOCUMENT_UNLINKED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                collaboratorDocumentDeleted:
+                  summary: Vínculo removido por cascata
+                  value:
+                    type: https://api.example.com/problems/collaborator-document-deleted
+                    title: Vínculo documental removido
+                    status: 410
+                    detail: O vínculo documental 66a64ab05bd7213b90d9b003 foi removido logicamente por exclusão do colaborador
+                      ou do tipo de documento.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003
+                    code: COLLABORATOR_DOCUMENT_DELETED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para desvincular o documento do colaborador foi excedido. Aguarde antes
+                      de tentar novamente.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao desvincular o documento do colaborador.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível desvincular o documento do colaborador porque o MongoDB ou outra dependência
+                      necessária está indisponível.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/collaborator-documents/{id}/versions:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Identificador do vínculo documental.
+      schema:
+        $ref: '#/components/schemas/ObjectId'
+      example: 66a64ab05bd7213b90d9b001
+    post:
+      tags:
+      - Document Versions
+      summary: Enviar ou reenviar uma versão
+      operationId: createDocumentVersion
+      description: Operação deliberadamente não idempotente. Cada chamada aceita cria uma nova versão, inclusive quando os
+        metadados são idênticos. Não existe Idempotency-Key nem deduplicação por conteúdo. O número da versão é calculado
+        atomicamente pelo MongoDB em um único findOneAndUpdate com pipeline. Reenvios simultâneos são preservados; retry após
+        resposta incerta pode criar outra versão.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionCreateRequest'
+      responses:
+        '201':
+          description: Versão criada.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/DocumentVersion'
+              example:
+                version: 2
+                submittedAt: '2026-07-27T14:30:00.000Z'
+                metadata:
+                  originalName: aso-ana-souza.pdf
+                  mimeType: application/pdf
+                  sizeBytes: 248193
+                  storageKey: collaborators/66a64ab05bd7213b90d9b001/aso/v2.pdf
+                  notes: Documento renovado
+                _links:
+                  self:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions/2
+                  document:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100
+                  previous:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions/1
+          links:
+            GetVersion:
+              operationId: getDocumentVersion
+              parameters:
+                id: $request.path.id
+                version: $response.body#/version
+            GetDocument:
+              operationId: getCollaboratorDocument
+              parameters:
+                id: $request.path.id
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidObjectId:
+                  summary: ObjectId inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-object-id
+                    title: Identificador inválido
+                    status: 400
+                    detail: O identificador informado para versão do documento não possui o formato ObjectId esperado.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: INVALID_OBJECT_ID
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: id
+                      code: INVALID_OBJECT_ID
+                      message: Informe um ObjectId hexadecimal com 24 caracteres.
+        '404':
+          description: Um recurso necessário para esta operação não foi encontrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorDocumentNotFound:
+                  summary: Vínculo documental inexistente
+                  value:
+                    type: https://api.example.com/problems/collaborator-document-not-found
+                    title: Vínculo documental não encontrado
+                    status: 404
+                    detail: Nenhum vínculo documental foi encontrado com o identificador 66a64ab05bd7213b90d9b003.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: COLLABORATOR_DOCUMENT_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '410':
+          description: O recurso foi removido logicamente ou o vínculo foi encerrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorDocumentUnlinked:
+                  summary: Vínculo já desvinculado
+                  value:
+                    type: https://api.example.com/problems/collaborator-document-unlinked
+                    title: Vínculo documental encerrado
+                    status: 410
+                    detail: O vínculo documental 66a64ab05bd7213b90d9b003 foi desvinculado e não aceita novos envios ou nova
+                      desvinculação.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: COLLABORATOR_DOCUMENT_UNLINKED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                collaboratorDocumentDeleted:
+                  summary: Vínculo removido por cascata
+                  value:
+                    type: https://api.example.com/problems/collaborator-document-deleted
+                    title: Vínculo documental removido
+                    status: 410
+                    detail: O vínculo documental 66a64ab05bd7213b90d9b003 foi removido logicamente por exclusão do colaborador
+                      ou do tipo de documento.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: COLLABORATOR_DOCUMENT_DELETED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '415':
+          description: O Content-Type enviado não é suportado por esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unsupportedMediaType:
+                  summary: Content-Type incompatível com a operação
+                  value:
+                    type: https://api.example.com/problems/unsupported-media-type
+                    title: Tipo de mídia não suportado
+                    status: 415
+                    detail: O corpo usado para enviar uma nova versão do documento deve ser enviado com Content-Type application/json.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: UNSUPPORTED_MEDIA_TYPE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '422':
+          description: O corpo foi interpretado, mas contém dados inválidos para o recurso.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                validationError:
+                  summary: Falha de validação do recurso
+                  value:
+                    type: https://api.example.com/problems/validation-error
+                    title: Dados inválidos
+                    status: 422
+                    detail: Os metadados da nova versão do documento são inválidos.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: VALIDATION_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: metadata.originalName
+                      code: REQUIRED
+                      message: O nome original do arquivo é obrigatório.
+                    - field: metadata.sizeBytes
+                      code: MINIMUM
+                      message: O tamanho do arquivo não pode ser negativo.
+                documentHistoryLimitReached:
+                  summary: Limite físico do histórico embutido atingido
+                  value:
+                    type: https://api.example.com/problems/document-history-limit-reached
+                    title: Capacidade do histórico atingida
+                    status: 422
+                    detail: A nova versão não pôde ser anexada porque o histórico embutido atingiu a capacidade física.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: DOCUMENT_HISTORY_LIMIT_REACHED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para enviar uma nova versão do documento foi excedido. Aguarde antes de
+                      tentar novamente.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao enviar uma nova versão do documento.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível enviar uma nova versão do documento porque o MongoDB ou outra dependência necessária
+                      está indisponível.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+    get:
+      tags:
+      - Document Versions
+      summary: Listar versões do documento
+      operationId: listDocumentVersions
+      description: Ordenação total pelo campo version, em desc por padrão ou asc quando solicitado. Somente asc e desc são
+        aceitos.
+      parameters:
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      - name: order
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - desc
+          - asc
+          default: desc
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Página de versões do documento.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/VersionCollection'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          description: id inválido retorna INVALID_OBJECT_ID. cursor, limit ou order inválido retorna INVALID_QUERY_PARAMETER,
+            com errors.field identificando o parâmetro.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidObjectId:
+                  summary: ObjectId inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-object-id
+                    title: Identificador inválido
+                    status: 400
+                    detail: O identificador informado para versões do documento não possui o formato ObjectId esperado.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: INVALID_OBJECT_ID
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: id
+                      code: INVALID_OBJECT_ID
+                      message: Informe um ObjectId hexadecimal com 24 caracteres.
+                invalidQueryParameter:
+                  summary: Cursor, limit ou order inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-query-parameter
+                    title: Parâmetro de consulta inválido
+                    status: 400
+                    detail: Um parâmetro usado para listar versões do documento é inválido.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: INVALID_QUERY_PARAMETER
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: order
+                      code: INVALID_ENUM_VALUE
+                      message: O parâmetro order aceita somente asc ou desc.
+        '404':
+          description: Um recurso necessário para esta operação não foi encontrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorDocumentNotFound:
+                  summary: Vínculo documental inexistente
+                  value:
+                    type: https://api.example.com/problems/collaborator-document-not-found
+                    title: Vínculo documental não encontrado
+                    status: 404
+                    detail: Nenhum vínculo documental foi encontrado com o identificador 66a64ab05bd7213b90d9b003.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: COLLABORATOR_DOCUMENT_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para listar versões do documento foi excedido. Aguarde antes de tentar
+                      novamente.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao listar versões do documento.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível listar versões do documento porque o MongoDB ou outra dependência necessária
+                      está indisponível.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/collaborator-documents/{id}/versions/{version}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Identificador do vínculo documental.
+      schema:
+        $ref: '#/components/schemas/ObjectId'
+      example: 66a64ab05bd7213b90d9b001
+    - name: version
+      in: path
+      required: true
+      description: Número positivo da versão.
+      schema:
+        type: integer
+        minimum: 1
+      example: 2
+    get:
+      tags:
+      - Document Versions
+      summary: Consultar uma versão
+      operationId: getDocumentVersion
+      description: Retorna uma versão específica do histórico imutável de um vínculo documental.
+      parameters:
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Versão encontrada.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/DocumentVersion'
+              example:
+                version: 2
+                submittedAt: '2026-07-27T14:30:00.000Z'
+                metadata:
+                  originalName: aso-ana-souza.pdf
+                  mimeType: application/pdf
+                  sizeBytes: 248193
+                  storageKey: collaborators/66a64ab05bd7213b90d9b001/aso/v2.pdf
+                  notes: Documento renovado
+                _links:
+                  self:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions/2
+                  document:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100
+                  previous:
+                    href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions/1
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          description: id inválido retorna INVALID_OBJECT_ID com errors.field=id; version inválida retorna INVALID_VERSION_NUMBER
+            com errors.field=version.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidObjectId:
+                  summary: ObjectId inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-object-id
+                    title: Identificador inválido
+                    status: 400
+                    detail: O identificador informado para vínculo documental não possui o formato ObjectId esperado.
+                    instance: /api/v1/collaborator-documents/id-invalido/versions/2
+                    code: INVALID_OBJECT_ID
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: id
+                      code: INVALID_OBJECT_ID
+                      message: Informe um ObjectId hexadecimal com 24 caracteres.
+                invalidVersionNumber:
+                  summary: Versão informada em formato inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-version-number
+                    title: Número de versão inválido
+                    status: 400
+                    detail: O parâmetro version deve ser um número inteiro maior ou igual a 1.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions/2
+                    code: INVALID_VERSION_NUMBER
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: version
+                      code: INVALID_INTEGER
+                      message: Informe uma versão inteira maior ou igual a 1.
+        '404':
+          description: Um recurso necessário para esta operação não foi encontrado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                collaboratorDocumentNotFound:
+                  summary: Vínculo documental inexistente
+                  value:
+                    type: https://api.example.com/problems/collaborator-document-not-found
+                    title: Vínculo documental não encontrado
+                    status: 404
+                    detail: Nenhum vínculo documental foi encontrado com o identificador 66a64ab05bd7213b90d9b003.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions/2
+                    code: COLLABORATOR_DOCUMENT_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                documentVersionNotFound:
+                  summary: Versão inexistente no vínculo
+                  value:
+                    type: https://api.example.com/problems/document-version-not-found
+                    title: Versão do documento não encontrada
+                    status: 404
+                    detail: A versão 2 não existe no vínculo documental 66a64ab05bd7213b90d9b003.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions/2
+                    code: DOCUMENT_VERSION_NOT_FOUND
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para consultar a versão do documento foi excedido. Aguarde antes de tentar
+                      novamente.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions/2
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao consultar a versão do documento.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions/2
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível consultar a versão do documento porque o MongoDB ou outra dependência necessária
+                      está indisponível.
+                    instance: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b003/versions/2
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/pending-documents:
+    get:
+      tags:
+      - Queries
+      summary: Consultar documentos pendentes
+      operationId: listPendingDocuments
+      description: Consulta vínculos com status=PENDING, deletedAt=null e unlinkedAt=null. Todos os filtros informados são
+        combinados por AND. Nomes usam substring sem diferenciar caixa ou acentos; CPF e código usam correspondência exata,
+        com código normalizado em maiúsculas. Filtros de colaborador e tipo usam lookup. Ordenação total por documentTypeId
+        ASC, collaboratorId ASC e _id ASC.
+      parameters:
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/IfNoneMatch'
+      - name: collaboratorName
+        in: query
+        schema:
+          type: string
+      - name: cpf
+        in: query
+        schema:
+          type: string
+          pattern: ^\d{11}$
+      - name: documentTypeName
+        in: query
+        schema:
+          type: string
+      - name: documentTypeCode
+        in: query
+        schema:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+      responses:
+        '200':
+          description: Página de documentos pendentes.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/PendingDocumentCollection'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidQueryParameter:
+                  summary: Filtro ou cursor inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-query-parameter
+                    title: Parâmetro de consulta inválido
+                    status: 400
+                    detail: Um ou mais parâmetros usados para listar documentos pendentes são inválidos.
+                    instance: /api/v1/pending-documents
+                    code: INVALID_QUERY_PARAMETER
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: cursor
+                      code: INVALID_CURSOR
+                      message: O cursor informado é inválido ou expirou.
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para listar documentos pendentes foi excedido. Aguarde antes de tentar
+                      novamente.
+                    instance: /api/v1/pending-documents
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao listar documentos pendentes.
+                    instance: /api/v1/pending-documents
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível listar documentos pendentes porque o MongoDB ou outra dependência necessária
+                      está indisponível.
+                    instance: /api/v1/pending-documents
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/statistics/completeness:
+    get:
+      tags:
+      - Statistics
+      summary: Consultar completude global
+      operationId: getCompletenessStatistics
+      description: Percentual = vínculos ativos SUBMITTED / total de vínculos ativos * 100. Colaboradores sem vínculos não
+        entram no denominador. Sem vínculos ativos, percentage=0. O percentual é um número JSON arredondado em duas casas
+        pelo modo HALF_UP.
+      parameters:
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Estatística global de completude.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/CompletenessStatistics'
+              example:
+                totalActiveDocuments: 40
+                submittedDocuments: 30
+                pendingDocuments: 10
+                percentage: 75
+                calculatedAt: '2026-07-27T15:00:00.000Z'
+                _links:
+                  self:
+                    href: /api/v1/statistics/completeness
+                  pending-documents:
+                    href: /api/v1/pending-documents
+                  pending-document-types:
+                    href: /api/v1/statistics/pending-document-types
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para consultar a completude global foi excedido. Aguarde antes de tentar
+                      novamente.
+                    instance: /api/v1/statistics/completeness
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao consultar a completude global.
+                    instance: /api/v1/statistics/completeness
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível consultar a completude global porque o MongoDB ou outra dependência necessária
+                      está indisponível.
+                    instance: /api/v1/statistics/completeness
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/statistics/pending-document-types:
+    get:
+      tags:
+      - Statistics
+      summary: Consultar tipos com mais pendências
+      operationId: listPendingDocumentTypeStatistics
+      description: Ordenação total por pendingCount DESC e documentTypeId ASC como desempate.
+      parameters:
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Página de tipos de documento ordenados por quantidade de pendências.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/PendingDocumentTypeStatisticsCollection'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidQueryParameter:
+                  summary: Filtro ou cursor inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-query-parameter
+                    title: Parâmetro de consulta inválido
+                    status: 400
+                    detail: Um ou mais parâmetros usados para consultar tipos de documento mais pendentes são inválidos.
+                    instance: /api/v1/statistics/pending-document-types
+                    code: INVALID_QUERY_PARAMETER
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: cursor
+                      code: INVALID_CURSOR
+                      message: O cursor informado é inválido ou expirou.
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para consultar tipos de documento mais pendentes foi excedido. Aguarde
+                      antes de tentar novamente.
+                    instance: /api/v1/statistics/pending-document-types
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao consultar tipos de documento mais pendentes.
+                    instance: /api/v1/statistics/pending-document-types
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível consultar tipos de documento mais pendentes porque o MongoDB ou outra dependência
+                      necessária está indisponível.
+                    instance: /api/v1/statistics/pending-document-types
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/submissions/latest:
+    get:
+      tags:
+      - Submissions
+      summary: Consultar o último envio de cada documento lógico
+      operationId: listLatestSubmissions
+      description: 'Retorna um item por vínculo ativo SUBMITTED. Ordenação: lastSubmittedAt DESC e _id DESC.'
+      parameters:
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Página de últimos envios por documento lógico.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/LatestSubmissionCollection'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidQueryParameter:
+                  summary: Filtro ou cursor inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-query-parameter
+                    title: Parâmetro de consulta inválido
+                    status: 400
+                    detail: Um ou mais parâmetros usados para listar os últimos envios são inválidos.
+                    instance: /api/v1/submissions/latest
+                    code: INVALID_QUERY_PARAMETER
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: cursor
+                      code: INVALID_CURSOR
+                      message: O cursor informado é inválido ou expirou.
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para listar os últimos envios foi excedido. Aguarde antes de tentar novamente.
+                    instance: /api/v1/submissions/latest
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao listar os últimos envios.
+                    instance: /api/v1/submissions/latest
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível listar os últimos envios porque o MongoDB ou outra dependência necessária está
+                      indisponível.
+                    instance: /api/v1/submissions/latest
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+  /api/v1/submission-events:
+    get:
+      tags:
+      - Submissions
+      summary: Consultar todos os eventos de envio
+      operationId: listSubmissionEvents
+      description: 'Expõe cada elemento de versions como evento. Consulta baseada em unwind; mais custosa que /submissions/latest.
+        Ordenação: submittedAt DESC, documentId DESC e version DESC.'
+      parameters:
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Página de eventos individuais de envio.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/SubmissionEventCollection'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          description: A requisição desta operação possui sintaxe, identificador ou parâmetro inválido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidQueryParameter:
+                  summary: Filtro ou cursor inválido
+                  value:
+                    type: https://api.example.com/problems/invalid-query-parameter
+                    title: Parâmetro de consulta inválido
+                    status: 400
+                    detail: Um ou mais parâmetros usados para listar eventos de envio são inválidos.
+                    instance: /api/v1/submission-events
+                    code: INVALID_QUERY_PARAMETER
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+                    errors:
+                    - field: cursor
+                      code: INVALID_CURSOR
+                      message: O cursor informado é inválido ou expirou.
+        '429':
+          description: O limite de requisições desta operação foi excedido.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit da operação excedido
+                  value:
+                    type: https://api.example.com/problems/rate-limit-exceeded
+                    title: Limite de requisições excedido
+                    status: 429
+                    detail: O limite de requisições para listar eventos de envio foi excedido. Aguarde antes de tentar novamente.
+                    instance: /api/v1/submission-events
+                    code: RATE_LIMIT_EXCEEDED
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Ocorreu uma falha interna durante esta operação.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                internalServerError:
+                  summary: Erro interno específico da operação
+                  value:
+                    type: https://api.example.com/problems/internal-server-error
+                    title: Falha interna ao processar a operação
+                    status: 500
+                    detail: Ocorreu uma falha inesperada ao listar eventos de envio.
+                    instance: /api/v1/submission-events
+                    code: INTERNAL_SERVER_ERROR
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+        '503':
+          description: Uma dependência necessária para esta operação está temporariamente indisponível.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serviceUnavailable:
+                  summary: Dependência necessária indisponível
+                  value:
+                    type: https://api.example.com/problems/service-unavailable
+                    title: Serviço temporariamente indisponível
+                    status: 503
+                    detail: Não foi possível listar eventos de envio porque o MongoDB ou outra dependência necessária está
+                      indisponível.
+                    instance: /api/v1/submission-events
+                    code: SERVICE_UNAVAILABLE
+                    traceId: 01J3Y2QHB8FV4RGY7Y1QXNT2D4
+components:
+  schemas:
+    ObjectId:
+      type: string
+      pattern: ^[a-fA-F0-9]{24}$
+      description: Identificador MongoDB ObjectId exposto em formato hexadecimal.
+      examples:
+      - 66a64ab05bd7213b90d9b001
+    DateTime:
+      type: string
+      format: date-time
+      description: Data e hora em ISO 8601 e UTC.
+      examples:
+      - '2026-07-27T14:30:00.000Z'
+    NullableDateTime:
+      oneOf:
+      - $ref: '#/components/schemas/DateTime'
+      - type: 'null'
+    HealthStatus:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          const: ok
+      additionalProperties: false
+    HalLink:
+      type: object
+      required:
+      - href
+      properties:
+        href:
+          type: string
+          description: URI ou URI Template do recurso relacionado.
+        templated:
+          type: boolean
+          default: false
+        method:
+          type: string
+          enum:
+          - GET
+          - POST
+          - PATCH
+          - DELETE
+          description: Método sugerido para links de ação.
+        type:
+          type: string
+          description: Media type esperado para o recurso relacionado.
+        title:
+          type: string
+      additionalProperties: false
+    HalLinks:
+      type: object
+      description: Relações HATEOAS. Links de ação aparecem somente quando a transição é válida para o estado atual.
+      additionalProperties:
+        $ref: '#/components/schemas/HalLink'
+    ApiRoot:
+      type: object
+      required:
+      - name
+      - version
+      - _links
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        _links:
+          $ref: '#/components/schemas/HalLinks'
+      additionalProperties: false
+      example:
+        name: Collaborator Document API
+        version: '1'
+        _links:
+          self:
+            href: /api/v1
+          collaborators:
+            href: /api/v1/collaborators{?cursor,limit,name,cpf,email}
+            templated: true
+          document-types:
+            href: /api/v1/document-types{?cursor,limit,name,code}
+            templated: true
+          collaborator-documents:
+            href: /api/v1/collaborator-documents{?cursor,limit,collaboratorId,documentTypeId,status,lifecycle}
+            templated: true
+          pending-documents:
+            href: /api/v1/pending-documents{?cursor,limit,collaboratorName,cpf,documentTypeName,documentTypeCode}
+            templated: true
+          completeness:
+            href: /api/v1/statistics/completeness
+          pending-document-types:
+            href: /api/v1/statistics/pending-document-types{?cursor,limit}
+            templated: true
+          latest-submissions:
+            href: /api/v1/submissions/latest{?cursor,limit}
+            templated: true
+          submission-events:
+            href: /api/v1/submission-events{?cursor,limit}
+            templated: true
+    CollaboratorCreateRequest:
+      type: object
+      required:
+      - name
+      - cpf
+      - email
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          examples:
+          - Ana Souza
+        cpf:
+          type: string
+          pattern: ^\d{11}$
+          description: CPF normalizado somente com dígitos.
+          examples:
+          - '12345678909'
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          examples:
+          - ana.souza@example.com
+      additionalProperties: false
+    CollaboratorPatchRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        cpf:
+          type: string
+          pattern: ^\d{11}$
+        email:
+          type: string
+          format: email
+          maxLength: 320
+      additionalProperties: false
+    Collaborator:
+      type: object
+      required:
+      - id
+      - name
+      - cpf
+      - email
+      - createdAt
+      - updatedAt
+      - deletedAt
+      - _links
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        name:
+          type: string
+        cpf:
+          type: string
+          pattern: ^\d{11}$
+        email:
+          type: string
+          format: email
+        createdAt:
+          $ref: '#/components/schemas/DateTime'
+        updatedAt:
+          $ref: '#/components/schemas/DateTime'
+        deletedAt:
+          $ref: '#/components/schemas/NullableDateTime'
+        _links:
+          $ref: '#/components/schemas/HalLinks'
+      additionalProperties: false
+      description: Quando deletedAt é diferente de null, links de alteração, exclusão e criação de vínculo não são retornados.
+      example:
+        id: 66a64ab05bd7213b90d9b001
+        name: Ana Souza
+        cpf: '12345678909'
+        email: ana.souza@example.com
+        createdAt: '2026-07-27T12:00:00.000Z'
+        updatedAt: '2026-07-27T12:00:00.000Z'
+        deletedAt: null
+        _links:
+          self:
+            href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+          collection:
+            href: /api/v1/collaborators
+          update:
+            href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+            method: PATCH
+          delete:
+            href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+            method: DELETE
+          documents:
+            href: /api/v1/collaborator-documents?collaboratorId=66a64ab05bd7213b90d9b001
+          link-document:
+            href: /api/v1/collaborator-documents
+            method: POST
+    DocumentTypeCreateRequest:
+      type: object
+      required:
+      - name
+      - code
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          description: Código estável normalizado em maiúsculas.
+        description:
+          oneOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+      additionalProperties: false
+      example:
+        name: Atestado de Saúde Ocupacional
+        code: ASO
+        description: Documento de aptidão ocupacional
+    DocumentTypePatchRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          description: Embora alterável, deve ser tratado como identificador estável.
+        description:
+          oneOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+      additionalProperties: false
+    DocumentType:
+      type: object
+      required:
+      - id
+      - name
+      - code
+      - description
+      - createdAt
+      - updatedAt
+      - deletedAt
+      - _links
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        name:
+          type: string
+        code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+        description:
+          oneOf:
+          - type: string
+          - type: 'null'
+        createdAt:
+          $ref: '#/components/schemas/DateTime'
+        updatedAt:
+          $ref: '#/components/schemas/DateTime'
+        deletedAt:
+          $ref: '#/components/schemas/NullableDateTime'
+        _links:
+          $ref: '#/components/schemas/HalLinks'
+      additionalProperties: false
+      example:
+        id: 66a64ab05bd7213b90d9b010
+        name: Atestado de Saúde Ocupacional
+        code: ASO
+        description: Documento de aptidão ocupacional
+        createdAt: '2026-07-27T12:00:00.000Z'
+        updatedAt: '2026-07-27T12:00:00.000Z'
+        deletedAt: null
+        _links:
+          self:
+            href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+          collection:
+            href: /api/v1/document-types
+          update:
+            href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+            method: PATCH
+          delete:
+            href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+            method: DELETE
+          documents:
+            href: /api/v1/collaborator-documents?documentTypeId=66a64ab05bd7213b90d9b010
+          pending-documents:
+            href: /api/v1/pending-documents?documentTypeCode=ASO
+    DocumentStatus:
+      type: string
+      enum:
+      - PENDING
+      - SUBMITTED
+    DocumentLifecycle:
+      type: string
+      enum:
+      - active
+      - unlinked
+      - deleted
+      - all
+      default: active
+    DocumentMetadata:
+      type: object
+      required:
+      - originalName
+      - mimeType
+      - sizeBytes
+      - storageKey
+      - notes
+      properties:
+        originalName:
+          type: string
+          minLength: 1
+          maxLength: 512
+        mimeType:
+          oneOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+        sizeBytes:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+          - type: 'null'
+        storageKey:
+          oneOf:
+          - type: string
+            maxLength: 1024
+          - type: 'null'
+        notes:
+          oneOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+      additionalProperties: false
+    VersionCreateMetadata:
+      type: object
+      required:
+      - originalName
+      properties:
+        originalName:
+          type: string
+          minLength: 1
+          maxLength: 512
+        mimeType:
+          oneOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          default: null
+        sizeBytes:
+          oneOf:
+          - type: integer
+            format: int64
+            minimum: 0
+          - type: 'null'
+          default: null
+        storageKey:
+          oneOf:
+          - type: string
+            maxLength: 1024
+          - type: 'null'
+          default: null
+        notes:
+          oneOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          default: null
+      additionalProperties: false
+    VersionCreateRequest:
+      type: object
+      required:
+      - metadata
+      properties:
+        metadata:
+          $ref: '#/components/schemas/VersionCreateMetadata'
+      additionalProperties: false
+      example:
+        metadata:
+          originalName: aso-ana-souza.pdf
+          mimeType: application/pdf
+          sizeBytes: 248193
+          storageKey: collaborators/66a64ab05bd7213b90d9b001/aso/v2.pdf
+          notes: Documento renovado
+    DocumentVersion:
+      type: object
+      required:
+      - version
+      - submittedAt
+      - metadata
+      - _links
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        submittedAt:
+          $ref: '#/components/schemas/DateTime'
+        metadata:
+          $ref: '#/components/schemas/DocumentMetadata'
+        _links:
+          $ref: '#/components/schemas/HalLinks'
+      additionalProperties: false
+      example:
+        version: 2
+        submittedAt: '2026-07-27T14:30:00.000Z'
+        metadata:
+          originalName: aso-ana-souza.pdf
+          mimeType: application/pdf
+          sizeBytes: 248193
+          storageKey: collaborators/66a64ab05bd7213b90d9b001/aso/v2.pdf
+          notes: Documento renovado
+        _links:
+          self:
+            href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions/2
+          document:
+            href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100
+          previous:
+            href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions/1
+    CollaboratorDocumentCreateRequest:
+      type: object
+      required:
+      - collaboratorId
+      - documentTypeId
+      properties:
+        collaboratorId:
+          $ref: '#/components/schemas/ObjectId'
+        documentTypeId:
+          $ref: '#/components/schemas/ObjectId'
+      additionalProperties: false
+      example:
+        collaboratorId: 66a64ab05bd7213b90d9b001
+        documentTypeId: 66a64ab05bd7213b90d9b010
+    CollaboratorDocument:
+      type: object
+      required:
+      - id
+      - collaboratorId
+      - documentTypeId
+      - status
+      - currentVersion
+      - lastSubmittedAt
+      - linkedAt
+      - unlinkedAt
+      - createdAt
+      - updatedAt
+      - deletedAt
+      - _links
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        collaboratorId:
+          $ref: '#/components/schemas/ObjectId'
+        documentTypeId:
+          $ref: '#/components/schemas/ObjectId'
+        status:
+          $ref: '#/components/schemas/DocumentStatus'
+        currentVersion:
+          type: integer
+          minimum: 0
+        lastSubmittedAt:
+          $ref: '#/components/schemas/NullableDateTime'
+        linkedAt:
+          $ref: '#/components/schemas/DateTime'
+        unlinkedAt:
+          $ref: '#/components/schemas/NullableDateTime'
+        createdAt:
+          $ref: '#/components/schemas/DateTime'
+        updatedAt:
+          $ref: '#/components/schemas/DateTime'
+        deletedAt:
+          $ref: '#/components/schemas/NullableDateTime'
+        _links:
+          $ref: '#/components/schemas/HalLinks'
+      allOf:
+      - if:
+          properties:
+            status:
+              const: PENDING
+        then:
+          properties:
+            currentVersion:
+              const: 0
+            lastSubmittedAt:
+              type: 'null'
+      - if:
+          properties:
+            status:
+              const: SUBMITTED
+        then:
+          properties:
+            currentVersion:
+              type: integer
+              minimum: 1
+            lastSubmittedAt:
+              $ref: '#/components/schemas/DateTime'
+      additionalProperties: false
+      description: Vínculos ativos PENDING oferecem submit-version e unlink; SUBMITTED oferecem current-version, resubmit-version
+        e unlink. Vínculos desvinculados ou removidos oferecem apenas consulta histórica.
+      examples:
+      - id: 66a64ab05bd7213b90d9b100
+        collaboratorId: 66a64ab05bd7213b90d9b001
+        documentTypeId: 66a64ab05bd7213b90d9b010
+        status: PENDING
+        currentVersion: 0
+        lastSubmittedAt: null
+        linkedAt: '2026-07-27T13:00:00.000Z'
+        unlinkedAt: null
+        createdAt: '2026-07-27T13:00:00.000Z'
+        updatedAt: '2026-07-27T13:00:00.000Z'
+        deletedAt: null
+        _links:
+          self:
+            href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100
+          collaborator:
+            href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+          document-type:
+            href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+          versions:
+            href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions
+          submit-version:
+            href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions
+            method: POST
+          unlink:
+            href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100
+            method: DELETE
+      - id: 66a64ab05bd7213b90d9b100
+        collaboratorId: 66a64ab05bd7213b90d9b001
+        documentTypeId: 66a64ab05bd7213b90d9b010
+        status: SUBMITTED
+        currentVersion: 2
+        lastSubmittedAt: '2026-07-27T14:30:00.000Z'
+        linkedAt: '2026-07-27T13:00:00.000Z'
+        unlinkedAt: null
+        createdAt: '2026-07-27T13:00:00.000Z'
+        updatedAt: '2026-07-27T14:30:00.000Z'
+        deletedAt: null
+        _links:
+          self:
+            href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100
+          collaborator:
+            href: /api/v1/collaborators/66a64ab05bd7213b90d9b001
+          document-type:
+            href: /api/v1/document-types/66a64ab05bd7213b90d9b010
+          versions:
+            href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions
+          current-version:
+            href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions/2
+          resubmit-version:
+            href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100/versions
+            method: POST
+          unlink:
+            href: /api/v1/collaborator-documents/66a64ab05bd7213b90d9b100
+            method: DELETE
+    PageLinks:
+      type: object
+      required:
+      - self
+      properties:
+        self:
+          $ref: '#/components/schemas/HalLink'
+        next:
+          $ref: '#/components/schemas/HalLink'
+        create:
+          $ref: '#/components/schemas/HalLink'
+      additionalProperties:
+        $ref: '#/components/schemas/HalLink'
+    CollaboratorCollection:
+      type: object
+      required:
+      - count
+      - _embedded
+      - _links
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        _embedded:
+          type: object
+          required:
+          - collaborators
+          properties:
+            collaborators:
+              type: array
+              items:
+                $ref: '#/components/schemas/Collaborator'
+          additionalProperties: false
+        _links:
+          $ref: '#/components/schemas/PageLinks'
+      additionalProperties: false
+    DocumentTypeCollection:
+      type: object
+      required:
+      - count
+      - _embedded
+      - _links
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        _embedded:
+          type: object
+          required:
+          - document-types
+          properties:
+            document-types:
+              type: array
+              items:
+                $ref: '#/components/schemas/DocumentType'
+          additionalProperties: false
+        _links:
+          $ref: '#/components/schemas/PageLinks'
+      additionalProperties: false
+    CollaboratorDocumentCollection:
+      type: object
+      required:
+      - count
+      - _embedded
+      - _links
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        _embedded:
+          type: object
+          required:
+          - collaborator-documents
+          properties:
+            collaborator-documents:
+              type: array
+              items:
+                $ref: '#/components/schemas/CollaboratorDocument'
+          additionalProperties: false
+        _links:
+          $ref: '#/components/schemas/PageLinks'
+      additionalProperties: false
+    VersionCollection:
+      type: object
+      required:
+      - count
+      - currentVersion
+      - _embedded
+      - _links
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        currentVersion:
+          type: integer
+          minimum: 0
+        _embedded:
+          type: object
+          required:
+          - versions
+          properties:
+            versions:
+              type: array
+              items:
+                $ref: '#/components/schemas/DocumentVersion'
+          additionalProperties: false
+        _links:
+          $ref: '#/components/schemas/PageLinks'
+      additionalProperties: false
+    CollaboratorSummary:
+      type: object
+      required:
+      - id
+      - name
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        name:
+          type: string
+        cpf:
+          type: string
+          pattern: ^\d{11}$
+      additionalProperties: false
+    DocumentTypeSummary:
+      type: object
+      required:
+      - id
+      - name
+      - code
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        name:
+          type: string
+        code:
+          type: string
+      additionalProperties: false
+    PendingDocument:
+      type: object
+      required:
+      - id
+      - status
+      - linkedAt
+      - collaborator
+      - documentType
+      - _links
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        status:
+          const: PENDING
+        linkedAt:
+          $ref: '#/components/schemas/DateTime'
+        collaborator:
+          $ref: '#/components/schemas/CollaboratorSummary'
+        documentType:
+          $ref: '#/components/schemas/DocumentTypeSummary'
+        _links:
+          $ref: '#/components/schemas/HalLinks'
+      additionalProperties: false
+    PendingDocumentCollection:
+      type: object
+      required:
+      - count
+      - _embedded
+      - _links
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        _embedded:
+          type: object
+          required:
+          - pending-documents
+          properties:
+            pending-documents:
+              type: array
+              items:
+                $ref: '#/components/schemas/PendingDocument'
+          additionalProperties: false
+        _links:
+          $ref: '#/components/schemas/PageLinks'
+      additionalProperties: false
+    CompletenessStatistics:
+      type: object
+      required:
+      - totalActiveDocuments
+      - submittedDocuments
+      - pendingDocuments
+      - percentage
+      - calculatedAt
+      - _links
+      properties:
+        totalActiveDocuments:
+          type: integer
+          minimum: 0
+        submittedDocuments:
+          type: integer
+          minimum: 0
+        pendingDocuments:
+          type: integer
+          minimum: 0
+        percentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          multipleOf: 0.01
+        calculatedAt:
+          $ref: '#/components/schemas/DateTime'
+          description: Instante de geração da resposta 200. É excluído do ETag semântico; uma correspondência de If-None-Match
+            produz 304 antes de um novo corpo ser gerado.
+        _links:
+          $ref: '#/components/schemas/HalLinks'
+      additionalProperties: false
+      example:
+        totalActiveDocuments: 40
+        submittedDocuments: 30
+        pendingDocuments: 10
+        percentage: 75
+        calculatedAt: '2026-07-27T15:00:00.000Z'
+        _links:
+          self:
+            href: /api/v1/statistics/completeness
+          pending-documents:
+            href: /api/v1/pending-documents
+          pending-document-types:
+            href: /api/v1/statistics/pending-document-types
+    PendingDocumentTypeStatistic:
+      type: object
+      required:
+      - documentType
+      - pendingCount
+      - _links
+      properties:
+        documentType:
+          $ref: '#/components/schemas/DocumentTypeSummary'
+        pendingCount:
+          type: integer
+          minimum: 1
+        _links:
+          $ref: '#/components/schemas/HalLinks'
+      additionalProperties: false
+    PendingDocumentTypeStatisticsCollection:
+      type: object
+      required:
+      - count
+      - _embedded
+      - _links
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        _embedded:
+          type: object
+          required:
+          - document-types
+          properties:
+            document-types:
+              type: array
+              items:
+                $ref: '#/components/schemas/PendingDocumentTypeStatistic'
+          additionalProperties: false
+        _links:
+          $ref: '#/components/schemas/PageLinks'
+      additionalProperties: false
+    LatestSubmission:
+      type: object
+      required:
+      - documentId
+      - currentVersion
+      - lastSubmittedAt
+      - collaborator
+      - documentType
+      - _links
+      properties:
+        documentId:
+          $ref: '#/components/schemas/ObjectId'
+        currentVersion:
+          type: integer
+          minimum: 1
+        lastSubmittedAt:
+          $ref: '#/components/schemas/DateTime'
+        collaborator:
+          $ref: '#/components/schemas/CollaboratorSummary'
+        documentType:
+          $ref: '#/components/schemas/DocumentTypeSummary'
+        _links:
+          $ref: '#/components/schemas/HalLinks'
+      additionalProperties: false
+    LatestSubmissionCollection:
+      type: object
+      required:
+      - count
+      - _embedded
+      - _links
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        _embedded:
+          type: object
+          required:
+          - submissions
+          properties:
+            submissions:
+              type: array
+              items:
+                $ref: '#/components/schemas/LatestSubmission'
+          additionalProperties: false
+        _links:
+          $ref: '#/components/schemas/PageLinks'
+      additionalProperties: false
+    SubmissionEvent:
+      type: object
+      required:
+      - documentId
+      - version
+      - submittedAt
+      - metadata
+      - _links
+      properties:
+        documentId:
+          $ref: '#/components/schemas/ObjectId'
+        version:
+          type: integer
+          minimum: 1
+        submittedAt:
+          $ref: '#/components/schemas/DateTime'
+        metadata:
+          $ref: '#/components/schemas/DocumentMetadata'
+        _links:
+          $ref: '#/components/schemas/HalLinks'
+      additionalProperties: false
+    SubmissionEventCollection:
+      type: object
+      required:
+      - count
+      - _embedded
+      - _links
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        _embedded:
+          type: object
+          required:
+          - submission-events
+          properties:
+            submission-events:
+              type: array
+              items:
+                $ref: '#/components/schemas/SubmissionEvent'
+          additionalProperties: false
+        _links:
+          $ref: '#/components/schemas/PageLinks'
+      additionalProperties: false
+    FieldError:
+      type: object
+      required:
+      - field
+      - code
+      - message
+      properties:
+        field:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+      additionalProperties: false
+    ProblemDetails:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      - detail
+      - instance
+      - code
+      - traceId
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          enum:
+          - MALFORMED_JSON
+          - INVALID_QUERY_PARAMETER
+          - INVALID_OBJECT_ID
+          - INVALID_VERSION_NUMBER
+          - COLLABORATOR_NOT_FOUND
+          - COLLABORATOR_DELETED
+          - DUPLICATE_ACTIVE_CPF
+          - DUPLICATE_ACTIVE_EMAIL
+          - DOCUMENT_TYPE_NOT_FOUND
+          - DOCUMENT_TYPE_DELETED
+          - DUPLICATE_ACTIVE_DOCUMENT_TYPE_CODE
+          - COLLABORATOR_DOCUMENT_NOT_FOUND
+          - ACTIVE_LINK_ALREADY_EXISTS
+          - COLLABORATOR_DOCUMENT_UNLINKED
+          - COLLABORATOR_DOCUMENT_DELETED
+          - INVALID_DOCUMENT_STATE
+          - DOCUMENT_VERSION_NOT_FOUND
+          - DOCUMENT_HISTORY_LIMIT_REACHED
+          - VALIDATION_ERROR
+          - RATE_LIMIT_EXCEEDED
+          - UNSUPPORTED_MEDIA_TYPE
+          - INTERNAL_SERVER_ERROR
+          - SERVICE_UNAVAILABLE
+        traceId:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+      additionalProperties: false
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Cursor stateless, opaco, base64url e assinado com HMAC-SHA-256, retornado no link next da página anterior.
+        Expira em 15 minutos e é vinculado à operação, aos filtros normalizados, à ordenação e ao limit. Não deve ser interpretado
+        pelo cliente. Cursor vazio, adulterado, expirado ou incompatível retorna 400 INVALID_QUERY_PARAMETER com errors.field=cursor.
+      schema:
+        type: string
+        minLength: 1
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Quantidade máxima de itens por página.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: ETag fraco previamente retornado para validação semântica do cache de leitura.
+      schema:
+        type: string
+  headers:
+    ETag:
+      description: ETag fraco no formato W/"sha256:<hash>". O hash usa JSON canônico dos dados semanticamente relevantes,
+        incluindo filtros, ordenação, cursor, limit e estado que determina links HAL. Exclui calculatedAt, identificadores
+        de trace, headers e campos gerados somente no instante da resposta.
+      schema:
+        type: string
+        pattern: ^W/"sha256:[a-f0-9]{64}"$
+      example: 'W/"sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"'
+    Location:
+      description: URI do recurso criado.
+      schema:
+        type: string
+    RetryAfter:
+      description: Tempo, em segundos, até uma nova tentativa.
+      schema:
+        type: integer
+        minimum: 1
+  responses:
+    NotModified:
+      description: A representação semântica não foi alterada desde o ETag informado. A resposta não possui corpo.
