@@ -7,6 +7,7 @@ import type {CompletenessCounts} from "../../../application/models/completeness-
 import type {LatestSubmissionView} from "../../../application/models/latest-submission.view.js";
 import type {PendingDocumentTypeStatisticView} from "../../../application/models/pending-document-type-statistic.view.js";
 import type {PendingDocumentView} from "../../../application/models/pending-document.view.js";
+import type {SubmissionEventView} from "../../../application/models/submission-event.view.js";
 import type {CompletenessStatisticsReadModel} from "../../../application/ports/completeness-statistics.read-model.js";
 import type {
   LatestSubmissionPage,
@@ -20,11 +21,16 @@ import type {
   PendingDocumentPage,
   PendingDocumentsReadModel
 } from "../../../application/ports/pending-documents.read-model.js";
+import type {
+  SubmissionEventPage,
+  SubmissionEventsReadModel
+} from "../../../application/ports/submission-events.read-model.js";
 import {reportingFailure, type ReportingFailure} from "../../../application/reporting.failure.js";
 import {completenessStatisticsPipeline} from "./pipelines/completeness-statistics.pipeline.js";
 import {latestSubmissionsPipeline} from "./pipelines/latest-submissions.pipeline.js";
 import {pendingDocumentTypeStatisticsPipeline} from "./pipelines/pending-document-type-statistics.pipeline.js";
 import {pendingDocumentsPipeline} from "./pipelines/pending-documents.pipeline.js";
+import {submissionEventsPipeline} from "./pipelines/submission-events.pipeline.js";
 
 /** Adaptador MongoDB das consultas projetadas de reporting. */
 @Injectable()
@@ -33,7 +39,8 @@ export class MongoReportingRepository
     PendingDocumentsReadModel,
     CompletenessStatisticsReadModel,
     PendingDocumentTypeStatisticsReadModel,
-    LatestSubmissionsReadModel
+    LatestSubmissionsReadModel,
+    SubmissionEventsReadModel
 {
   constructor(private readonly mongoose: MongooseService) {}
 
@@ -92,6 +99,38 @@ export class MongoReportingRepository
       const items: LatestSubmissionView[] = [];
       for (const row of rows.slice(0, input.limit)) {
         const mapped = latestSubmissionFromRow(row);
+        if (mapped.isErr()) return err(mapped.error);
+        items.push(mapped.value);
+      }
+      return ok({items, hasNext: rows.length > input.limit});
+    } catch (error) {
+      return err(mapMongoFailure(error));
+    }
+  }
+
+  async listSubmissionEvents(
+    input: Parameters<SubmissionEventsReadModel["listSubmissionEvents"]>[0]
+  ): Promise<Result<SubmissionEventPage, ReportingFailure>> {
+    try {
+      const database = this.mongoose.get()?.db;
+      if (!database) {
+        return err(
+          reportingFailure("SERVICE_UNAVAILABLE", "Reporting persistence is unavailable.")
+        );
+      }
+      const rows = await database
+        .collection("collaborator_documents")
+        .aggregate(
+          submissionEventsPipeline({
+            filters: input.filters,
+            limit: input.limit,
+            ...(input.after ? {after: input.after} : {})
+          })
+        )
+        .toArray();
+      const items: SubmissionEventView[] = [];
+      for (const row of rows.slice(0, input.limit)) {
+        const mapped = submissionEventFromRow(row);
         if (mapped.isErr()) return err(mapped.error);
         items.push(mapped.value);
       }
@@ -209,6 +248,37 @@ function latestSubmissionFromRow(row: Document): Result<LatestSubmissionView, Re
   });
 }
 
+function submissionEventFromRow(row: Document): Result<SubmissionEventView, ReportingFailure> {
+  const metadata = asRecord(row.metadata);
+  const submittedAt = toIsoDate(row.submittedAt);
+  if (
+    typeof row.documentId !== "string" ||
+    !Number.isSafeInteger(row.version) ||
+    row.version < 1 ||
+    !submittedAt ||
+    typeof metadata.originalName !== "string" ||
+    !isNullableString(metadata.mimeType) ||
+    !isNullableNonNegativeInteger(metadata.sizeBytes) ||
+    !isNullableString(metadata.storageKey) ||
+    !isNullableString(metadata.notes)
+  ) {
+    return err(reportingFailure("INTERNAL_SERVER_ERROR", "Reporting projection is invalid."));
+  }
+
+  return ok({
+    documentId: row.documentId,
+    version: row.version,
+    submittedAt,
+    metadata: {
+      originalName: metadata.originalName,
+      mimeType: metadata.mimeType,
+      sizeBytes: metadata.sizeBytes,
+      storageKey: metadata.storageKey,
+      notes: metadata.notes
+    }
+  });
+}
+
 function pendingDocumentFromRow(row: Document): Result<PendingDocumentView, ReportingFailure> {
   const collaborator = asRecord(row.collaborator);
   const documentType = asRecord(row.documentType);
@@ -279,6 +349,14 @@ function toIsoDate(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
+function isNullableNonNegativeInteger(value: unknown): value is number | null {
+  return value === null || (Number.isSafeInteger(value) && (value as number) >= 0);
 }
 
 function mapMongoFailure(error: unknown): ReportingFailure {

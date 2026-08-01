@@ -7,6 +7,7 @@ import {GetCompletenessStatisticsQuery} from "./application/queries/get-complete
 import {ListLatestSubmissionsQuery} from "./application/queries/list-latest-submissions.query.js";
 import {ListPendingDocumentTypeStatisticsQuery} from "./application/queries/list-pending-document-type-statistics.query.js";
 import {ListPendingDocumentsQuery} from "./application/queries/list-pending-documents.query.js";
+import {ListSubmissionEventsQuery} from "./application/queries/list-submission-events.query.js";
 import {MongoReportingRepository} from "./infrastructure/persistence/mongodb/mongo-reporting.repository.js";
 
 export type ReportingHttpSettings = Readonly<{
@@ -27,6 +28,7 @@ export class ReportingRuntime {
 
   readonly listPendingDocuments: ListPendingDocumentsQuery;
   readonly listLatestSubmissions: ListLatestSubmissionsQuery;
+  readonly listSubmissionEvents: ListSubmissionEventsQuery;
   readonly listPendingDocumentTypeStatistics: ListPendingDocumentTypeStatisticsQuery;
   readonly getCompletenessStatistics: GetCompletenessStatisticsQuery;
   private readonly rateLimiters = new Map<string, RateLimitMiddleware>();
@@ -38,6 +40,7 @@ export class ReportingRuntime {
   ) {
     this.listPendingDocuments = new ListPendingDocumentsQuery(repository);
     this.listLatestSubmissions = new ListLatestSubmissionsQuery(repository);
+    this.listSubmissionEvents = new ListSubmissionEventsQuery(repository);
     this.listPendingDocumentTypeStatistics = new ListPendingDocumentTypeStatisticsQuery(repository);
     this.getCompletenessStatistics = new GetCompletenessStatisticsQuery(repository, clock);
   }

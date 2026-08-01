@@ -1,6 +1,7 @@
 import type {LatestSubmissionView} from "../../../application/models/latest-submission.view.js";
 import type {PendingDocumentTypeStatisticView} from "../../../application/models/pending-document-type-statistic.view.js";
 import type {PendingDocumentView} from "../../../application/models/pending-document.view.js";
+import type {SubmissionEventView} from "../../../application/models/submission-event.view.js";
 
 /** Adapta a projeção de pendência para uma representação HAL. */
 export const pendingDocumentPresenter = (pending: PendingDocumentView) => ({
@@ -19,6 +20,17 @@ export const latestSubmissionPresenter = (submission: LatestSubmissionView) => (
     self: {href: `/api/v1/collaborator-documents/${submission.documentId}`},
     collaborator: {href: `/api/v1/collaborators/${submission.collaborator.id}`},
     documentType: {href: `/api/v1/document-types/${submission.documentType.id}`}
+  }
+});
+
+/** Adapta uma versão histórica para uma representação HAL. */
+export const submissionEventPresenter = (event: SubmissionEventView) => ({
+  ...event,
+  _links: {
+    self: {
+      href: `/api/v1/collaborator-documents/${event.documentId}/versions/${event.version}`
+    },
+    document: {href: `/api/v1/collaborator-documents/${event.documentId}`}
   }
 });
 
