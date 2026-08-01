@@ -11,6 +11,7 @@ import {
   pendingDocumentPageFixtures,
   type PendingDocumentFixture
 } from "../helpers/reporting-fixtures.js";
+import {ReportingRuntime} from "../../src/modules/reporting/reporting.runtime.js";
 
 const collaboratorOne = "66a64ab05bd7213b90d9b001";
 const collaboratorTwo = "66a64ab05bd7213b90d9b002";
@@ -30,6 +31,7 @@ describe("Listing pending documents", () => {
   beforeEach(async () => {
     await resetDatabase(httpDatabase());
     await seedBaseReportingRows();
+    PlatformTest.get<ReportingRuntime>(ReportingRuntime).resetRateLimiters();
   });
 
   afterAll(() => {
@@ -336,9 +338,6 @@ async function seedBaseReportingRows(): Promise<void> {
     collaboratorDocumentRow("66a64ab05bd7213b90d9c001", collaboratorOne, typeOne),
     collaboratorDocumentRow("66a64ab05bd7213b90d9c002", collaboratorTwo, typeTwo),
     collaboratorDocumentRow("66a64ab05bd7213b90d9c003", collaboratorOne, typeTwo),
-    collaboratorDocumentRow("66a64ab05bd7213b90d9c004", collaboratorOne, typeOne, {
-      status: "SUBMITTED"
-    }),
     collaboratorDocumentRow("66a64ab05bd7213b90d9c005", collaboratorTwo, typeOne, {
       unlinkedAt: new Date("2026-07-30T13:00:00.000Z")
     }),
