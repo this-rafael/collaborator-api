@@ -57,6 +57,13 @@ export const listPendingDocumentTypeStatisticsContractPath = resolve(
   "contracts",
   "list-pending-document-type-statistics.openapi.yaml"
 );
+export const listLatestSubmissionsContractPath = resolve(
+  repoRoot,
+  "specs",
+  "028-list-latest-submissions",
+  "contracts",
+  "list-latest-submissions.openapi.yaml"
+);
 
 export type JsonScalar = string | number | boolean | null;
 export type JsonValue = JsonScalar | JsonObject | JsonArray;
@@ -731,3 +738,9 @@ export const loadListPendingDocumentTypeStatisticsSliceFromContract = (): Operat
 
 export const loadListPendingDocumentTypeStatisticsSliceFromExpected = (): OperationSlice =>
   loadOperationSliceFromExpected("/api/v1/statistics/pending-document-types", "get");
+
+export const loadListLatestSubmissionsSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(listLatestSubmissionsContractPath, "/api/v1/submissions/latest", "get");
+
+export const loadListLatestSubmissionsSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/submissions/latest", "get");

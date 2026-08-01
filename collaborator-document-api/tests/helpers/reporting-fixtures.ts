@@ -51,6 +51,28 @@ export interface PendingDocumentTypeStatisticsPageFixture {
   hasNext: boolean;
 }
 
+export interface LatestSubmissionFixture {
+  documentId: string;
+  currentVersion: number;
+  lastSubmittedAt: string;
+  collaborator: {
+    id: string;
+    name: string;
+    cpf: string;
+  };
+  documentType: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  _links: Record<string, {href: string}>;
+}
+
+export interface LatestSubmissionPageFixture {
+  items: LatestSubmissionFixture[];
+  hasNext: boolean;
+}
+
 export const pendingDocumentFixture = (
   overrides: Partial<PendingDocumentFixture> = {}
 ): PendingDocumentFixture => ({
@@ -146,6 +168,54 @@ export const pendingDocumentTypeStatisticFixtures = (
       },
       pendingCount: count - index,
       _links: {self: {href: `/api/v1/document-types/${documentTypeId}`}}
+    });
+  });
+
+export const latestSubmissionFixture = (
+  overrides: Partial<LatestSubmissionFixture> = {}
+): LatestSubmissionFixture => ({
+  documentId: "66a64ab05bd7213b90d9c001",
+  currentVersion: 2,
+  lastSubmittedAt: "2026-07-31T15:00:00.000Z",
+  collaborator: {
+    id: "66a64ab05bd7213b90d9b001",
+    name: "Ana María Silva",
+    cpf: "12345678909"
+  },
+  documentType: {
+    id: "66a64ab05bd7213b90d9b010",
+    name: "Atestado de Saúde Ocupacional",
+    code: "ASO"
+  },
+  _links: {
+    self: {href: "/api/v1/collaborator-documents/66a64ab05bd7213b90d9c001"},
+    collaborator: {href: "/api/v1/collaborators/66a64ab05bd7213b90d9b001"},
+    documentType: {href: "/api/v1/document-types/66a64ab05bd7213b90d9b010"}
+  },
+  ...overrides
+});
+
+export const latestSubmissionPageFixtures = (count: number): LatestSubmissionFixture[] =>
+  Array.from({length: count}, (_, index) => {
+    const documentId = hexadecimalId("66a64ab05bd7213b90d9d000", index + 1);
+    const documentTypeId = hexadecimalId("66a64ab05bd7213b90d9e000", index + 1);
+    const lastSubmittedAt = new Date(
+      Date.parse("2026-07-31T15:00:00.000Z") - index * 60_000
+    ).toISOString();
+    return latestSubmissionFixture({
+      documentId,
+      currentVersion: index + 1,
+      lastSubmittedAt,
+      documentType: {
+        id: documentTypeId,
+        name: `Tipo ${String(index + 1).padStart(3, "0")}`,
+        code: `TYPE_${String(index + 1).padStart(3, "0")}`
+      },
+      _links: {
+        self: {href: `/api/v1/collaborator-documents/${documentId}`},
+        collaborator: {href: "/api/v1/collaborators/66a64ab05bd7213b90d9b001"},
+        documentType: {href: `/api/v1/document-types/${documentTypeId}`}
+      }
     });
   });
 
