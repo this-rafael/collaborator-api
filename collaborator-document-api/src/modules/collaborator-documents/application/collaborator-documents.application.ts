@@ -15,6 +15,7 @@ import type {
 import {CreateCollaboratorDocumentUseCase} from "./use-cases/create-collaborator-document.use-case.js";
 import {CreateDocumentVersionUseCase} from "./use-cases/create-document-version.use-case.js";
 import {GetCollaboratorDocumentUseCase} from "./use-cases/get-collaborator-document.use-case.js";
+import {GetDocumentVersionUseCase} from "./use-cases/get-document-version.use-case.js";
 import {ListCollaboratorDocumentsUseCase} from "./use-cases/list-collaborator-documents.use-case.js";
 import {ListDocumentVersionsUseCase} from "./use-cases/list-document-versions.use-case.js";
 import {SoftDeleteCollaboratorDocumentsUseCase} from "./use-cases/soft-delete-collaborator-documents.use-case.js";
@@ -34,6 +35,7 @@ export type CollaboratorDocumentsApplication = Readonly<{
   create: CreateCollaboratorDocumentUseCase;
   createVersion: CreateDocumentVersionUseCase;
   get: GetCollaboratorDocumentUseCase;
+  getVersion: GetDocumentVersionUseCase;
   list: ListCollaboratorDocumentsUseCase;
   listVersions: ListDocumentVersionsUseCase;
   unlink: UnlinkCollaboratorDocumentUseCase;
@@ -54,6 +56,7 @@ export const createCollaboratorDocumentsApplication = (
     ),
     createVersion: new CreateDocumentVersionUseCase(dependencies.repository, dependencies.clock),
     get: new GetCollaboratorDocumentUseCase(dependencies.repository),
+    getVersion: new GetDocumentVersionUseCase(dependencies.repository),
     list: new ListCollaboratorDocumentsUseCase(dependencies.repository),
     listVersions: new ListDocumentVersionsUseCase(dependencies.repository),
     unlink: new UnlinkCollaboratorDocumentUseCase(dependencies.repository, dependencies.clock),
