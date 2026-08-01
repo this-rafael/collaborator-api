@@ -36,6 +36,21 @@ export interface CompletenessStatisticsFixture extends CompletenessCountsFixture
   };
 }
 
+export interface PendingDocumentTypeStatisticFixture {
+  documentType: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  pendingCount: number;
+  _links: Record<string, {href: string}>;
+}
+
+export interface PendingDocumentTypeStatisticsPageFixture {
+  items: PendingDocumentTypeStatisticFixture[];
+  hasNext: boolean;
+}
+
 export const pendingDocumentFixture = (
   overrides: Partial<PendingDocumentFixture> = {}
 ): PendingDocumentFixture => ({
@@ -102,6 +117,37 @@ export const completenessStatisticsFixture = (
   },
   ...overrides
 });
+
+export const pendingDocumentTypeStatisticFixture = (
+  overrides: Partial<PendingDocumentTypeStatisticFixture> = {}
+): PendingDocumentTypeStatisticFixture => ({
+  documentType: {
+    id: "66a64ab05bd7213b90d9b010",
+    name: "Atestado de Saúde Ocupacional",
+    code: "ASO"
+  },
+  pendingCount: 3,
+  _links: {
+    self: {href: "/api/v1/document-types/66a64ab05bd7213b90d9b010"}
+  },
+  ...overrides
+});
+
+export const pendingDocumentTypeStatisticFixtures = (
+  count: number
+): PendingDocumentTypeStatisticFixture[] =>
+  Array.from({length: count}, (_, index) => {
+    const documentTypeId = hexadecimalId("66a64ab05bd7213b90d9e000", index + 1);
+    return pendingDocumentTypeStatisticFixture({
+      documentType: {
+        id: documentTypeId,
+        name: `Tipo ${String(index + 1).padStart(3, "0")}`,
+        code: `TYPE_${String(index + 1).padStart(3, "0")}`
+      },
+      pendingCount: count - index,
+      _links: {self: {href: `/api/v1/document-types/${documentTypeId}`}}
+    });
+  });
 
 function hexadecimalId(base: string, offset: number): string {
   return (BigInt(`0x${base}`) + BigInt(offset)).toString(16).padStart(24, "0");

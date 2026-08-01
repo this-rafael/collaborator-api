@@ -4,20 +4,29 @@ import type {Document} from "mongodb";
 import {err, ok, type Result} from "neverthrow";
 
 import type {CompletenessCounts} from "../../../application/models/completeness-statistics.view.js";
+import type {PendingDocumentTypeStatisticView} from "../../../application/models/pending-document-type-statistic.view.js";
 import type {PendingDocumentView} from "../../../application/models/pending-document.view.js";
 import type {CompletenessStatisticsReadModel} from "../../../application/ports/completeness-statistics.read-model.js";
+import type {
+  PendingDocumentTypeStatisticsPage,
+  PendingDocumentTypeStatisticsReadModel
+} from "../../../application/ports/pending-document-type-statistics.read-model.js";
 import type {
   PendingDocumentPage,
   PendingDocumentsReadModel
 } from "../../../application/ports/pending-documents.read-model.js";
 import {reportingFailure, type ReportingFailure} from "../../../application/reporting.failure.js";
 import {completenessStatisticsPipeline} from "./pipelines/completeness-statistics.pipeline.js";
+import {pendingDocumentTypeStatisticsPipeline} from "./pipelines/pending-document-type-statistics.pipeline.js";
 import {pendingDocumentsPipeline} from "./pipelines/pending-documents.pipeline.js";
 
 /** Adaptador MongoDB das consultas projetadas de reporting. */
 @Injectable()
 export class MongoReportingRepository
-  implements PendingDocumentsReadModel, CompletenessStatisticsReadModel
+  implements
+    PendingDocumentsReadModel,
+    CompletenessStatisticsReadModel,
+    PendingDocumentTypeStatisticsReadModel
 {
   constructor(private readonly mongoose: MongooseService) {}
 
@@ -75,6 +84,40 @@ export class MongoReportingRepository
       return err(mapMongoFailure(error));
     }
   }
+
+  async listPendingDocumentTypeStatistics(
+    input: Parameters<
+      PendingDocumentTypeStatisticsReadModel["listPendingDocumentTypeStatistics"]
+    >[0]
+  ): Promise<Result<PendingDocumentTypeStatisticsPage, ReportingFailure>> {
+    try {
+      const database = this.mongoose.get()?.db;
+      if (!database) {
+        return err(
+          reportingFailure("SERVICE_UNAVAILABLE", "Reporting persistence is unavailable.")
+        );
+      }
+      const rows = await database
+        .collection("collaborator_documents")
+        .aggregate(
+          pendingDocumentTypeStatisticsPipeline({
+            filters: input.filters,
+            limit: input.limit,
+            ...(input.after ? {after: input.after} : {})
+          })
+        )
+        .toArray();
+      const items: PendingDocumentTypeStatisticView[] = [];
+      for (const row of rows.slice(0, input.limit)) {
+        const mapped = pendingDocumentTypeStatisticFromRow(row);
+        if (mapped.isErr()) return err(mapped.error);
+        items.push(mapped.value);
+      }
+      return ok({items, hasNext: rows.length > input.limit});
+    } catch (error) {
+      return err(mapMongoFailure(error));
+    }
+  }
 }
 
 function completenessCountsFromRow(row: Document): Result<CompletenessCounts, ReportingFailure> {
@@ -123,6 +166,30 @@ function pendingDocumentFromRow(row: Document): Result<PendingDocumentView, Repo
       name: documentType.name,
       code: documentType.code
     }
+  });
+}
+
+function pendingDocumentTypeStatisticFromRow(
+  row: Document
+): Result<PendingDocumentTypeStatisticView, ReportingFailure> {
+  const documentType = asRecord(row.documentType);
+  if (
+    !Number.isSafeInteger(row.pendingCount) ||
+    row.pendingCount < 1 ||
+    typeof documentType.id !== "string" ||
+    typeof documentType.name !== "string" ||
+    typeof documentType.code !== "string"
+  ) {
+    return err(reportingFailure("INTERNAL_SERVER_ERROR", "Reporting projection is invalid."));
+  }
+
+  return ok({
+    documentType: {
+      id: documentType.id,
+      name: documentType.name,
+      code: documentType.code
+    },
+    pendingCount: row.pendingCount
   });
 }
 
