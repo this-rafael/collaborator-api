@@ -1,0 +1,8 @@
+extends:
+  - spectral:oas
+
+rules:
+  # Spectral 6's JSONPath evaluator crashes on nullable OpenAPI 3.1 examples.
+  duplicated-entry-in-enum: off
+  info-contact: off
+  info-license: off

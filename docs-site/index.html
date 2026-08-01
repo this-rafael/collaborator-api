@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Portal técnico da Collaborator Document API: OpenAPI, TypeDoc e arquitetura interativa."
+    />
+    <meta name="theme-color" content="#07121f" />
+    <title>Collaborator Document API · Documentation Hub</title>
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./assets/styles.css" />
+  </head>
+  <body>
+    <header class="shell nav">
+      <a class="brand" href="./" aria-label="Collaborator Document API">
+        <span class="brand-mark">CD</span>
+        <span>Collaborator Document API</span>
+      </a>
+      <nav class="nav-links" aria-label="Navegação principal">
+        <a href="./openapi/">OpenAPI</a>
+        <a href="./reference/">TypeDoc</a>
+        <a href="./architecture/">Arquitetura</a>
+        <a href="https://github.com/this-rafael/collaborator-api">GitHub</a>
+        <a class="language" href="./en/" lang="en">EN</a>
+      </nav>
+    </header>
+
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <span class="eyebrow">contrato vivo · histórico preservado</span>
+          <h1>
+            Documentos de colaboradores,
+            <span class="gradient-text">sem perder o contexto.</span>
+          </h1>
+          <p class="lead">
+            Explore o contrato HTTP, os símbolos TypeScript e as relações de uma
+            API que gerencia colaboradores, tipos documentais, vínculos, versões
+            e indicadores operacionais.
+          </p>
+          <div class="actions">
+            <a class="button primary" href="./openapi/">Explorar a API →</a>
+            <a class="button" href="./architecture/">Navegar pelo grafo</a>
+            <a class="button" href="./reference/">Ler o código</a>
+          </div>
+        </div>
+
+        <div class="terminal" aria-label="Exemplo de descoberta HAL">
+          <div class="terminal-head" aria-hidden="true">
+            <span class="dot"></span><span class="dot"></span
+            ><span class="dot"></span>
+          </div>
+          <pre><span class="prompt">$</span> curl /api/v1
+<span class="value">{
+  "name": "Collaborator Document API",
+  "version": "1",
+  "_links": {
+    "collaborators": { "href": "/api/v1/collaborators{?cursor,limit}" },
+    "document-types": { "href": "/api/v1/document-types{?cursor,limit}" },
+    "pending-documents": { "href": "/api/v1/pending-documents{?cursor,limit}" }
+  }
+}</span>
+
+<span class="prompt">#</span> success: application/hal+json
+<span class="prompt">#</span> errors: application/problem+json</pre>
+        </div>
+      </section>
+
+      <section class="section" id="explorar">
+        <div class="section-heading">
+          <span class="kicker">Três visões · Um sistema</span>
+          <h2>Escolha a profundidade.</h2>
+          <p>
+            Comece pelo contrato público, desça até os símbolos ou percorra as
+            camadas visualmente. Cada visão é gerada a partir do repositório.
+          </p>
+        </div>
+
+        <div class="cards">
+          <article class="card">
+            <span class="icon">API</span>
+            <h3>OpenAPI 3.1</h3>
+            <p>
+              23 operações de negócio, health checks, representações HAL,
+              Problem Details, paginação, cache e exemplos de payload.
+            </p>
+            <a href="./openapi/">Abrir contrato →</a>
+          </article>
+
+          <article class="card">
+            <span class="icon">TS</span>
+            <h3>TypeDoc</h3>
+            <p>
+              Casos de uso, entidades, portas, adaptadores, repositórios e
+              pontos de composição navegáveis por símbolo.
+            </p>
+            <a href="./reference/">Abrir referência →</a>
+          </article>
+
+          <article class="card">
+            <span class="icon">⌘</span>
+            <h3>Architecture Explorer</h3>
+            <p>
+              Nós, relações, camadas e tour guiado do monólito modular em um
+              grafo interativo configurado em português.
+            </p>
+            <a href="./architecture/">Abrir grafo →</a>
+          </article>
+        </div>
+
+        <div class="stats" aria-label="Métricas do portal">
+          <div class="stat">
+            <strong>23</strong><span>operações de negócio</span>
+          </div>
+          <div class="stat"><strong>2</strong><span>health checks</span></div>
+          <div class="stat"><strong>75</strong><span>nós no grafo</span></div>
+          <div class="stat">
+            <strong>93</strong><span>relações mapeadas</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="shell">
+      <span
+        >Collaborator Document API · documentação pública reproduzível.</span
+      >
+      <span
+        >Construído por
+        <a href="https://github.com/this-rafael">Rafael Pereira</a>.</span
+      >
+    </footer>
+  </body>
+</html>

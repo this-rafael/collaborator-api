@@ -75,4 +75,22 @@ describe("Listing document versions through the application", () => {
     expect(result.isErr()).toBe(true);
     if (result.isErr()) expect(result.error.code).toBe(code);
   });
+
+  it("maps an unexpected repository rejection to a modeled internal error", async () => {
+    const module = await import(listVersionsUseCaseModule);
+    const repository = {
+      listVersions: async () => {
+        throw new Error("unexpected persistence rejection");
+      }
+    };
+
+    const result = await new module.ListDocumentVersionsUseCase(repository).execute({
+      id,
+      order: "desc",
+      limit: 20
+    });
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("INTERNAL_SERVER_ERROR");
+  });
 });

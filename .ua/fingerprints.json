@@ -1,0 +1,1292 @@
+{
+  "version": "1.0.0",
+  "gitCommitHash": "c8a5ffef99af10b354fc2e9a486799f8251c32ab",
+  "generatedAt": "2026-07-28T16:31:56.137Z",
+  "files": {
+    ".nvmrc": {
+      "filePath": ".nvmrc",
+      "contentHash": "8f9258d5e9da5443c42966a661aee09292b49d1c64e718dcc5f72976500bac48",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    ".ua/.understandignore": {
+      "filePath": ".ua/.understandignore",
+      "contentHash": "51db07b089482330d620d6b45271aa4ff12e59e413033945d3a5f25894b20275",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 44,
+      "hasStructuralAnalysis": false
+    },
+    ".ua/config.json": {
+      "filePath": ".ua/config.json",
+      "contentHash": "3c13541059fe94ba9ddfebbfbc7785faba9fc45bcabdb41de0a3938f4ccadf92",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 4,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/.env.example": {
+      "filePath": "collaborator-document-api/.env.example",
+      "contentHash": "70a201adce8d0c34e33a6f0b6b1b0a20a4b8f651a19c7cc91167a8ac9a0b9ded",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 5,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/.nvmrc": {
+      "filePath": "collaborator-document-api/.nvmrc",
+      "contentHash": "8f9258d5e9da5443c42966a661aee09292b49d1c64e718dcc5f72976500bac48",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    "collaborator-document-api/.prettierignore": {
+      "filePath": "collaborator-document-api/.prettierignore",
+      "contentHash": "5d9fa7ed2883a0668befa0b3d46a94d5dda4b0b8e44cf11f39ecea4223e5b1ac",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 7,
+      "hasStructuralAnalysis": false
+    },
+    "collaborator-document-api/.swcrc": {
+      "filePath": "collaborator-document-api/.swcrc",
+      "contentHash": "86f03bdd870f3a08331c261cfa0359d902a010224b8f2ca8f99692be405d798e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 23,
+      "hasStructuralAnalysis": false
+    },
+    "collaborator-document-api/docker-compose.yml": {
+      "filePath": "collaborator-document-api/docker-compose.yml",
+      "contentHash": "3f092952ea381634f747329607d199e882e251ec2bf8aed83a483631db96d275",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 88,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/docker/mongo/init-replica-set.js": {
+      "filePath": "collaborator-document-api/docker/mongo/init-replica-set.js",
+      "contentHash": "4fcac078195bdf7386cf81c4eb1d29ef60f99550a7c0ba0d23c63612c5b8035c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 29,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/Dockerfile": {
+      "filePath": "collaborator-document-api/Dockerfile",
+      "contentHash": "ce62c9c3acf2d5a19877baa51661c226e7fb9c35cd0ba2e92fac39dfd12b2d2c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 35,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/docs/foundation.md": {
+      "filePath": "collaborator-document-api/docs/foundation.md",
+      "contentHash": "53a1d6bea9727c6ebebbf16ed05f246a5262b68fc69a1ab7edd2da535cd94995",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 25,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/eslint.config.js": {
+      "filePath": "collaborator-document-api/eslint.config.js",
+      "contentHash": "f8dc6fa41cd904c1fabb0f5ecf5137dfb78a9626adb25a4f9d2c9e4523f0ccd9",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@eslint/js",
+          "specifiers": [
+            "eslint"
+          ]
+        },
+        {
+          "source": "eslint-config-prettier",
+          "specifiers": [
+            "eslintConfigPrettier"
+          ]
+        },
+        {
+          "source": "globals",
+          "specifiers": [
+            "globals"
+          ]
+        },
+        {
+          "source": "typescript-eslint",
+          "specifiers": [
+            "tseslint"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 32,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/lefthook.yml": {
+      "filePath": "collaborator-document-api/lefthook.yml",
+      "contentHash": "438f2973189ed04755e20b296abefb064c9eb3902875ebe186e426776d525bac",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 13,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/package.json": {
+      "filePath": "collaborator-document-api/package.json",
+      "contentHash": "a50af096e24545df10a4d33a60a728810c7485ba773e86cc8384bb3c77704f58",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 82,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/pnpm-workspace.yaml": {
+      "filePath": "collaborator-document-api/pnpm-workspace.yaml",
+      "contentHash": "6f5d113193ac1f58073c89a2771c01697efb8f1b964e3dd8818e1ebf4d5b9135",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 8,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/README.md": {
+      "filePath": "collaborator-document-api/README.md",
+      "contentHash": "490f655ff54acd8729f079e0aa9b4a0ade6cc3d134f7be97e6c57bd0caa54704",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 86,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/scripts/check-runtime.d.mts": {
+      "filePath": "collaborator-document-api/scripts/check-runtime.d.mts",
+      "contentHash": "fc86580b75a962e2d02f3b45fb4025eeafd7f45493c97e92f51d3daf92b13dc7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 5,
+      "hasStructuralAnalysis": false
+    },
+    "collaborator-document-api/scripts/check-runtime.mjs": {
+      "filePath": "collaborator-document-api/scripts/check-runtime.mjs",
+      "contentHash": "65fa00770c157de6d915f97810b451b044e7019bbae8594a6f75b0a449aae23f",
+      "functions": [
+        {
+          "name": "parseVersion",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "isAtLeast",
+          "params": [
+            "actual",
+            "minimum"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "validateRuntime",
+          "params": [],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "validateRuntime"
+      ],
+      "totalLines": 36,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/scripts/smoke-built-app.mjs": {
+      "filePath": "collaborator-document-api/scripts/smoke-built-app.mjs",
+      "contentHash": "804953282fba370f3ab364e52cd4e47191300d2087d4eb35bb29601cd393d569",
+      "functions": [
+        {
+          "name": "freePort",
+          "params": [],
+          "exported": false,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:child_process",
+          "specifiers": [
+            "spawn"
+          ]
+        },
+        {
+          "source": "node:events",
+          "specifiers": [
+            "once"
+          ]
+        },
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "existsSync"
+          ]
+        },
+        {
+          "source": "node:net",
+          "specifiers": [
+            "createServer"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "join"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 65,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/scripts/verify-test-runner.mjs": {
+      "filePath": "collaborator-document-api/scripts/verify-test-runner.mjs",
+      "contentHash": "fb7e06493f609838438dc94f839e818aa118abb91bd37e19ad34c481deee7399",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:child_process",
+          "specifiers": [
+            "spawnSync"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 14,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/src/bootstrap.ts": {
+      "filePath": "collaborator-document-api/src/bootstrap.ts",
+      "contentHash": "6cbf063a94d23b6a75583e177a56a0767780b79efb14bf9579c07279b365d5cc",
+      "functions": [
+        {
+          "name": "serverSettings",
+          "params": [
+            "env"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "startApplication",
+          "params": [
+            "env"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "stopApplication",
+          "params": [
+            "platform"
+          ],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@tsed/logger",
+          "specifiers": [
+            "$log"
+          ]
+        },
+        {
+          "source": "@tsed/platform-express",
+          "specifiers": [
+            "PlatformExpress"
+          ]
+        },
+        {
+          "source": "./config/env.js",
+          "specifiers": [
+            "AppEnv"
+          ]
+        },
+        {
+          "source": "./Server.js",
+          "specifiers": [
+            "Server"
+          ]
+        }
+      ],
+      "exports": [
+        "serverSettings",
+        "startApplication",
+        "stopApplication"
+      ],
+      "totalLines": 31,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/src/config/env.ts": {
+      "filePath": "collaborator-document-api/src/config/env.ts",
+      "contentHash": "dafceb2605ed43528372508f0a652279cbfed8ff5b34974c73dc64a3bffb5e48",
+      "functions": [
+        {
+          "name": "required",
+          "params": [
+            "source",
+            "name",
+            "issues"
+          ],
+          "returnType": "string | undefined",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "isOneOf",
+          "params": [
+            "value",
+            "values"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "loadEnv",
+          "params": [
+            "source"
+          ],
+          "returnType": "AppEnv",
+          "exported": true,
+          "lineCount": 48
+        }
+      ],
+      "classes": [
+        {
+          "name": "EnvironmentValidationError",
+          "methods": [
+            "constructor"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [],
+      "exports": [
+        "nodeEnvironments",
+        "logLevels",
+        "EnvironmentValidationError",
+        "loadEnv"
+      ],
+      "totalLines": 82,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/src/config/index.ts": {
+      "filePath": "collaborator-document-api/src/config/index.ts",
+      "contentHash": "b1f4a9e14931fc4dca1c3ea2077bf639003030aca9931fdc8f504c002c6caa42",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "loadEnv",
+        "AppEnv"
+      ],
+      "totalLines": 2,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/src/controllers/health.controller.ts": {
+      "filePath": "collaborator-document-api/src/controllers/health.controller.ts",
+      "contentHash": "72fc9469e7f9be9a42d4ce4432b148fbfdccc4272a55d153fb2a0fb4036774d1",
+      "functions": [],
+      "classes": [
+        {
+          "name": "HealthController",
+          "methods": [
+            "live"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "imports": [
+        {
+          "source": "@tsed/di",
+          "specifiers": [
+            "Controller"
+          ]
+        },
+        {
+          "source": "@tsed/schema",
+          "specifiers": [
+            "Get",
+            "Returns",
+            "Status"
+          ]
+        }
+      ],
+      "exports": [
+        "HealthController"
+      ],
+      "totalLines": 15,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/src/index.ts": {
+      "filePath": "collaborator-document-api/src/index.ts",
+      "contentHash": "72af61659abf98f0ceb419ef6c1150ca44ccce2ab1cafbdf2fb2f6f47508a71f",
+      "functions": [
+        {
+          "name": "main",
+          "params": [],
+          "returnType": "Promise<number>",
+          "exported": true,
+          "lineCount": 20
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:url",
+          "specifiers": [
+            "pathToFileURL"
+          ]
+        },
+        {
+          "source": "@tsed/logger",
+          "specifiers": [
+            "$log"
+          ]
+        },
+        {
+          "source": "./bootstrap.js",
+          "specifiers": [
+            "startApplication",
+            "stopApplication"
+          ]
+        },
+        {
+          "source": "./config/env.js",
+          "specifiers": [
+            "loadEnv"
+          ]
+        }
+      ],
+      "exports": [
+        "main"
+      ],
+      "totalLines": 36,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/src/Server.ts": {
+      "filePath": "collaborator-document-api/src/Server.ts",
+      "contentHash": "cc0a535abc80abc1b337db52d4f8a4b1158cf695ae68cb5b7a55b6fbe12d3881",
+      "functions": [],
+      "classes": [
+        {
+          "name": "Server",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 1
+        }
+      ],
+      "imports": [
+        {
+          "source": "@tsed/di",
+          "specifiers": [
+            "Configuration"
+          ]
+        },
+        {
+          "source": "@tsed/mongoose",
+          "specifiers": []
+        },
+        {
+          "source": "@tsed/platform-express",
+          "specifiers": []
+        },
+        {
+          "source": "./controllers/health.controller.js",
+          "specifiers": [
+            "HealthController"
+          ]
+        },
+        {
+          "source": "./shared/infrastructure/persistence/mongodb/mongo-index-manager.js",
+          "specifiers": [
+            "MongoIndexManager"
+          ]
+        },
+        {
+          "source": "./shared/infrastructure/persistence/mongodb/mongo-transaction-manager.js",
+          "specifiers": [
+            "MongoTransactionManager"
+          ]
+        }
+      ],
+      "exports": [
+        "Server"
+      ],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/src/shared/application/application-failure.ts": {
+      "filePath": "collaborator-document-api/src/shared/application/application-failure.ts",
+      "contentHash": "3d85f6d4b81447f665525c8b8daf46d6622e0acf34c770d83513046a5f19b067",
+      "functions": [],
+      "classes": [
+        {
+          "name": "ApplicationFailure",
+          "methods": [
+            "constructor"
+          ],
+          "properties": [
+            "kind"
+          ],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "imports": [],
+      "exports": [
+        "ApplicationFailure"
+      ],
+      "totalLines": 12,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/src/shared/domain/domain-failure.ts": {
+      "filePath": "collaborator-document-api/src/shared/domain/domain-failure.ts",
+      "contentHash": "aac55f203f5087d7fb6b7e17ce977f045082f23669667ed24da29146efe4eadb",
+      "functions": [],
+      "classes": [
+        {
+          "name": "DomainFailure",
+          "methods": [
+            "constructor"
+          ],
+          "properties": [
+            "kind"
+          ],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "imports": [],
+      "exports": [
+        "DomainFailure"
+      ],
+      "totalLines": 12,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts": {
+      "filePath": "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-index-manager.ts",
+      "contentHash": "0ea5f9992bdd94d03fa1fd60e428a7504325c981947e71517ea03f237c6c2244",
+      "functions": [],
+      "classes": [
+        {
+          "name": "MongoIndexManager",
+          "methods": [
+            "constructor",
+            "ensure",
+            "list",
+            "connection",
+            "database"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 28
+        }
+      ],
+      "imports": [
+        {
+          "source": "@tsed/di",
+          "specifiers": [
+            "Injectable"
+          ]
+        },
+        {
+          "source": "@tsed/mongoose",
+          "specifiers": [
+            "MongooseService"
+          ]
+        },
+        {
+          "source": "mongodb",
+          "specifiers": [
+            "IndexDescription",
+            "IndexDescriptionInfo"
+          ]
+        }
+      ],
+      "exports": [
+        "MongoIndexManager"
+      ],
+      "totalLines": 34,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts": {
+      "filePath": "collaborator-document-api/src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.ts",
+      "contentHash": "dd42bb4ab6477291491d75774d3257c91ac2c82c10bc28fdf1837b02e99165d6",
+      "functions": [],
+      "classes": [
+        {
+          "name": "MongoTransactionManager",
+          "methods": [
+            "constructor",
+            "execute"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 21
+        }
+      ],
+      "imports": [
+        {
+          "source": "@tsed/di",
+          "specifiers": [
+            "Injectable"
+          ]
+        },
+        {
+          "source": "@tsed/mongoose",
+          "specifiers": [
+            "MongooseService"
+          ]
+        },
+        {
+          "source": "mongoose",
+          "specifiers": [
+            "ClientSession"
+          ]
+        }
+      ],
+      "exports": [
+        "MongoTransactionManager"
+      ],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/src/shared/result.ts": {
+      "filePath": "collaborator-document-api/src/shared/result.ts",
+      "contentHash": "afc5f3b04a42f6811bdd7ea8f2b5998ee345565bc2eac398029d3eac2c63e69a",
+      "functions": [
+        {
+          "name": "success",
+          "params": [
+            "value"
+          ],
+          "returnType": "Result<T, never>",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "failure",
+          "params": [
+            "error"
+          ],
+          "returnType": "Result<never, E>",
+          "exported": true,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "neverthrow",
+          "specifiers": [
+            "err",
+            "ok",
+            "Result",
+            "Promise<Result>"
+          ]
+        }
+      ],
+      "exports": [
+        "err",
+        "ok",
+        "Result",
+        "Promise<Result>",
+        "success",
+        "failure"
+      ],
+      "totalLines": 8,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/contract/health.contract.spec.ts": {
+      "filePath": "collaborator-document-api/tests/contract/health.contract.spec.ts",
+      "contentHash": "f8ddb52f3a891cbfe94d1af27cf618a2ec4f7caba7b581ec2d2ebc81c230e376",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "afterAll",
+            "beforeAll",
+            "describe",
+            "expect",
+            "it"
+          ]
+        },
+        {
+          "source": "@tsed/platform-http/testing",
+          "specifiers": [
+            "PlatformTest"
+          ]
+        },
+        {
+          "source": "supertest",
+          "specifiers": [
+            "supertest"
+          ]
+        },
+        {
+          "source": "../../src/Server.js",
+          "specifiers": [
+            "Server"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 17,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/fixtures/intentional-failure.spec.ts": {
+      "filePath": "collaborator-document-api/tests/fixtures/intentional-failure.spec.ts",
+      "contentHash": "64145cafb074226de47280001cc6dd439ad3ff3fd38d961c24aac3e9c16be920",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "expect",
+            "it"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 6,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/fixtures/vitest.failure.config.ts": {
+      "filePath": "collaborator-document-api/tests/fixtures/vitest.failure.config.ts",
+      "contentHash": "2b6b88ff11318b4ef2888ec00a80ea36e3a24d6d5c85cde95112fd0c9bf6e34e",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest/config",
+          "specifiers": [
+            "defineConfig"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 4,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/helpers/clock.ts": {
+      "filePath": "collaborator-document-api/tests/helpers/clock.ts",
+      "contentHash": "d4bf5ac9f2d5e19622060eaf32bcbaf7e48e7a1f1ef71e36f021a63ea67e569c",
+      "functions": [],
+      "classes": [
+        {
+          "name": "FixedClock",
+          "methods": [
+            "constructor",
+            "now"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "imports": [],
+      "exports": [
+        "FixedClock"
+      ],
+      "totalLines": 12,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/helpers/database.ts": {
+      "filePath": "collaborator-document-api/tests/helpers/database.ts",
+      "contentHash": "1afc9bb2f962df391b2ab9d4f8923ab01f5d27081f9a9d88eec2a0c417a0ffff",
+      "functions": [
+        {
+          "name": "resetDatabase",
+          "params": [
+            "database"
+          ],
+          "returnType": "Promise<void>",
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "mongodb",
+          "specifiers": [
+            "Db"
+          ]
+        }
+      ],
+      "exports": [
+        "resetDatabase"
+      ],
+      "totalLines": 6,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/helpers/failures.ts": {
+      "filePath": "collaborator-document-api/tests/helpers/failures.ts",
+      "contentHash": "520f929accee1b145d7bb5d83caacea3f013ca7d76f801303d86e65cc997b74d",
+      "functions": [
+        {
+          "name": "simulatedFailure",
+          "params": [
+            "message"
+          ],
+          "returnType": "Error",
+          "exported": true,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "simulatedFailure"
+      ],
+      "totalLines": 2,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/helpers/fixtures.ts": {
+      "filePath": "collaborator-document-api/tests/helpers/fixtures.ts",
+      "contentHash": "ae116ac808fe6295cc55a1e5eacc3c8667621838992382f4df085ea050c3f062",
+      "functions": [
+        {
+          "name": "fixture",
+          "params": [
+            "factory"
+          ],
+          "returnType": "T",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "sequenceFixture",
+          "params": [
+            "factory",
+            "count"
+          ],
+          "returnType": "T[]",
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "fixture",
+        "sequenceFixture"
+      ],
+      "totalLines": 5,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/helpers/mongo-container.global.ts": {
+      "filePath": "collaborator-document-api/tests/helpers/mongo-container.global.ts",
+      "contentHash": "65d2cc7c8d9c81715dce9803995525ac96fdcc81fa4de2ed147f9796f4179482",
+      "functions": [
+        {
+          "name": "setup",
+          "params": [
+            "project"
+          ],
+          "exported": true,
+          "lineCount": 23
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "existsSync"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "join"
+          ]
+        },
+        {
+          "source": "vitest/node",
+          "specifiers": [
+            "TestProject"
+          ]
+        }
+      ],
+      "exports": [
+        "setup"
+      ],
+      "totalLines": 34,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/http/health.spec.ts": {
+      "filePath": "collaborator-document-api/tests/http/health.spec.ts",
+      "contentHash": "28916eaa8badaf3c97ef2a9d4e8502186f7ded1dcd3d259d6ea62862cd7bfe6a",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "afterAll",
+            "beforeAll",
+            "describe",
+            "expect",
+            "it"
+          ]
+        },
+        {
+          "source": "@tsed/platform-http/testing",
+          "specifiers": [
+            "PlatformTest"
+          ]
+        },
+        {
+          "source": "supertest",
+          "specifiers": [
+            "supertest"
+          ]
+        },
+        {
+          "source": "../../src/Server.js",
+          "specifiers": [
+            "Server"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 17,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/integration/mongodb.spec.ts": {
+      "filePath": "collaborator-document-api/tests/integration/mongodb.spec.ts",
+      "contentHash": "441997c7d2be597499c74df00650a3eec451a20b150dd60a540004c691e00b46",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "afterAll",
+            "beforeAll",
+            "beforeEach",
+            "describe",
+            "expect",
+            "inject",
+            "it"
+          ]
+        },
+        {
+          "source": "@tsed/platform-http/testing",
+          "specifiers": [
+            "PlatformTest"
+          ]
+        },
+        {
+          "source": "@tsed/mongoose",
+          "specifiers": [
+            "MongooseService"
+          ]
+        },
+        {
+          "source": "../../src/bootstrap.js",
+          "specifiers": [
+            "serverSettings",
+            "startApplication",
+            "stopApplication"
+          ]
+        },
+        {
+          "source": "../../src/Server.js",
+          "specifiers": [
+            "Server"
+          ]
+        },
+        {
+          "source": "../../src/shared/infrastructure/persistence/mongodb/mongo-index-manager.js",
+          "specifiers": [
+            "MongoIndexManager"
+          ]
+        },
+        {
+          "source": "../../src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.js",
+          "specifiers": [
+            "MongoTransactionManager"
+          ]
+        },
+        {
+          "source": "../helpers/database.js",
+          "specifiers": [
+            "resetDatabase"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 71,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/unit/env.spec.ts": {
+      "filePath": "collaborator-document-api/tests/unit/env.spec.ts",
+      "contentHash": "af3975dfd039199160ab5df3938452126298e4c5b0ae3961c9407567877dad95",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "expect",
+            "it"
+          ]
+        },
+        {
+          "source": "../../src/config/env.js",
+          "specifiers": [
+            "EnvironmentValidationError",
+            "loadEnv"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 48,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/unit/mongo-managers.spec.ts": {
+      "filePath": "collaborator-document-api/tests/unit/mongo-managers.spec.ts",
+      "contentHash": "8896ad1e13ecc88a9fec5ac298152643aa84da35481bbf25e40794ae4aebb818",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "expect",
+            "it"
+          ]
+        },
+        {
+          "source": "../../src/shared/infrastructure/persistence/mongodb/mongo-index-manager.js",
+          "specifiers": [
+            "MongoIndexManager"
+          ]
+        },
+        {
+          "source": "../../src/shared/infrastructure/persistence/mongodb/mongo-transaction-manager.js",
+          "specifiers": [
+            "MongoTransactionManager"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 19,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/unit/runtime.spec.ts": {
+      "filePath": "collaborator-document-api/tests/unit/runtime.spec.ts",
+      "contentHash": "bccb2d96c7a84bdec4811f2204a0b2743cc7eae7238273a6cf84bff2fb64436a",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "expect",
+            "it"
+          ]
+        },
+        {
+          "source": "../../scripts/check-runtime.mjs",
+          "specifiers": [
+            "validateRuntime"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tests/unit/shared-foundation.spec.ts": {
+      "filePath": "collaborator-document-api/tests/unit/shared-foundation.spec.ts",
+      "contentHash": "93827ea7f1422c6f1b4e01ac5595c2f3d9412a8416f9a76434debcd612bbdb9b",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "expect",
+            "it"
+          ]
+        },
+        {
+          "source": "../../src/shared/application/application-failure.js",
+          "specifiers": [
+            "ApplicationFailure"
+          ]
+        },
+        {
+          "source": "../../src/shared/domain/domain-failure.js",
+          "specifiers": [
+            "DomainFailure"
+          ]
+        },
+        {
+          "source": "../../src/shared/result.js",
+          "specifiers": [
+            "failure",
+            "success"
+          ]
+        },
+        {
+          "source": "../helpers/clock.js",
+          "specifiers": [
+            "FixedClock"
+          ]
+        },
+        {
+          "source": "../helpers/failures.js",
+          "specifiers": [
+            "simulatedFailure"
+          ]
+        },
+        {
+          "source": "../helpers/fixtures.js",
+          "specifiers": [
+            "fixture",
+            "sequenceFixture"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 45,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tsconfig.build.json": {
+      "filePath": "collaborator-document-api/tsconfig.build.json",
+      "contentHash": "02bbc8c025b7cda7680393877983a5740acb07addbf076ceeff186137b6581bd",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 10,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/tsconfig.json": {
+      "filePath": "collaborator-document-api/tsconfig.json",
+      "contentHash": "53806a46009aacc8e249542946d9121f7785edc77ced3eb77202761a8c515395",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
+    "collaborator-document-api/vitest.config.ts": {
+      "filePath": "collaborator-document-api/vitest.config.ts",
+      "contentHash": "a2dd6bc8d96a5fac9dc47b3561b86cd3464e3e7efef760dc711746dc9692ee79",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "unplugin-swc",
+          "specifiers": [
+            "swc"
+          ]
+        },
+        {
+          "source": "vitest/config",
+          "specifiers": [
+            "defineConfig"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 41,
+      "hasStructuralAnalysis": true
+    },
+    "lefthook.yml": {
+      "filePath": "lefthook.yml",
+      "contentHash": "7562fe027b58256b083f4daf62ae436706cbd99fc380fb8bc12c1a313ad634f6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "README.md": {
+      "filePath": "README.md",
+      "contentHash": "f869f2ac44ec79e29f969e3cae7d3cec8b1b87d56714dcac4cbbdcc94d5f7b6b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 990,
+      "hasStructuralAnalysis": true
+    },
+    "TEXTO_BASE_DESAFIO.md": {
+      "filePath": "TEXTO_BASE_DESAFIO.md",
+      "contentHash": "0251c181aa945761e24c46dd06c176d589ce642f671b379fd7179de63049c09e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 87,
+      "hasStructuralAnalysis": true
+    }
+  }
+}

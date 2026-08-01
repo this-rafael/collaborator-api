@@ -50,4 +50,18 @@ describe("Getting a document version through the application", () => {
     if (result.isErr()) expect(result.error.code).toBe(code);
     expect(repository.calls).toEqual([{id, version: 2}]);
   });
+
+  it("maps an unexpected repository rejection to a modeled internal error", async () => {
+    const module = await import(getDocumentVersionUseCaseModule);
+    const repository = {
+      getVersion: async () => {
+        throw new Error("unexpected persistence rejection");
+      }
+    };
+
+    const result = await new module.GetDocumentVersionUseCase(repository).execute({id, version: 2});
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("INTERNAL_SERVER_ERROR");
+  });
 });

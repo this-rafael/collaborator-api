@@ -1,0 +1,20 @@
+{
+  "name": "collaborator-document-docs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Portal público da Collaborator Document API",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "docs:site": "node scripts/build-docs-site.mjs",
+    "docs:site:check": "npm run openapi:lint && npm run docs:site && node scripts/check-docs-site.mjs",
+    "openapi:lint": "spectral lint openapi/openapi.yaml"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.41.0",
+    "@stoplight/spectral-cli": "6.16.2"
+  }
+}
