@@ -12,6 +12,10 @@ import type {CollaboratorDocument} from "../../domain/aggregates/collaborator-do
 import type {CollaboratorDocumentFailure} from "../../domain/errors/collaborator-document.failure.js";
 import type {CollaboratorDocumentsFailure} from "../contracts/soft-delete-collaborator-documents.input.js";
 import type {CollaboratorDocumentOutput} from "../contracts/collaborator-document-output.js";
+import type {
+  DocumentVersionMetadata,
+  DocumentVersionOutput
+} from "../contracts/document-version-output.js";
 
 /**
  * Filtros normalizados aplicados à listagem de vínculos.
@@ -40,6 +44,18 @@ export type CollaboratorDocumentListPage = Readonly<{
 
 /** Porta de persistência do módulo collaborator-documents. */
 export interface CollaboratorDocumentRepository {
+  /**
+   * Anexa uma versão ao histórico do vínculo em uma atualização atômica.
+   *
+   * @param input - Identificador, metadados normalizados e instante da submissão.
+   * @returns Result com a versão criada; em falha, um código de ciclo de vida,
+   * capacidade ou disponibilidade.
+   */
+  appendVersion(input: {
+    id: string;
+    metadata: DocumentVersionMetadata;
+    submittedAt: Date;
+  }): Promise<Result<DocumentVersionOutput, CollaboratorDocumentFailure>>;
   /**
    * Aplica soft delete em cascata aos vínculos ativos de um colaborador.
    *

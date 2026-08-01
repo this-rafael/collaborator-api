@@ -13,6 +13,7 @@ import type {
   DocumentTypeStatusReader
 } from "./ports/parent-status.readers.js";
 import {CreateCollaboratorDocumentUseCase} from "./use-cases/create-collaborator-document.use-case.js";
+import {CreateDocumentVersionUseCase} from "./use-cases/create-document-version.use-case.js";
 import {GetCollaboratorDocumentUseCase} from "./use-cases/get-collaborator-document.use-case.js";
 import {ListCollaboratorDocumentsUseCase} from "./use-cases/list-collaborator-documents.use-case.js";
 import {SoftDeleteCollaboratorDocumentsUseCase} from "./use-cases/soft-delete-collaborator-documents.use-case.js";
@@ -30,6 +31,7 @@ export type CollaboratorDocumentsApplicationDependencies = Readonly<{
 /** Fachada framework-neutral do módulo. */
 export type CollaboratorDocumentsApplication = Readonly<{
   create: CreateCollaboratorDocumentUseCase;
+  createVersion: CreateDocumentVersionUseCase;
   get: GetCollaboratorDocumentUseCase;
   list: ListCollaboratorDocumentsUseCase;
   unlink: UnlinkCollaboratorDocumentUseCase;
@@ -48,6 +50,7 @@ export const createCollaboratorDocumentsApplication = (
       dependencies.clock,
       dependencies.ids
     ),
+    createVersion: new CreateDocumentVersionUseCase(dependencies.repository, dependencies.clock),
     get: new GetCollaboratorDocumentUseCase(dependencies.repository),
     list: new ListCollaboratorDocumentsUseCase(dependencies.repository),
     unlink: new UnlinkCollaboratorDocumentUseCase(dependencies.repository, dependencies.clock),
