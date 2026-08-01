@@ -3,6 +3,7 @@ import {Constant, Injectable} from "@tsed/di";
 import {HmacCursorCodec} from "../../shared/infrastructure/security/hmac-cursor-codec.js";
 import {SystemClock} from "../../shared/infrastructure/time/system-clock.js";
 import {RateLimitMiddleware} from "../../shared/presentation/http/middlewares/rate-limit.middleware.js";
+import {GetCompletenessStatisticsQuery} from "./application/queries/get-completeness-statistics.query.js";
 import {ListPendingDocumentsQuery} from "./application/queries/list-pending-documents.query.js";
 import {MongoReportingRepository} from "./infrastructure/persistence/mongodb/mongo-reporting.repository.js";
 
@@ -23,6 +24,7 @@ export class ReportingRuntime {
   private readonly settings!: ReportingHttpSettings;
 
   readonly listPendingDocuments: ListPendingDocumentsQuery;
+  readonly getCompletenessStatistics: GetCompletenessStatisticsQuery;
   private readonly rateLimiters = new Map<string, RateLimitMiddleware>();
   private cursorCodecInstance?: HmacCursorCodec;
 
@@ -31,6 +33,7 @@ export class ReportingRuntime {
     private readonly clock: SystemClock
   ) {
     this.listPendingDocuments = new ListPendingDocumentsQuery(repository);
+    this.getCompletenessStatistics = new GetCompletenessStatisticsQuery(repository, clock);
   }
 
   get cursorCodec(): HmacCursorCodec {

@@ -20,6 +20,22 @@ export interface PendingDocumentPageFixture {
   hasNext: boolean;
 }
 
+export interface CompletenessCountsFixture {
+  totalActiveDocuments: number;
+  submittedDocuments: number;
+}
+
+export interface CompletenessStatisticsFixture extends CompletenessCountsFixture {
+  pendingDocuments: number;
+  percentage: number;
+  calculatedAt: string;
+  _links: {
+    self: {href: string};
+    "pending-documents": {href: string};
+    "pending-document-types": {href: string};
+  };
+}
+
 export const pendingDocumentFixture = (
   overrides: Partial<PendingDocumentFixture> = {}
 ): PendingDocumentFixture => ({
@@ -62,6 +78,30 @@ export const pendingDocumentPageFixtures = (count: number): PendingDocumentFixtu
       }
     });
   });
+
+export const completenessCountsFixture = (
+  overrides: Partial<CompletenessCountsFixture> = {}
+): CompletenessCountsFixture => ({
+  totalActiveDocuments: 4,
+  submittedDocuments: 3,
+  ...overrides
+});
+
+export const completenessStatisticsFixture = (
+  overrides: Partial<CompletenessStatisticsFixture> = {}
+): CompletenessStatisticsFixture => ({
+  totalActiveDocuments: 4,
+  submittedDocuments: 3,
+  pendingDocuments: 1,
+  percentage: 75,
+  calculatedAt: "2026-07-31T12:00:00.000Z",
+  _links: {
+    self: {href: "/api/v1/statistics/completeness"},
+    "pending-documents": {href: "/api/v1/pending-documents"},
+    "pending-document-types": {href: "/api/v1/statistics/pending-document-types"}
+  },
+  ...overrides
+});
 
 function hexadecimalId(base: string, offset: number): string {
   return (BigInt(`0x${base}`) + BigInt(offset)).toString(16).padStart(24, "0");

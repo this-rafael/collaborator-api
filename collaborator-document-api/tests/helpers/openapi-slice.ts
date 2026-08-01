@@ -43,6 +43,13 @@ export const listPendingDocumentsContractPath = resolve(
   "contracts",
   "list-pending-documents.openapi.yaml"
 );
+export const getCompletenessStatisticsContractPath = resolve(
+  repoRoot,
+  "specs",
+  "026-get-completeness-statistics",
+  "contracts",
+  "get-completeness-statistics.openapi.yaml"
+);
 
 export type JsonScalar = string | number | boolean | null;
 export type JsonValue = JsonScalar | JsonObject | JsonArray;
@@ -697,3 +704,13 @@ export const loadListPendingDocumentsSliceFromContract = (): OperationSlice =>
 
 export const loadListPendingDocumentsSliceFromExpected = (): OperationSlice =>
   loadOperationSliceFromExpected("/api/v1/pending-documents", "get");
+
+export const loadGetCompletenessStatisticsSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(
+    getCompletenessStatisticsContractPath,
+    "/api/v1/statistics/completeness",
+    "get"
+  );
+
+export const loadGetCompletenessStatisticsSliceFromExpected = (): OperationSlice =>
+  loadOperationSliceFromExpected("/api/v1/statistics/completeness", "get");
