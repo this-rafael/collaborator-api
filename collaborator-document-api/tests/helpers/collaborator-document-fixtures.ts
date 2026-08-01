@@ -28,6 +28,12 @@ export interface DocumentVersionFixture {
   metadata: DocumentVersionMetadataFixture;
 }
 
+export interface DocumentVersionListPageFixture {
+  items: readonly DocumentVersionFixture[];
+  currentVersion: number;
+  hasNext: boolean;
+}
+
 export type DocumentVersionCreateBody = Readonly<{
   metadata: Readonly<{
     originalName: string;
@@ -166,6 +172,29 @@ export const documentVersionFixture = (
   version: 1,
   submittedAt: "2026-07-30T12:30:00.000Z",
   metadata: documentVersionMetadataFixture(),
+  ...overrides
+});
+
+export const documentVersionHistoryFixtures = (count: number): DocumentVersionFixture[] =>
+  Array.from({length: count}, (_, index) => {
+    const version = index + 1;
+    return documentVersionFixture({
+      version,
+      submittedAt: new Date(Date.UTC(2026, 6, 30, 12, 30 + index)).toISOString(),
+      metadata: documentVersionMetadataFixture({
+        originalName: `document-${version}.pdf`,
+        storageKey: `collaborators/66a64ab05bd7213b90d9b001/documents/v${version}.pdf`,
+        notes: `Document version ${version}`
+      })
+    });
+  });
+
+export const documentVersionListPageFixture = (
+  overrides: Partial<DocumentVersionListPageFixture> = {}
+): DocumentVersionListPageFixture => ({
+  items: documentVersionHistoryFixtures(3),
+  currentVersion: 3,
+  hasNext: false,
   ...overrides
 });
 

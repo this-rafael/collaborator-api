@@ -22,6 +22,13 @@ export const createDocumentVersionContractPath = resolve(
   "contracts",
   "create-document-version.openapi.yaml"
 );
+export const listDocumentVersionsContractPath = resolve(
+  repoRoot,
+  "specs",
+  "023-list-document-versions",
+  "contracts",
+  "list-document-versions.openapi.yaml"
+);
 
 export type JsonScalar = string | number | boolean | null;
 export type JsonValue = JsonScalar | JsonObject | JsonArray;
@@ -655,4 +662,11 @@ export const loadCreateDocumentVersionSliceFromContract = (): OperationSlice =>
     createDocumentVersionContractPath,
     "/api/v1/collaborator-documents/{id}/versions",
     "post"
+  );
+
+export const loadListDocumentVersionsSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(
+    listDocumentVersionsContractPath,
+    "/api/v1/collaborator-documents/{id}/versions",
+    "get"
   );

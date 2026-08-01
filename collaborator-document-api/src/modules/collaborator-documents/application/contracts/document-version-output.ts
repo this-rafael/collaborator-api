@@ -13,3 +13,10 @@ export type DocumentVersionOutput = Readonly<{
   submittedAt: string;
   metadata: DocumentVersionMetadata;
 }>;
+
+/** Página de versões documentais ordenada por número de versão. */
+export type DocumentVersionListPage = Readonly<{
+  items: readonly DocumentVersionOutput[];
+  currentVersion: number;
+  hasNext: boolean;
+}>;

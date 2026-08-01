@@ -1,4 +1,7 @@
-import type {DocumentVersionOutput} from "../../../application/contracts/document-version-output.js";
+import type {
+  DocumentVersionListPage,
+  DocumentVersionOutput
+} from "../../../application/contracts/document-version-output.js";
 
 type HalLink = Readonly<{href: string}>;
 
@@ -21,3 +24,25 @@ export const documentVersionPresenter = (
   }
   return {...version, _links: links};
 };
+
+/** Representação HAL de uma página do histórico de versões. */
+export type DocumentVersionCollectionHal = Readonly<{
+  count: number;
+  currentVersion: number;
+  _embedded: Readonly<{versions: readonly DocumentVersionHal[]}>;
+  _links: Readonly<Record<string, HalLink>>;
+}>;
+
+/** Converte uma página da aplicação para a coleção HAL publicada. */
+export const documentVersionCollectionPresenter = (
+  documentId: string,
+  page: DocumentVersionListPage,
+  hrefs: Readonly<{self: string; next?: string}>
+): DocumentVersionCollectionHal => ({
+  count: page.items.length,
+  currentVersion: page.currentVersion,
+  _embedded: {versions: page.items.map((version) => documentVersionPresenter(documentId, version))},
+  _links: hrefs.next
+    ? {self: {href: hrefs.self}, next: {href: hrefs.next}}
+    : {self: {href: hrefs.self}}
+});

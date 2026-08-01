@@ -13,6 +13,7 @@ import type {CollaboratorDocumentFailure} from "../../domain/errors/collaborator
 import type {CollaboratorDocumentsFailure} from "../contracts/soft-delete-collaborator-documents.input.js";
 import type {CollaboratorDocumentOutput} from "../contracts/collaborator-document-output.js";
 import type {
+  DocumentVersionListPage,
   DocumentVersionMetadata,
   DocumentVersionOutput
 } from "../contracts/document-version-output.js";
@@ -56,6 +57,19 @@ export interface CollaboratorDocumentRepository {
     metadata: DocumentVersionMetadata;
     submittedAt: Date;
   }): Promise<Result<DocumentVersionOutput, CollaboratorDocumentFailure>>;
+  /**
+   * Lista o histórico embutido de versões por keyset numérico.
+   *
+   * @param input - Identificador do vínculo, ordenação, limite e âncora opcionais.
+   * @returns Página de versões mesmo para vínculos históricos; 404 somente quando
+   * o vínculo não existe.
+   */
+  listVersions(input: {
+    id: string;
+    order: "asc" | "desc";
+    limit: number;
+    afterVersion?: number;
+  }): Promise<Result<DocumentVersionListPage, CollaboratorDocumentFailure>>;
   /**
    * Aplica soft delete em cascata aos vínculos ativos de um colaborador.
    *
