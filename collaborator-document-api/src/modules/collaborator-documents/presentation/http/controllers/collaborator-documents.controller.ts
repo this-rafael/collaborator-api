@@ -11,7 +11,6 @@ import {
   Description,
   Enum,
   Get,
-  getJsonMethodStore,
   Integer,
   Maximum,
   Minimum,
@@ -25,15 +24,29 @@ import {
 import type {Request, Response} from "express";
 import {err, ok, type Result} from "neverthrow";
 
+import type {CollaboratorDocumentOutput} from "../../../application/contracts/collaborator-document-output.js";
 import {normalizeCollaboratorDocumentFilters} from "../../../application/use-cases/list-collaborator-documents.use-case.js";
 import {CollaboratorDocumentsRuntime} from "../../../collaborator-documents.runtime.js";
 import type {FieldError} from "../../../../../shared/presentation/http/schemas/problem-details.js";
 import {EtagService} from "../../../../../shared/presentation/http/cache/etag.service.js";
+import {WithoutResponseContent} from "../../../../../shared/presentation/http/decorators/without-response-content.js";
 import {ProblemDetailsMapper} from "../../../../../shared/presentation/http/errors/problem-details.mapper.js";
+import {
+  invalidObjectIdFailure,
+  invalidQueryFailure,
+  isJsonRequest,
+  isObjectId,
+  OBJECT_ID_PATTERN,
+  parseKeysetPaging,
+  queryValue
+} from "../../../../../shared/presentation/http/helpers/http-request.helpers.js";
 import {getRequestTraceId} from "../../../../../shared/presentation/http/middlewares/request-id.middleware.js";
+import {buildHalCollectionPage} from "../../../../../shared/presentation/http/responses/hal-collection-page.js";
+import {writeHalWithEtag} from "../../../../../shared/presentation/http/responses/hal-etag-response.js";
 import {ProblemDetails} from "../../../../../shared/presentation/http/schemas/problem-details.js";
 import {CreateCollaboratorDocumentDto} from "../dtos/create-collaborator-document.dto.js";
 import {CreateDocumentVersionDto} from "../dtos/create-document-version.dto.js";
+import {ListCollaboratorDocumentsQueryDto} from "../dtos/list-collaborator-documents.query.dto.js";
 import {collaboratorDocumentPresenter} from "../presenters/collaborator-document.presenter.js";
 import {
   documentVersionCollectionPresenter,
@@ -55,8 +68,6 @@ type HttpFailure = Readonly<{
   message?: string;
   errors?: readonly FieldError[];
 }>;
-
-const objectIdPattern = /^[a-f\d]{24}$/i;
 
 /** Controlador REST para vínculos documentais. */
 @Controller("/api/v1/collaborator-documents")
@@ -193,18 +204,7 @@ export class CollaboratorDocumentsController {
   @(Returns(500, ProblemDetails).ContentType("application/problem+json"))
   @(Returns(503, ProblemDetails).ContentType("application/problem+json"))
   async list(
-    @QueryParams({expression: "collaboratorId", useType: String, useValidation: false})
-    collaboratorId: string | undefined,
-    @QueryParams({expression: "documentTypeId", useType: String, useValidation: false})
-    documentTypeId: string | undefined,
-    @QueryParams({expression: "status", useType: String, useValidation: false})
-    status: string | undefined,
-    @QueryParams({expression: "lifecycle", useType: String, useValidation: false})
-    lifecycle: string | undefined,
-    @QueryParams({expression: "limit", useType: String, useValidation: false})
-    rawLimit: string | undefined,
-    @QueryParams({expression: "cursor", useType: String, useValidation: false})
-    rawCursor: string | undefined,
+    @QueryParams({useValidation: false}) query: ListCollaboratorDocumentsQueryDto,
     @HeaderParams("If-None-Match") ifNoneMatch: string | undefined,
     @Res() res: Response
   ): Promise<void> {
@@ -215,12 +215,12 @@ export class CollaboratorDocumentsController {
       return;
 
     const parsed = parseListQuery(
-      rawLimit,
-      rawCursor,
-      collaboratorId,
-      documentTypeId,
-      status,
-      lifecycle
+      query.limit,
+      query.cursor,
+      query.collaboratorId,
+      query.documentTypeId,
+      query.status,
+      query.lifecycle
     );
     if (parsed.isErr()) return this.writeProblem(res, parsed.error, traceId);
 
@@ -263,32 +263,15 @@ export class CollaboratorDocumentsController {
     });
     if (result.isErr()) return this.writeProblem(res, result.error, traceId);
 
-    const items = result.value.items.map(collaboratorDocumentPresenter);
-    const selfQuery = new URLSearchParams();
-    for (const [key, value] of Object.entries(normalizedFilters.value)) {
-      if (value !== undefined) selfQuery.set(key, String(value));
-    }
-    selfQuery.set("limit", String(limit));
-    if (cursor) selfQuery.set("cursor", cursor);
-    const self = `/api/v1/collaborator-documents?${selfQuery.toString()}`;
-    const lastId = result.value.items.at(-1)?.id;
-    const next =
-      result.value.hasNext && lastId
-        ? listNextHref(
-            selfQuery,
-            this.runtime.cursorCodec.encode({...context, position: {id: lastId}})
-          )
-        : undefined;
-    const body = {
-      count: items.length,
-      _embedded: {"collaborator-documents": items},
-      _links: next ? {self: {href: self}, next: {href: next}} : {self: {href: self}}
-    };
-    const etag = this.etag.compute(body);
-    if (ifNoneMatch && this.etag.matches(etag, ifNoneMatch)) return this.notModified(res);
-
-    res.setHeader("ETag", etag);
-    res.status(200).type("application/hal+json").json(body);
+    this.writeListPage(
+      res,
+      result.value,
+      normalizedFilters.value,
+      limit,
+      cursor,
+      context,
+      ifNoneMatch
+    );
   }
 
   @Get("/:id/versions")
@@ -379,15 +362,12 @@ export class CollaboratorDocumentsController {
                 })
               )
             : undefined;
-        const body = documentVersionCollectionPresenter(id, page, {self, next});
-        const etag = this.etag.compute(body);
-        if (ifNoneMatch && this.etag.matches(etag, ifNoneMatch)) {
-          this.notModified(res);
-          return;
-        }
-
-        res.setHeader("ETag", etag);
-        res.status(200).type("application/hal+json").json(body);
+        writeHalWithEtag(
+          res,
+          documentVersionCollectionPresenter(id, page, {self, next}),
+          this.etag,
+          ifNoneMatch
+        );
       },
       (failure) => this.writeProblem(res, failure, traceId)
     );
@@ -434,12 +414,7 @@ export class CollaboratorDocumentsController {
     const result = await this.runtime.application.getVersion.execute({id, version});
     if (result.isErr()) return this.writeProblem(res, result.error, traceId);
 
-    const body = documentVersionPresenter(id, result.value);
-    const etag = this.etag.compute(body);
-    if (ifNoneMatch && this.etag.matches(etag, ifNoneMatch)) return this.notModified(res);
-
-    res.setHeader("ETag", etag);
-    res.status(200).type("application/hal+json").json(body);
+    writeHalWithEtag(res, documentVersionPresenter(id, result.value), this.etag, ifNoneMatch);
   }
 
   @Get("/:id")
@@ -472,12 +447,7 @@ export class CollaboratorDocumentsController {
     const result = await this.runtime.application.get.execute({id});
     if (result.isErr()) return this.writeProblem(res, result.error, traceId);
 
-    const body = collaboratorDocumentPresenter(result.value);
-    const etag = this.etag.compute(body);
-    if (ifNoneMatch && this.etag.matches(etag, ifNoneMatch)) return this.notModified(res);
-
-    res.setHeader("ETag", etag);
-    res.status(200).type("application/hal+json").json(body);
+    writeHalWithEtag(res, collaboratorDocumentPresenter(result.value), this.etag, ifNoneMatch);
   }
 
   @Delete("/:id")
@@ -507,11 +477,36 @@ export class CollaboratorDocumentsController {
     res.status(204).end();
   }
 
-  private notModified(res: Response): void {
-    res.status(304);
-    res.removeHeader("Content-Type");
-    res.removeHeader("Content-Length");
-    res.end();
+  private writeListPage(
+    res: Response,
+    page: Readonly<{items: readonly CollaboratorDocumentOutput[]; hasNext: boolean}>,
+    filters: Readonly<Record<string, unknown>>,
+    limit: number,
+    cursor: string | undefined,
+    context: {operationId: string; filtersHash: string; order: string; limit: number},
+    ifNoneMatch: string | undefined
+  ): void {
+    const stringFilters: Record<string, string | undefined> = {};
+    for (const [key, value] of Object.entries(filters)) {
+      stringFilters[key] = typeof value === "string" ? value : undefined;
+    }
+    writeHalWithEtag(
+      res,
+      buildHalCollectionPage({
+        items: page.items.map(collaboratorDocumentPresenter),
+        hasNext: page.hasNext,
+        lastId: page.items.at(-1)?.id,
+        filters: stringFilters,
+        limit,
+        cursor,
+        route: "/api/v1/collaborator-documents",
+        embeddedKey: "collaborator-documents",
+        context,
+        codec: this.runtime.cursorCodec
+      }),
+      this.etag,
+      ifNoneMatch
+    );
   }
 
   private writeProblem(res: Response, failure: HttpFailure | string, traceId: string): void {
@@ -536,53 +531,16 @@ function isCreateBody(
   if (!keys.includes("collaboratorId") || !keys.includes("documentTypeId")) return false;
   return (
     typeof record.collaboratorId === "string" &&
-    objectIdPattern.test(record.collaboratorId) &&
+    OBJECT_ID_PATTERN.test(record.collaboratorId) &&
     typeof record.documentTypeId === "string" &&
-    objectIdPattern.test(record.documentTypeId)
+    OBJECT_ID_PATTERN.test(record.documentTypeId)
   );
-}
-
-function isJsonRequest(res: Response): boolean {
-  return Boolean(res.req?.is("application/json"));
-}
-
-function isObjectId(value: string): boolean {
-  return objectIdPattern.test(value);
-}
-
-function queryValue(value: unknown): string | undefined {
-  return typeof value === "string" && value.length > 0 ? value : undefined;
-}
-
-function listNextHref(query: URLSearchParams, cursor: string): string {
-  const nextQuery = new URLSearchParams(query);
-  nextQuery.set("cursor", cursor);
-  return `/api/v1/collaborator-documents?${nextQuery.toString()}`;
 }
 
 function versionListNextHref(baseHref: string, query: URLSearchParams, cursor: string): string {
   const nextQuery = new URLSearchParams(query);
   nextQuery.set("cursor", cursor);
   return `${baseHref}?${nextQuery.toString()}`;
-}
-
-function WithoutResponseContent(status: number): MethodDecorator {
-  return (target, propertyKey) => {
-    getJsonMethodStore(target, propertyKey).operation.getResponseOf(status).delete("content");
-  };
-}
-
-function invalidObjectIdFailure(): HttpFailure {
-  return {
-    code: "INVALID_OBJECT_ID",
-    errors: [
-      {
-        field: "id",
-        code: "INVALID_OBJECT_ID",
-        message: "Informe um ObjectId hexadecimal com 24 caracteres."
-      }
-    ]
-  };
 }
 
 function invalidVersionNumberFailure(): HttpFailure {
@@ -593,19 +551,6 @@ function invalidVersionNumberFailure(): HttpFailure {
         field: "version",
         code: "INVALID_INTEGER",
         message: "Informe uma versão inteira maior ou igual a 1."
-      }
-    ]
-  };
-}
-
-function invalidQueryFailure(field: string): HttpFailure {
-  return {
-    code: "INVALID_QUERY_PARAMETER",
-    errors: [
-      {
-        field,
-        code: "INVALID_QUERY_PARAMETER",
-        message: "Informe um parâmetro de consulta válido."
       }
     ]
   };
@@ -651,7 +596,7 @@ function validationFailure(body: unknown): HttpFailure {
     });
   } else if (
     typeof record.collaboratorId !== "string" ||
-    !objectIdPattern.test(record.collaboratorId)
+    !OBJECT_ID_PATTERN.test(record.collaboratorId)
   ) {
     errors.push({
       field: "collaboratorId",
@@ -667,7 +612,7 @@ function validationFailure(body: unknown): HttpFailure {
     });
   } else if (
     typeof record.documentTypeId !== "string" ||
-    !objectIdPattern.test(record.documentTypeId)
+    !OBJECT_ID_PATTERN.test(record.documentTypeId)
   ) {
     errors.push({
       field: "documentTypeId",
@@ -838,23 +783,20 @@ function parseListQuery(
   status: string | undefined,
   lifecycle: string | undefined
 ): Result<ParsedListQuery, HttpFailure> {
-  const limit = rawLimit === undefined || rawLimit === "" ? 20 : Number(rawLimit);
-  const cursor = rawCursor === undefined ? undefined : queryValue(rawCursor);
-  const filters = {
-    collaboratorId: queryValue(collaboratorId),
-    documentTypeId: queryValue(documentTypeId),
-    status: queryValue(status),
-    lifecycle: queryValue(lifecycle)
-  };
-
-  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
-    return err(invalidQueryFailure("limit"));
+  const paging = parseKeysetPaging(rawLimit, rawCursor);
+  if (!paging.ok) {
+    return err(invalidQueryFailure(paging.field));
   }
-  if (rawCursor !== undefined && !cursor) {
-    return err(invalidQueryFailure("cursor"));
-  }
-
-  return ok({limit, cursor, filters});
+  return ok({
+    limit: paging.limit,
+    cursor: paging.cursor,
+    filters: {
+      collaboratorId: queryValue(collaboratorId),
+      documentTypeId: queryValue(documentTypeId),
+      status: queryValue(status),
+      lifecycle: queryValue(lifecycle)
+    }
+  });
 }
 
 type ParsedVersionListQuery = Readonly<{
@@ -869,14 +811,10 @@ function parseVersionListQuery(
   rawCursor: string | undefined
 ): Result<ParsedVersionListQuery, HttpFailure> {
   const order = rawOrder === undefined || rawOrder === "" ? "desc" : rawOrder;
-  const limit = rawLimit === undefined || rawLimit === "" ? 20 : Number(rawLimit);
-  const cursor = rawCursor === undefined ? undefined : queryValue(rawCursor);
-
   if (order !== "asc" && order !== "desc") return err(invalidQueryFailure("order"));
-  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
-    return err(invalidQueryFailure("limit"));
+  const paging = parseKeysetPaging(rawLimit, rawCursor);
+  if (!paging.ok) {
+    return err(invalidQueryFailure(paging.field));
   }
-  if (rawCursor !== undefined && !cursor) return err(invalidQueryFailure("cursor"));
-
-  return ok({order, limit, cursor});
+  return ok({order, limit: paging.limit, cursor: paging.cursor});
 }

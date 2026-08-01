@@ -181,7 +181,7 @@ describe("Listing collaborator documents", () => {
     await seedLinks(collaboratorDocumentPageFixtures(101));
     const response = await list({limit}).expect(200);
 
-    expect(collectionItems(response.body).length).toBe(Math.min(limit, 101));
+    expect(collectionItems(response.body)).toHaveLength(Math.min(limit, 101));
   });
 
   it("continues with the opaque next cursor without duplicates or omissions", async () => {

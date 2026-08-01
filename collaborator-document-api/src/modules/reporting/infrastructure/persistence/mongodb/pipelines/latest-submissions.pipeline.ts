@@ -2,6 +2,7 @@ import {ObjectId, type Document} from "mongodb";
 
 import type {LatestSubmissionPosition} from "../../../../application/models/latest-submission.view.js";
 import type {LatestSubmissionFilters} from "../../../../application/ports/latest-submissions.read-model.js";
+import {lookupByStringId} from "./lookup-by-string-id.js";
 
 /** Monta o pipeline projetado da página de últimos envios. */
 export const latestSubmissionsPipeline = (input: {
@@ -51,25 +52,6 @@ export const latestSubmissionsPipeline = (input: {
     }
   ];
 };
-
-function lookupByStringId(
-  from: string,
-  localField: string,
-  as: string,
-  projection: Document
-): Document {
-  return {
-    $lookup: {
-      from,
-      let: {foreignId: `$${localField}`},
-      pipeline: [
-        {$match: {$expr: {$eq: [{$toString: "$_id"}, "$$foreignId"]}}},
-        {$project: projection}
-      ],
-      as
-    }
-  };
-}
 
 function keysetAfter(position: LatestSubmissionPosition): Document[] {
   const submittedAt = new Date(position.lastSubmittedAt);

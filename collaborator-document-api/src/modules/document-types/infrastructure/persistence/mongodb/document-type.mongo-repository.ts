@@ -289,5 +289,5 @@ function mapMongoFailure(error: unknown): DocumentTypeFailure {
 }
 
 function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }

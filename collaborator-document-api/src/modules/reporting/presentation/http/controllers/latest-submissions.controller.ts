@@ -1,32 +1,23 @@
 import {Controller} from "@tsed/di";
 import {Res} from "@tsed/platform-http";
 import {HeaderParams, QueryParams} from "@tsed/platform-params";
-import {
-  ContentType,
-  Default,
-  Description,
-  Get,
-  getJsonMethodStore,
-  Integer,
-  Maximum,
-  Minimum,
-  MinLength,
-  OperationId,
-  Returns,
-  Summary,
-  Tags
-} from "@tsed/schema";
+import {ContentType, Description, Get, OperationId, Returns, Summary, Tags} from "@tsed/schema";
 import type {Response} from "express";
 
 import type {LatestSubmissionPosition} from "../../../application/models/latest-submission.view.js";
 import type {LatestSubmissionPage} from "../../../application/ports/latest-submissions.read-model.js";
-import type {ListLatestSubmissionsInput} from "../../../application/queries/list-latest-submissions.query.js";
-import type {ReportingFailure} from "../../../application/reporting.failure.js";
 import {ReportingRuntime} from "../../../reporting.runtime.js";
+import type {CursorContext} from "../../../../../shared/application/pagination/cursor-codec.js";
 import {EtagService} from "../../../../../shared/presentation/http/cache/etag.service.js";
+import {WithoutResponseContent} from "../../../../../shared/presentation/http/decorators/without-response-content.js";
 import {ProblemDetailsMapper} from "../../../../../shared/presentation/http/errors/problem-details.mapper.js";
-import {getRequestTraceId} from "../../../../../shared/presentation/http/middlewares/request-id.middleware.js";
-import {ProblemDetails} from "../../../../../shared/presentation/http/schemas/problem-details.js";
+import {writeHalWithEtag} from "../../../../../shared/presentation/http/responses/hal-etag-response.js";
+import {KeysetPageQueryDto} from "../dtos/keyset-page.query.dto.js";
+import {
+  collectionHref,
+  ReportingListErrorResponses,
+  runReportingKeysetList
+} from "../helpers/reporting-list.helpers.js";
 import {latestSubmissionPresenter} from "../presenters/reporting.presenter.js";
 import {LatestSubmissionCollectionResponse} from "../schemas/latest-submission-response.schema.js";
 
@@ -34,6 +25,7 @@ const route = "/api/v1/submissions/latest";
 const operationId = "listLatestSubmissions";
 const order = "lastSubmittedAt:desc,_id:desc";
 const filtersHash = "no-filters";
+const invalidMessage = "One or more latest submission query parameters are invalid.";
 
 /** Endpoint da coleção projetada dos últimos envios. */
 @Controller(route)
@@ -56,58 +48,28 @@ export class LatestSubmissionsController {
     .ContentType("application/hal+json")
     .Header("ETag", {$ref: "#/components/headers/ETag"} as never)
     .Description("Página de últimos envios por documento lógico."))
-  @(Returns(304).Description("Representação inalterada."))
-  @(Returns(400, ProblemDetails).ContentType("application/problem+json"))
-  @(Returns(429, ProblemDetails)
-    .ContentType("application/problem+json")
-    .Header("Retry-After", {$ref: "#/components/headers/RetryAfter"} as never))
-  @(Returns(500, ProblemDetails).ContentType("application/problem+json"))
-  @(Returns(503, ProblemDetails).ContentType("application/problem+json"))
+  @ReportingListErrorResponses()
   async list(
-    @QueryParams({expression: "cursor", useType: String, useValidation: false})
-    @MinLength(1)
-    cursor: string | undefined,
-    @QueryParams({expression: "limit", useType: Number, useValidation: false})
-    @Integer()
-    @Minimum(1)
-    @Maximum(100)
-    @Default(20)
-    rawLimit: string | undefined,
+    @QueryParams({useValidation: false}) query: KeysetPageQueryDto,
     @HeaderParams({expression: "If-None-Match", useType: String, useValidation: false})
     ifNoneMatch: string | undefined,
     @Res() res: Response
   ): Promise<void> {
-    const traceId = getRequestTraceId(res.req!);
-    if (!(await this.runtime.rateLimiter(operationId).handle(res.req!, res))) return;
-
-    const limit = rawLimit === undefined || rawLimit === "" ? 20 : Number(rawLimit);
-    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
-      return this.writeProblem(res, invalidCursorOrLimit("limit"), traceId);
-    }
-    if (cursor !== undefined && cursor.length === 0) {
-      return this.writeProblem(res, invalidCursorOrLimit("cursor"), traceId);
-    }
-
-    const context = {operationId, filtersHash, order, limit};
-    const decoded = cursor ? this.runtime.cursorCodec.decode(cursor, context) : undefined;
-    if (decoded?.isErr()) {
-      return this.writeProblem(res, invalidCursorOrLimit("cursor"), traceId);
-    }
-    const after = decoded?.isOk() ? decodePosition(decoded.value.position.id) : undefined;
-    if (decoded?.isOk() && !after) {
-      return this.writeProblem(res, invalidCursorOrLimit("cursor"), traceId);
-    }
-
-    const input: ListLatestSubmissionsInput = {
-      ...(cursor !== undefined ? {cursor} : {}),
-      limit,
-      ...(after ? {after} : {})
-    };
-    const result = await this.runtime.listLatestSubmissions.execute(input);
-    result.match(
-      (page) => this.writePage(res, page, limit, cursor, context, ifNoneMatch),
-      (failure) => this.writeProblem(res, failure, traceId)
-    );
+    await runReportingKeysetList({
+      res,
+      operationId,
+      route,
+      query,
+      problems: this.problems,
+      rateLimiter: this.runtime.rateLimiter(operationId),
+      codec: this.runtime.cursorCodec,
+      contextBase: {operationId, filtersHash, order},
+      decodePosition,
+      invalidMessage,
+      execute: (input) => this.runtime.listLatestSubmissions.execute(input),
+      writePage: (page, limit, cursor, context) =>
+        this.writePage(res, page, limit, cursor, context, ifNoneMatch)
+    });
   }
 
   private writePage(
@@ -115,15 +77,16 @@ export class LatestSubmissionsController {
     page: LatestSubmissionPage,
     limit: number,
     cursor: string | undefined,
-    context: {operationId: string; filtersHash: string; order: string; limit: number},
+    context: CursorContext,
     ifNoneMatch: string | undefined
   ): void {
     const items = page.items.map(latestSubmissionPresenter);
-    const self = collectionHref(limit, cursor);
+    const self = collectionHref(route, limit, cursor);
     const last = page.items.at(-1);
     const next =
       page.hasNext && last
         ? collectionHref(
+            route,
             limit,
             this.runtime.cursorCodec.encode({
               ...context,
@@ -136,42 +99,17 @@ export class LatestSubmissionsController {
             })
           )
         : undefined;
-    const body = {
-      count: items.length,
-      _embedded: {submissions: items},
-      _links: next ? {self: {href: self}, next: {href: next}} : {self: {href: self}}
-    };
-    const etag = this.etag.compute(body);
-    if (ifNoneMatch && this.etag.matches(etag, ifNoneMatch)) {
-      this.notModified(res);
-      return;
-    }
-    res.setHeader("ETag", etag);
-    res.status(200).type("application/hal+json").json(body);
+    writeHalWithEtag(
+      res,
+      {
+        count: items.length,
+        _embedded: {submissions: items},
+        _links: next ? {self: {href: self}, next: {href: next}} : {self: {href: self}}
+      },
+      this.etag,
+      ifNoneMatch
+    );
   }
-
-  private notModified(res: Response): void {
-    res.status(304);
-    res.removeHeader("Content-Type");
-    res.removeHeader("Content-Length");
-    res.end();
-  }
-
-  private writeProblem(res: Response, failure: ReportingFailure, traceId: string): void {
-    const {problem, retryAfter} = this.problems.fromFailure(failure, {
-      instance: res.req?.path ?? route,
-      traceId
-    });
-    res.status(problem.status).type("application/problem+json");
-    if (retryAfter) res.setHeader("Retry-After", String(retryAfter));
-    res.json(problem);
-  }
-}
-
-function collectionHref(limit: number, cursor?: string): string {
-  const query = new URLSearchParams({limit: String(limit)});
-  if (cursor) query.set("cursor", cursor);
-  return `${route}?${query.toString()}`;
 }
 
 function encodePosition(position: LatestSubmissionPosition): string {
@@ -188,24 +126,4 @@ function decodePosition(value: string): LatestSubmissionPosition | undefined {
   } catch {
     return undefined;
   }
-}
-
-function invalidCursorOrLimit(field: "cursor" | "limit"): ReportingFailure {
-  return {
-    code: "INVALID_QUERY_PARAMETER",
-    message: "One or more latest submission query parameters are invalid.",
-    errors: [
-      {
-        field,
-        code: field === "cursor" ? "INVALID_CURSOR" : "INVALID_LIMIT",
-        message: `The ${field} query parameter is invalid.`
-      }
-    ]
-  };
-}
-
-function WithoutResponseContent(status: number): MethodDecorator {
-  return (target, propertyKey) => {
-    getJsonMethodStore(target, propertyKey).operation.getResponseOf(status).delete("content");
-  };
 }

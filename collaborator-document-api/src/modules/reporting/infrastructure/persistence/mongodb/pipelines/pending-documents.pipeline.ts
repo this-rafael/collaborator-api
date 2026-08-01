@@ -2,6 +2,7 @@ import {ObjectId, type Document} from "mongodb";
 
 import type {PendingDocumentPosition} from "../../../../application/models/pending-document.view.js";
 import type {PendingDocumentFilters} from "../../../../application/ports/pending-documents.read-model.js";
+import {lookupByStringId} from "./lookup-by-string-id.js";
 
 /** Monta o pipeline projetado da página de pendências. */
 export const pendingDocumentsPipeline = (input: {
@@ -70,25 +71,6 @@ export const pendingDocumentsPipeline = (input: {
   ];
 };
 
-function lookupByStringId(
-  from: string,
-  localField: string,
-  as: string,
-  projection: Document
-): Document {
-  return {
-    $lookup: {
-      from,
-      let: {foreignId: `$${localField}`},
-      pipeline: [
-        {$match: {$expr: {$eq: [{$toString: "$_id"}, "$$foreignId"]}}},
-        {$project: projection}
-      ],
-      as
-    }
-  };
-}
-
 function keysetAfter(position: PendingDocumentPosition): Document[] {
   return [
     {documentTypeId: {$gt: position.documentTypeId}},
@@ -105,5 +87,5 @@ function keysetAfter(position: PendingDocumentPosition): Document[] {
 }
 
 function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }

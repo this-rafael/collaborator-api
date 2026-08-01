@@ -43,7 +43,7 @@ function validatePage(input: ListSubmissionEventsInput): Result<number, Reportin
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
     errors.push(fieldError("limit", "INVALID_LIMIT"));
   }
-  if (input.cursor !== undefined && input.cursor.length === 0) {
+  if (input.cursor?.length === 0) {
     errors.push(fieldError("cursor", "INVALID_CURSOR"));
   }
   if (input.after && !isPosition(input.after)) {

@@ -1,25 +1,18 @@
 import {Controller} from "@tsed/di";
 import {Res} from "@tsed/platform-http";
 import {HeaderParams} from "@tsed/platform-params";
-import {
-  ContentType,
-  Description,
-  Get,
-  getJsonMethodStore,
-  OperationId,
-  Returns,
-  Summary,
-  Tags
-} from "@tsed/schema";
+import {ContentType, Description, Get, OperationId, Returns, Summary, Tags} from "@tsed/schema";
 import type {Response} from "express";
 
 import type {CompletenessStatisticsView} from "../../../application/models/completeness-statistics.view.js";
-import type {ReportingFailure} from "../../../application/reporting.failure.js";
 import {ReportingRuntime} from "../../../reporting.runtime.js";
 import {EtagService} from "../../../../../shared/presentation/http/cache/etag.service.js";
+import {WithoutResponseContent} from "../../../../../shared/presentation/http/decorators/without-response-content.js";
 import {ProblemDetailsMapper} from "../../../../../shared/presentation/http/errors/problem-details.mapper.js";
 import {getRequestTraceId} from "../../../../../shared/presentation/http/middlewares/request-id.middleware.js";
+import {writeNotModified} from "../../../../../shared/presentation/http/responses/hal-etag-response.js";
 import {ProblemDetails} from "../../../../../shared/presentation/http/schemas/problem-details.js";
+import {writeReportingProblem} from "../helpers/reporting-list.helpers.js";
 import {CompletenessStatisticsResponse} from "../schemas/completeness-statistics-response.schema.js";
 
 const operationId = "getCompletenessStatistics";
@@ -61,7 +54,7 @@ export class CompletenessStatisticsController {
     const result = await this.runtime.getCompletenessStatistics.execute();
     result.match(
       (statistics) => this.writeStatistics(res, statistics, ifNoneMatch),
-      (failure) => this.writeProblem(res, failure, traceId)
+      (failure) => writeReportingProblem(res, this.problems, failure, traceId, route)
     );
   }
 
@@ -79,33 +72,12 @@ export class CompletenessStatisticsController {
       }
     };
     const {calculatedAt: _calculatedAt, ...semanticBody} = body;
-    const etag = this.etag.compute(semanticBody);
-
-    if (ifNoneMatch && this.etag.matches(etag, ifNoneMatch)) {
-      res.status(304);
-      res.removeHeader("Content-Type");
-      res.removeHeader("Content-Length");
-      res.end();
+    const tag = this.etag.compute(semanticBody);
+    if (ifNoneMatch && this.etag.matches(tag, ifNoneMatch)) {
+      writeNotModified(res);
       return;
     }
-
-    res.setHeader("ETag", etag);
+    res.setHeader("ETag", tag);
     res.status(200).type("application/hal+json").json(body);
   }
-
-  private writeProblem(res: Response, failure: ReportingFailure, traceId: string): void {
-    const {problem, retryAfter} = this.problems.fromFailure(failure, {
-      instance: res.req?.path ?? route,
-      traceId
-    });
-    res.status(problem.status).type("application/problem+json");
-    if (retryAfter) res.setHeader("Retry-After", String(retryAfter));
-    res.json(problem);
-  }
-}
-
-function WithoutResponseContent(status: number): MethodDecorator {
-  return (target, propertyKey) => {
-    getJsonMethodStore(target, propertyKey).operation.getResponseOf(status).delete("content");
-  };
 }

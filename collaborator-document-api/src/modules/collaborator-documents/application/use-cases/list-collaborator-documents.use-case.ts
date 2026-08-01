@@ -43,66 +43,84 @@ export const classifyLifecycle = (
  * @remarks
  * Quando `lifecycle` é omitido, assume-se "active" por padrão.
  */
+type RawCollaboratorDocumentFilters = Readonly<{
+  collaboratorId?: string;
+  documentTypeId?: string;
+  status?: string;
+  lifecycle?: string;
+}>;
+
+type MutableCollaboratorDocumentFilters = {
+  collaboratorId?: string;
+  documentTypeId?: string;
+  status?: "PENDING" | "SUBMITTED";
+  lifecycle: "active" | "unlinked" | "deleted" | "all";
+};
+
+const lifecycleValues = new Set(["active", "unlinked", "deleted", "all"]);
+
+function applyObjectIdFilter(
+  value: string | undefined,
+  field: "collaboratorId" | "documentTypeId",
+  errors: FieldError[],
+  normalized: MutableCollaboratorDocumentFilters
+): void {
+  if (value === undefined) return;
+  if (!objectIdPattern.test(value)) {
+    errors.push({
+      field,
+      code: "INVALID_OBJECT_ID",
+      message: `${field} must be a valid ObjectId`
+    });
+    return;
+  }
+  normalized[field] = value;
+}
+
+function applyStatusFilter(
+  value: string | undefined,
+  errors: FieldError[],
+  normalized: MutableCollaboratorDocumentFilters
+): void {
+  if (value === undefined) return;
+  if (value !== "PENDING" && value !== "SUBMITTED") {
+    errors.push({
+      field: "status",
+      code: "INVALID_ENUM",
+      message: "status must be PENDING or SUBMITTED"
+    });
+    return;
+  }
+  normalized.status = value;
+}
+
+function applyLifecycleFilter(
+  value: string | undefined,
+  errors: FieldError[],
+  normalized: MutableCollaboratorDocumentFilters
+): void {
+  if (value === undefined) return;
+  if (!lifecycleValues.has(value)) {
+    errors.push({
+      field: "lifecycle",
+      code: "INVALID_ENUM",
+      message: "lifecycle must be active, unlinked, deleted, or all"
+    });
+    return;
+  }
+  normalized.lifecycle = value as MutableCollaboratorDocumentFilters["lifecycle"];
+}
+
 export const normalizeCollaboratorDocumentFilters = (
-  filters: Readonly<{
-    collaboratorId?: string;
-    documentTypeId?: string;
-    status?: string;
-    lifecycle?: string;
-  }>
+  filters: RawCollaboratorDocumentFilters
 ): Result<CollaboratorDocumentListFilters, CollaboratorDocumentFailure> => {
   const errors: FieldError[] = [];
-  const normalized: {
-    collaboratorId?: string;
-    documentTypeId?: string;
-    status?: "PENDING" | "SUBMITTED";
-    lifecycle: "active" | "unlinked" | "deleted" | "all";
-  } = {lifecycle: "active"};
+  const normalized: MutableCollaboratorDocumentFilters = {lifecycle: "active"};
 
-  if (filters.collaboratorId !== undefined) {
-    if (!objectIdPattern.test(filters.collaboratorId)) {
-      errors.push({
-        field: "collaboratorId",
-        code: "INVALID_OBJECT_ID",
-        message: "collaboratorId must be a valid ObjectId"
-      });
-    } else normalized.collaboratorId = filters.collaboratorId;
-  }
-
-  if (filters.documentTypeId !== undefined) {
-    if (!objectIdPattern.test(filters.documentTypeId)) {
-      errors.push({
-        field: "documentTypeId",
-        code: "INVALID_OBJECT_ID",
-        message: "documentTypeId must be a valid ObjectId"
-      });
-    } else normalized.documentTypeId = filters.documentTypeId;
-  }
-
-  if (filters.status !== undefined) {
-    if (filters.status !== "PENDING" && filters.status !== "SUBMITTED") {
-      errors.push({
-        field: "status",
-        code: "INVALID_ENUM",
-        message: "status must be PENDING or SUBMITTED"
-      });
-    } else normalized.status = filters.status;
-  }
-
-  if (filters.lifecycle !== undefined) {
-    if (
-      filters.lifecycle !== "active" &&
-      filters.lifecycle !== "unlinked" &&
-      filters.lifecycle !== "deleted" &&
-      filters.lifecycle !== "all"
-    ) {
-      errors.push({
-        field: "lifecycle",
-        code: "INVALID_ENUM",
-        message: "lifecycle must be active, unlinked, deleted, or all"
-      });
-    } else normalized.lifecycle = filters.lifecycle;
-  }
+  applyObjectIdFilter(filters.collaboratorId, "collaboratorId", errors, normalized);
+  applyObjectIdFilter(filters.documentTypeId, "documentTypeId", errors, normalized);
+  applyStatusFilter(filters.status, errors, normalized);
+  applyLifecycleFilter(filters.lifecycle, errors, normalized);
 
   if (errors.length > 0) {
     return err(

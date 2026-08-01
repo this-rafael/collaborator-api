@@ -2,7 +2,6 @@ import type {Request, Response, NextFunction} from "express";
 import {$log} from "@tsed/logger";
 
 const CPF_PATTERN = /\d{3}\.?\d{3}\.?\d{3}-?\d{2}/g;
-const EMAIL_PATTERN = /[a-z0-9]+(?:[._%+-][a-z0-9]+)*@[a-z0-9]+(?:[.-][a-z0-9]+)*\.[a-z]{2,}/gi;
 
 /**
  * Remove dados sensíveis (CPF, email) de uma string,
@@ -12,7 +11,36 @@ const EMAIL_PATTERN = /[a-z0-9]+(?:[._%+-][a-z0-9]+)*@[a-z0-9]+(?:[.-][a-z0-9]+)
  * @returns String com dados mascarados.
  */
 export function maskSensitive(value: string): string {
-  return value.replace(CPF_PATTERN, "***").replace(EMAIL_PATTERN, "***@***");
+  return maskEmails(value.replace(CPF_PATTERN, "***"));
+}
+
+/** Mascara e-mails sem regex com backtracking. */
+function maskEmails(value: string): string {
+  let result = "";
+  let index = 0;
+  while (index < value.length) {
+    const at = value.indexOf("@", index);
+    if (at < 0) {
+      result += value.slice(index);
+      break;
+    }
+    let start = at;
+    while (start > index && value[start - 1] !== "/" && value[start - 1] !== " ") {
+      start -= 1;
+    }
+    let end = at + 1;
+    while (end < value.length && value[end] !== "/" && value[end] !== " ") {
+      end += 1;
+    }
+    if (start < at && end > at + 1) {
+      result += value.slice(index, start) + "***@***";
+      index = end;
+      continue;
+    }
+    result += value.slice(index, at + 1);
+    index = at + 1;
+  }
+  return result;
 }
 
 /**

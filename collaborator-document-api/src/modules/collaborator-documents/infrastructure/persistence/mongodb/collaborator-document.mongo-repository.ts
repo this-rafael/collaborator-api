@@ -424,7 +424,7 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
         if (mapped.isErr()) return err(mapped.error);
         versions.push(mapped.value);
       }
-      const ordered = versions.sort((left, right) => {
+      const ordered = versions.toSorted((left, right) => {
         return input.order === "asc" ? left.version - right.version : right.version - left.version;
       });
       const afterVersion = input.afterVersion;

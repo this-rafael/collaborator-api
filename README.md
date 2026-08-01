@@ -13,6 +13,8 @@
 
 Uma API REST para administrar o ciclo documental de colaboradores: catálogo de tipos, vínculos obrigatórios, envios versionados, pendências e indicadores — sem apagar o contexto histórico.
 
+> **Desafio prático InMeta** — este repositório é a minha solução para o [teste técnico da InMeta (API)](https://mature-crowberry-3fc.notion.site/Teste-t-cnico-Inmeta-API-22c926b5830d80d599ddfe7b4d2f22fa).
+
 [Portal](https://this-rafael.github.io/collaborator-api/) ·
 [OpenAPI](https://this-rafael.github.io/collaborator-api/openapi/) ·
 [TypeDoc](https://this-rafael.github.io/collaborator-api/reference/) ·
@@ -40,6 +42,7 @@ Uma API REST para administrar o ciclo documental de colaboradores: catálogo de 
 
 ## Conteúdo
 
+- [Desafio InMeta](#desafio-inmeta)
 - [O produto](#o-produto)
 - [Capacidades](#capacidades)
 - [Fluxo documental](#fluxo-documental)
@@ -52,6 +55,10 @@ Uma API REST para administrar o ciclo documental de colaboradores: catálogo de 
 - [Portal de documentação](#portal-de-documentação)
 - [Evolução com TDD](#evolução-com-tdd)
 - [Autor](#autor)
+
+## Desafio InMeta
+
+Este projeto é a implementação do [desafio prático técnico da InMeta](https://mature-crowberry-3fc.notion.site/Teste-t-cnico-Inmeta-API-22c926b5830d80d599ddfe7b4d2f22fa): uma API REST para gestão de documentos de colaboradores, com versionamento, histórico preservado e contratos HTTP explícitos.
 
 ## O produto
 
