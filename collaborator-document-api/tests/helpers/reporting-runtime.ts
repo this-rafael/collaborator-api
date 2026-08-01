@@ -3,9 +3,11 @@ import {vi} from "vitest";
 
 import {
   completenessCountsFixture,
+  latestSubmissionFixture,
   pendingDocumentFixture,
   pendingDocumentTypeStatisticFixture,
   type CompletenessCountsFixture,
+  type LatestSubmissionPageFixture,
   type PendingDocumentPageFixture,
   type PendingDocumentTypeStatisticsPageFixture
 } from "./reporting-fixtures.js";
@@ -23,6 +25,7 @@ type PendingDocumentTypeStatisticsResult = Result<
   PendingDocumentTypeStatisticsPageFixture,
   ReportingFailureStub
 >;
+type LatestSubmissionsResult = Result<LatestSubmissionPageFixture, ReportingFailureStub>;
 
 export class PendingDocumentsRepositoryStub {
   readonly list = vi.fn();
@@ -135,10 +138,53 @@ export class PendingDocumentTypeStatisticsRepositoryStub {
   }
 }
 
+export class LatestSubmissionsRepositoryStub {
+  readonly listLatestSubmissions = vi.fn();
+
+  constructor(result: LatestSubmissionsResult = ok(defaultLatestSubmissionsPage())) {
+    this.listLatestSubmissions.mockResolvedValue(result);
+  }
+
+  static success(
+    page: LatestSubmissionPageFixture = defaultLatestSubmissionsPage()
+  ): LatestSubmissionsRepositoryStub {
+    return new LatestSubmissionsRepositoryStub(ok(page));
+  }
+
+  static empty(): LatestSubmissionsRepositoryStub {
+    return LatestSubmissionsRepositoryStub.success({items: [], hasNext: false});
+  }
+
+  static internalError(): LatestSubmissionsRepositoryStub {
+    return LatestSubmissionsRepositoryStub.failure(
+      "INTERNAL_SERVER_ERROR",
+      "database internals must not leak"
+    );
+  }
+
+  static unavailable(): LatestSubmissionsRepositoryStub {
+    return LatestSubmissionsRepositoryStub.failure(
+      "SERVICE_UNAVAILABLE",
+      "reporting dependency unavailable"
+    );
+  }
+
+  private static failure(
+    code: ReportingFailureCode,
+    message: string
+  ): LatestSubmissionsRepositoryStub {
+    return new LatestSubmissionsRepositoryStub(err({code, message}));
+  }
+}
+
 function defaultPage(): PendingDocumentPageFixture {
   return {items: [pendingDocumentFixture()], hasNext: false};
 }
 
 function defaultStatisticsPage(): PendingDocumentTypeStatisticsPageFixture {
   return {items: [pendingDocumentTypeStatisticFixture()], hasNext: false};
+}
+
+function defaultLatestSubmissionsPage(): LatestSubmissionPageFixture {
+  return {items: [latestSubmissionFixture()], hasNext: false};
 }
