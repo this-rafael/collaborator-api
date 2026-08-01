@@ -286,6 +286,18 @@ A execução local registrada abaixo alcançou **98,2%** de cobertura em stateme
   />
 </div>
 
+### SonarQube (Quality Gate)
+
+A análise SonarQube do new code (desde 29 de julho) está com **Quality Gate Passed**: **0** new issues, cobertura **97,1%** (≥ 80%) e duplicação **2,98%** (< 3%).
+
+<div align="center">
+  <img
+    src="docs/assets/sonar-quality-gate.png"
+    alt="Dashboard SonarQube da Collaborator Document API: Quality Gate Passed, 0 new issues, 97,1% de cobertura e 2,98% de duplicação no new code"
+    width="960"
+  />
+</div>
+
 O lint do contrato público e o build completo do portal também são executáveis localmente:
 
 ```bash
