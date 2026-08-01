@@ -4,9 +4,14 @@ import type {Document} from "mongodb";
 import {err, ok, type Result} from "neverthrow";
 
 import type {CompletenessCounts} from "../../../application/models/completeness-statistics.view.js";
+import type {LatestSubmissionView} from "../../../application/models/latest-submission.view.js";
 import type {PendingDocumentTypeStatisticView} from "../../../application/models/pending-document-type-statistic.view.js";
 import type {PendingDocumentView} from "../../../application/models/pending-document.view.js";
 import type {CompletenessStatisticsReadModel} from "../../../application/ports/completeness-statistics.read-model.js";
+import type {
+  LatestSubmissionPage,
+  LatestSubmissionsReadModel
+} from "../../../application/ports/latest-submissions.read-model.js";
 import type {
   PendingDocumentTypeStatisticsPage,
   PendingDocumentTypeStatisticsReadModel
@@ -17,6 +22,7 @@ import type {
 } from "../../../application/ports/pending-documents.read-model.js";
 import {reportingFailure, type ReportingFailure} from "../../../application/reporting.failure.js";
 import {completenessStatisticsPipeline} from "./pipelines/completeness-statistics.pipeline.js";
+import {latestSubmissionsPipeline} from "./pipelines/latest-submissions.pipeline.js";
 import {pendingDocumentTypeStatisticsPipeline} from "./pipelines/pending-document-type-statistics.pipeline.js";
 import {pendingDocumentsPipeline} from "./pipelines/pending-documents.pipeline.js";
 
@@ -26,7 +32,8 @@ export class MongoReportingRepository
   implements
     PendingDocumentsReadModel,
     CompletenessStatisticsReadModel,
-    PendingDocumentTypeStatisticsReadModel
+    PendingDocumentTypeStatisticsReadModel,
+    LatestSubmissionsReadModel
 {
   constructor(private readonly mongoose: MongooseService) {}
 
@@ -53,6 +60,38 @@ export class MongoReportingRepository
       const items: PendingDocumentView[] = [];
       for (const row of rows.slice(0, input.limit)) {
         const mapped = pendingDocumentFromRow(row);
+        if (mapped.isErr()) return err(mapped.error);
+        items.push(mapped.value);
+      }
+      return ok({items, hasNext: rows.length > input.limit});
+    } catch (error) {
+      return err(mapMongoFailure(error));
+    }
+  }
+
+  async listLatestSubmissions(
+    input: Parameters<LatestSubmissionsReadModel["listLatestSubmissions"]>[0]
+  ): Promise<Result<LatestSubmissionPage, ReportingFailure>> {
+    try {
+      const database = this.mongoose.get()?.db;
+      if (!database) {
+        return err(
+          reportingFailure("SERVICE_UNAVAILABLE", "Reporting persistence is unavailable.")
+        );
+      }
+      const rows = await database
+        .collection("collaborator_documents")
+        .aggregate(
+          latestSubmissionsPipeline({
+            filters: input.filters,
+            limit: input.limit,
+            ...(input.after ? {after: input.after} : {})
+          })
+        )
+        .toArray();
+      const items: LatestSubmissionView[] = [];
+      for (const row of rows.slice(0, input.limit)) {
+        const mapped = latestSubmissionFromRow(row);
         if (mapped.isErr()) return err(mapped.error);
         items.push(mapped.value);
       }
@@ -132,6 +171,42 @@ function completenessCountsFromRow(row: Document): Result<CompletenessCounts, Re
     return err(reportingFailure("INTERNAL_SERVER_ERROR", "Reporting projection is invalid."));
   }
   return ok({totalActiveDocuments, submittedDocuments});
+}
+
+function latestSubmissionFromRow(row: Document): Result<LatestSubmissionView, ReportingFailure> {
+  const collaborator = asRecord(row.collaborator);
+  const documentType = asRecord(row.documentType);
+  const lastSubmittedAt = toIsoDate(row.lastSubmittedAt);
+  if (
+    typeof row.documentId !== "string" ||
+    !Number.isSafeInteger(row.currentVersion) ||
+    row.currentVersion < 1 ||
+    !lastSubmittedAt ||
+    typeof collaborator.id !== "string" ||
+    typeof collaborator.name !== "string" ||
+    (collaborator.cpf !== undefined && typeof collaborator.cpf !== "string") ||
+    typeof documentType.id !== "string" ||
+    typeof documentType.name !== "string" ||
+    typeof documentType.code !== "string"
+  ) {
+    return err(reportingFailure("INTERNAL_SERVER_ERROR", "Reporting projection is invalid."));
+  }
+
+  return ok({
+    documentId: row.documentId,
+    currentVersion: row.currentVersion,
+    lastSubmittedAt,
+    collaborator: {
+      id: collaborator.id,
+      name: collaborator.name,
+      ...(typeof collaborator.cpf === "string" ? {cpf: collaborator.cpf} : {})
+    },
+    documentType: {
+      id: documentType.id,
+      name: documentType.name,
+      code: documentType.code
+    }
+  });
 }
 
 function pendingDocumentFromRow(row: Document): Result<PendingDocumentView, ReportingFailure> {

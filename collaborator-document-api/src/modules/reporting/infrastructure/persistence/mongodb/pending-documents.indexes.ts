@@ -17,10 +17,20 @@ export const pendingDocumentIndexes: readonly IndexDescription[] = [
     },
     name: "collaborator_documents_pending_reporting_keyset",
     partialFilterExpression: {status: "PENDING", deletedAt: null, unlinkedAt: null}
+  },
+  {
+    key: {status: 1, deletedAt: 1, unlinkedAt: 1, lastSubmittedAt: -1, _id: -1},
+    name: "collaborator_documents_latest_submissions_keyset",
+    partialFilterExpression: {
+      status: "SUBMITTED",
+      deletedAt: null,
+      unlinkedAt: null,
+      lastSubmittedAt: {$type: "date"}
+    }
   }
 ];
 
-/** Garante o índice que sustenta o filtro e a ordenação da consulta. */
+/** Garante os índices que sustentam os filtros e ordenações de reporting. */
 @Injectable()
 export class PendingDocumentsIndexProvisioner {
   constructor(private readonly mongoose: MongooseService) {}
