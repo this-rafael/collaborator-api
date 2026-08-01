@@ -33,6 +33,8 @@ Uma API REST para administrar o ciclo documental de colaboradores: catálogo de 
 - [Execução local](#execução-local)
 - [Qualidade](#qualidade)
 - [Portal de documentação](#portal-de-documentação)
+- [Evolução com TDD](#evolução-com-tdd)
+- [Autor](#autor)
 
 ## O produto
 
@@ -248,6 +250,18 @@ As suítes cobrem quatro níveis:
 - contrato: compatibilidade entre endpoints e OpenAPI;
 - integração: índices, transações, concorrência e consultas reais no MongoDB.
 
+### Cobertura de testes
+
+A execução local registrada abaixo alcançou **98,2%** de cobertura em statements e linhas, **95,3%** em branches e **99,14%** em funções. As lacunas visíveis concentram-se em caminhos de borda de controladores e na ramificação de um aggregate; elas ficam documentadas no próprio relatório, sem esconder o resultado atrás de uma métrica agregada.
+
+<div align="center">
+  <img
+    src="docs/assets/coverage-report.png"
+    alt="Relatório de cobertura v8 da Collaborator Document API: 98,2% de statements e linhas, 95,3% de branches e 99,14% de funções"
+    width="960"
+  />
+</div>
+
 O lint do contrato público e o build completo do portal também são executáveis localmente:
 
 ```bash
@@ -267,12 +281,54 @@ O portal é gerado de forma reproduzível e publicado pelo GitHub Pages quando `
 | TypeDoc     | Referência navegável dos símbolos TypeScript      | [Abrir](https://this-rafael.github.io/collaborator-api/reference/)    |
 | Arquitetura | Grafo de conhecimento interativo em português     | [Abrir](https://this-rafael.github.io/collaborator-api/architecture/) |
 
+<div align="center">
+  <a href="https://this-rafael.github.io/collaborator-api/">
+    <img
+      src="docs/assets/documentation-portal.png"
+      alt="Página inicial do portal da Collaborator Document API, com links para OpenAPI, TypeDoc e arquitetura"
+      width="960"
+    />
+  </a>
+</div>
+
+## Evolução com TDD
+
+O desenvolvimento foi organizado em fatias verticais **red → green**: a branch `red` introduz os testes que especificam o comportamento; a `green` contém a implementação que os faz passar. A estratégia foi inspirada no fluxo utilizado em [paketa-credito-challange](https://github.com/this-rafael/paketa-credito-challange), preservando a evolução auditável de cada capacidade neste repositório.
+
+|  #  | Capacidade                     | Red                                                                                                                                                               | Green                                                                                                                                                                 |
+| :-: | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01  | Descoberta da API              | [`feature/1/discovery-resource/red`](https://github.com/this-rafael/collaborator-api/tree/feature/1/discovery-resource/red)                                       | [`feature/1/discovery-resource/green`](https://github.com/this-rafael/collaborator-api/tree/feature/1/discovery-resource/green)                                       |
+| 02  | Liveness e readiness           | [`feature/2/heath-check/red`](https://github.com/this-rafael/collaborator-api/tree/feature/2/heath-check/red)                                                     | [`feature/2/heath-check/green`](https://github.com/this-rafael/collaborator-api/tree/feature/2/heath-check/green)                                                     |
+| 03  | Recurso de colaboradores       | [`feature/3/collaborators-resource/red`](https://github.com/this-rafael/collaborator-api/tree/feature/3/collaborators-resource/red)                               | [`feature/3/collaborators-resource/green`](https://github.com/this-rafael/collaborator-api/tree/feature/3/collaborators-resource/green)                               |
+| 04  | Tipos documentais              | [`feature/4/document-types-resource/red`](https://github.com/this-rafael/collaborator-api/tree/feature/4/document-types-resource/red)                             | [`feature/4/document-types-resource/green`](https://github.com/this-rafael/collaborator-api/tree/feature/4/document-types-resource/green)                             |
+| 05  | Vínculos colaborador-documento | [`feature/5/collaboratos-documents-resource/red`](https://github.com/this-rafael/collaborator-api/tree/feature/5/collaboratos-documents-resource/red)             | [`feature/5/collaboratos-documents-resource/green`](https://github.com/this-rafael/collaborator-api/tree/feature/5/collaboratos-documents-resource/green)             |
+| 06  | Envio de versão                | [`feature/6/create-document-version/red`](https://github.com/this-rafael/collaborator-api/tree/feature/6/create-document-version/red)                             | [`feature/6/create-document-version/green`](https://github.com/this-rafael/collaborator-api/tree/feature/6/create-document-version/green)                             |
+| 07  | Listagem de versões            | [`feature/6/list-document-versions/red`](https://github.com/this-rafael/collaborator-api/tree/feature/6/list-document-versions/red)                               | [`feature/6/list-document-versions/green`](https://github.com/this-rafael/collaborator-api/tree/feature/6/list-document-versions/green)                               |
+| 08  | Consulta de uma versão         | [`feature/6/get-document-version/red`](https://github.com/this-rafael/collaborator-api/tree/feature/6/get-document-version/red)                                   | [`feature/6/get-document-version/green`](https://github.com/this-rafael/collaborator-api/tree/feature/6/get-document-version/green)                                   |
+| 09  | Pendências documentais         | [`feature/7/list-pending-documents/red`](https://github.com/this-rafael/collaborator-api/tree/feature/7/list-pending-documents/red)                               | [`feature/7/list-pending-documents/green`](https://github.com/this-rafael/collaborator-api/tree/feature/7/list-pending-documents/green)                               |
+| 10  | Completude                     | [`feature/7/get-completeness-statistics/red`](https://github.com/this-rafael/collaborator-api/tree/feature/7/get-completeness-statistics/red)                     | [`feature/7/get-completeness-statistics/green`](https://github.com/this-rafael/collaborator-api/tree/feature/7/get-completeness-statistics/green)                     |
+| 11  | Tipos pendentes                | [`feature/7/list-pending-document-type-statistics/red`](https://github.com/this-rafael/collaborator-api/tree/feature/7/list-pending-document-type-statistics/red) | [`feature/7/list-pending-document-type-statistics/green`](https://github.com/this-rafael/collaborator-api/tree/feature/7/list-pending-document-type-statistics/green) |
+| 12  | Últimas submissões             | [`feature/7/list-latest-submissions/red`](https://github.com/this-rafael/collaborator-api/tree/feature/7/list-latest-submissions/red)                             | [`feature/7/list-latest-submissions/green`](https://github.com/this-rafael/collaborator-api/tree/feature/7/list-latest-submissions/green)                             |
+| 13  | Eventos de submissão           | [`feature/7/list-submission-events/red`](https://github.com/this-rafael/collaborator-api/tree/feature/7/list-submission-events/red)                               | [`feature/7/list-submission-events/green`](https://github.com/this-rafael/collaborator-api/tree/feature/7/list-submission-events/green)                               |
+| 14  | Portal de documentação         | [`feature/8/docs-portal/red`](https://github.com/this-rafael/collaborator-api/commit/b44a18f2fc0a7ef9e5a9ee6fe81fb426d515e337)                                    | [`feature/8/docs-portal/green`](https://github.com/this-rafael/collaborator-api/commit/0a31d4fa94b03f1f06530e3f76f3ac1ba8662872)                                      |
+
+Os nomes `heath-check` e `collaboratos-documents` foram mantidos literalmente porque fazem parte do histórico Git publicado. As refs do portal foram removidas depois da integração; por isso, seus nomes apontam para os commits red e green preservados.
+
 ---
 
 <div align="center">
 
+### Rafael Pereira
+
+Engenheiro de Software Sênior · Full Stack & Solutions Architect
+
+[![GitHub](https://img.shields.io/badge/GitHub-this--rafael-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/this-rafael)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Rafael%20Pereira-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/this-rafael-pereira/)
+
 **Collaborator Document API** · histórico explícito, transições navegáveis e consistência verificável.
 
 [GitHub](https://github.com/this-rafael/collaborator-api) · [Documentação](https://this-rafael.github.io/collaborator-api/)
+
+[![Footer](https://capsule-render.vercel.app/api?type=waving&color=0:2563EB,48:0891B2,100:059669&height=120&section=footer)](https://github.com/this-rafael)
 
 </div>
