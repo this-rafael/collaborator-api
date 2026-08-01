@@ -1,5 +1,7 @@
 import {Injectable} from "@tsed/di";
+import {$log} from "@tsed/logger";
 import {MongooseService} from "@tsed/mongoose";
+import {BSON, type Document} from "mongodb";
 import {err, ok, type Result} from "neverthrow";
 import {Types, type Connection} from "mongoose";
 
@@ -10,6 +12,11 @@ import {
   type CollaboratorDocumentsFailure
 } from "../../../application/contracts/soft-delete-collaborator-documents.input.js";
 import type {CollaboratorDocumentOutput} from "../../../application/contracts/collaborator-document-output.js";
+import type {
+  DocumentVersionListPage,
+  DocumentVersionMetadata,
+  DocumentVersionOutput
+} from "../../../application/contracts/document-version-output.js";
 import type {
   CollaboratorDocumentListFilters,
   CollaboratorDocumentListPage,
@@ -33,10 +40,27 @@ const unavailable = (): CollaboratorDocumentFailure =>
     "Collaborator document persistence is unavailable."
   );
 
+const embeddedHistoryWarningBytes = 8 * 1024 * 1024;
+
 /** Persistência Mongo pertencente ao módulo collaborator-documents. */
 @Injectable()
 export class MongoCollaboratorDocumentRepository implements CollaboratorDocumentRepository {
   constructor(private readonly mongoose: MongooseService) {}
+
+  getVersion(input: {
+    id: string;
+    version: number;
+  }): Promise<Result<DocumentVersionOutput, CollaboratorDocumentFailure>> {
+    return this.getVersionSafely(input);
+  }
+
+  appendVersion(input: {
+    id: string;
+    metadata: DocumentVersionMetadata;
+    submittedAt: Date;
+  }): Promise<Result<DocumentVersionOutput, CollaboratorDocumentFailure>> {
+    return this.appendVersionSafely(input);
+  }
 
   softDeleteActiveByCollaboratorId(
     collaboratorId: string,
@@ -70,6 +94,15 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
     limit: number;
   }): Promise<Result<CollaboratorDocumentListPage, CollaboratorDocumentFailure>> {
     return this.listSafely(input);
+  }
+
+  listVersions(input: {
+    id: string;
+    order: "asc" | "desc";
+    limit: number;
+    afterVersion?: number;
+  }): Promise<Result<DocumentVersionListPage, CollaboratorDocumentFailure>> {
+    return this.listVersionsSafely(input);
   }
 
   unlinkActive(
@@ -148,6 +181,94 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
     }
   }
 
+  private async appendVersionSafely(input: {
+    id: string;
+    metadata: DocumentVersionMetadata;
+    submittedAt: Date;
+  }): Promise<Result<DocumentVersionOutput, CollaboratorDocumentFailure>> {
+    try {
+      const model = this.model();
+      if (!model) return err(unavailable());
+      if (!Types.ObjectId.isValid(input.id)) {
+        return err(
+          collaboratorDocumentApplicationFailure(
+            "COLLABORATOR_DOCUMENT_NOT_FOUND",
+            "Collaborator document was not found."
+          )
+        );
+      }
+
+      const nextVersion = {$add: [{$ifNull: ["$currentVersion", 0]}, 1]};
+      const updated = await model
+        .findOneAndUpdate(
+          {_id: input.id, deletedAt: null, unlinkedAt: null},
+          [
+            {
+              $set: {
+                currentVersion: nextVersion,
+                status: "SUBMITTED",
+                lastSubmittedAt: input.submittedAt,
+                updatedAt: input.submittedAt,
+                versions: {
+                  $concatArrays: [
+                    {$ifNull: ["$versions", []]},
+                    [
+                      {
+                        version: nextVersion,
+                        submittedAt: input.submittedAt,
+                        metadata: {$literal: input.metadata}
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          {returnDocument: "after", updatePipeline: true}
+        )
+        .lean();
+
+      if (!updated) return await this.classifyAppendMiss(input.id);
+      warnWhenEmbeddedHistoryIsLarge(updated);
+
+      const version = Array.isArray(updated.versions) ? updated.versions.at(-1) : undefined;
+      return documentVersionOutput(version);
+    } catch (error) {
+      return err(mapAppendVersionMongoFailure(error));
+    }
+  }
+
+  private async classifyAppendMiss(
+    id: string
+  ): Promise<Result<DocumentVersionOutput, CollaboratorDocumentFailure>> {
+    const model = this.model();
+    if (!model) return err(unavailable());
+
+    const existing = await model.findById(id).select({deletedAt: 1, unlinkedAt: 1}).lean();
+    if (!existing) {
+      return err(
+        collaboratorDocumentApplicationFailure(
+          "COLLABORATOR_DOCUMENT_NOT_FOUND",
+          "Collaborator document was not found."
+        )
+      );
+    }
+    if (existing.deletedAt) {
+      return err(
+        collaboratorDocumentApplicationFailure(
+          "COLLABORATOR_DOCUMENT_DELETED",
+          "Collaborator document was deleted."
+        )
+      );
+    }
+    return err(
+      collaboratorDocumentApplicationFailure(
+        "COLLABORATOR_DOCUMENT_UNLINKED",
+        "Collaborator document was unlinked."
+      )
+    );
+  }
+
   private async findByIdSafely(
     id: string
   ): Promise<Result<CollaboratorDocumentOutput, CollaboratorDocumentFailure>> {
@@ -172,6 +293,49 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
               "Collaborator document was not found."
             )
           );
+    } catch (error) {
+      return err(mapMongoFailure(error));
+    }
+  }
+
+  private async getVersionSafely(input: {
+    id: string;
+    version: number;
+  }): Promise<Result<DocumentVersionOutput, CollaboratorDocumentFailure>> {
+    try {
+      const model = this.model();
+      if (!model) return err(unavailable());
+      if (!Types.ObjectId.isValid(input.id)) {
+        return err(
+          collaboratorDocumentApplicationFailure(
+            "COLLABORATOR_DOCUMENT_NOT_FOUND",
+            "Collaborator document was not found."
+          )
+        );
+      }
+
+      const row = await model
+        .findOne({_id: input.id}, {versions: {$elemMatch: {version: input.version}}})
+        .lean();
+      if (!row) {
+        return err(
+          collaboratorDocumentApplicationFailure(
+            "COLLABORATOR_DOCUMENT_NOT_FOUND",
+            "Collaborator document was not found."
+          )
+        );
+      }
+
+      const version = Array.isArray(row.versions) ? row.versions[0] : undefined;
+      if (version === undefined) {
+        return err(
+          collaboratorDocumentApplicationFailure(
+            "DOCUMENT_VERSION_NOT_FOUND",
+            "Document version was not found."
+          )
+        );
+      }
+      return documentVersionOutput(version);
     } catch (error) {
       return err(mapMongoFailure(error));
     }
@@ -214,6 +378,66 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
         items.push(mapped.value);
       }
       return ok({items, hasNext});
+    } catch (error) {
+      return err(mapMongoFailure(error));
+    }
+  }
+
+  private async listVersionsSafely(input: {
+    id: string;
+    order: "asc" | "desc";
+    limit: number;
+    afterVersion?: number;
+  }): Promise<Result<DocumentVersionListPage, CollaboratorDocumentFailure>> {
+    try {
+      const model = this.model();
+      if (!model) return err(unavailable());
+      if (!Types.ObjectId.isValid(input.id)) {
+        return err(
+          collaboratorDocumentApplicationFailure(
+            "COLLABORATOR_DOCUMENT_NOT_FOUND",
+            "Collaborator document was not found."
+          )
+        );
+      }
+
+      const row = await model.findById(input.id).select({currentVersion: 1, versions: 1}).lean();
+      if (!row) {
+        return err(
+          collaboratorDocumentApplicationFailure(
+            "COLLABORATOR_DOCUMENT_NOT_FOUND",
+            "Collaborator document was not found."
+          )
+        );
+      }
+      if (
+        !Number.isInteger(row.currentVersion) ||
+        row.currentVersion < 0 ||
+        !Array.isArray(row.versions)
+      ) {
+        return err(invalidVersionPersistenceData());
+      }
+
+      const versions: DocumentVersionOutput[] = [];
+      for (const value of row.versions) {
+        const mapped = documentVersionOutput(value);
+        if (mapped.isErr()) return err(mapped.error);
+        versions.push(mapped.value);
+      }
+      const ordered = versions.sort((left, right) => {
+        return input.order === "asc" ? left.version - right.version : right.version - left.version;
+      });
+      const afterVersion = input.afterVersion;
+      const afterAnchor =
+        afterVersion === undefined
+          ? ordered
+          : ordered.filter((value) =>
+              input.order === "asc" ? value.version > afterVersion : value.version < afterVersion
+            );
+      const hasNext = afterAnchor.length > input.limit;
+      const items = hasNext ? afterAnchor.slice(0, input.limit) : afterAnchor;
+
+      return ok({items, currentVersion: row.currentVersion, hasNext});
     } catch (error) {
       return err(mapMongoFailure(error));
     }
@@ -321,4 +545,94 @@ function mapMongoFailure(error: unknown): CollaboratorDocumentFailure {
     "INTERNAL_SERVER_ERROR",
     "Collaborator document persistence failed."
   );
+}
+
+function mapAppendVersionMongoFailure(error: unknown): CollaboratorDocumentFailure {
+  if (isDocumentHistoryCapacityError(error)) {
+    return collaboratorDocumentApplicationFailure(
+      "DOCUMENT_HISTORY_LIMIT_REACHED",
+      "The embedded document history reached its physical capacity."
+    );
+  }
+  return mapMongoFailure(error);
+}
+
+function isDocumentHistoryCapacityError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as {code?: number; codeName?: string; message?: string};
+  return (
+    candidate.code === 10_334 ||
+    candidate.codeName === "BSONObjectTooLarge" ||
+    /BSONObj size|object to insert too large|document is larger than/i.test(candidate.message ?? "")
+  );
+}
+
+function documentVersionOutput(
+  value: unknown
+): Result<DocumentVersionOutput, CollaboratorDocumentFailure> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return err(invalidVersionPersistenceData());
+  }
+  const candidate = value as Record<string, unknown>;
+  const metadata = candidate.metadata;
+  if (
+    !Number.isInteger(candidate.version) ||
+    (candidate.version as number) < 1 ||
+    !(candidate.submittedAt instanceof Date) ||
+    !metadata ||
+    typeof metadata !== "object" ||
+    Array.isArray(metadata)
+  ) {
+    return err(invalidVersionPersistenceData());
+  }
+  const normalizedMetadata = metadata as Record<string, unknown>;
+  if (
+    typeof normalizedMetadata.originalName !== "string" ||
+    !isNullableString(normalizedMetadata.mimeType) ||
+    !isNullableNonNegativeInteger(normalizedMetadata.sizeBytes) ||
+    !isNullableString(normalizedMetadata.storageKey) ||
+    !isNullableString(normalizedMetadata.notes)
+  ) {
+    return err(invalidVersionPersistenceData());
+  }
+
+  return ok({
+    version: candidate.version as number,
+    submittedAt: candidate.submittedAt.toISOString(),
+    metadata: {
+      originalName: normalizedMetadata.originalName,
+      mimeType: normalizedMetadata.mimeType,
+      sizeBytes: normalizedMetadata.sizeBytes,
+      storageKey: normalizedMetadata.storageKey,
+      notes: normalizedMetadata.notes
+    }
+  });
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
+function isNullableNonNegativeInteger(value: unknown): value is number | null {
+  return value === null || (Number.isInteger(value) && (value as number) >= 0);
+}
+
+function invalidVersionPersistenceData(): CollaboratorDocumentFailure {
+  return collaboratorDocumentApplicationFailure(
+    "INTERNAL_SERVER_ERROR",
+    "Document version persistence data is invalid."
+  );
+}
+
+function warnWhenEmbeddedHistoryIsLarge(document: unknown): void {
+  try {
+    if (BSON.calculateObjectSize(document as Document) > embeddedHistoryWarningBytes) {
+      $log.warn({
+        event: "DOCUMENT_VERSION_HISTORY_CAPACITY_WARNING",
+        operationId: "createDocumentVersion"
+      });
+    }
+  } catch {
+    // Best-effort observability must not change a confirmed write result.
+  }
 }

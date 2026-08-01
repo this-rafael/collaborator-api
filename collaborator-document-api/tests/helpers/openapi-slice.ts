@@ -15,6 +15,27 @@ export const discoveryContractPath = resolve(
   "contracts",
   "discover-api.openapi.yaml"
 );
+export const createDocumentVersionContractPath = resolve(
+  repoRoot,
+  "specs",
+  "022-create-document-version",
+  "contracts",
+  "create-document-version.openapi.yaml"
+);
+export const listDocumentVersionsContractPath = resolve(
+  repoRoot,
+  "specs",
+  "023-list-document-versions",
+  "contracts",
+  "list-document-versions.openapi.yaml"
+);
+export const getDocumentVersionContractPath = resolve(
+  repoRoot,
+  "specs",
+  "024-get-document-version",
+  "contracts",
+  "get-document-version.openapi.yaml"
+);
 
 export type JsonScalar = string | number | boolean | null;
 export type JsonValue = JsonScalar | JsonObject | JsonArray;
@@ -574,8 +595,8 @@ export interface OperationSlice {
   responses: JsonObject;
 }
 
-export function loadOperationSliceFromExpected(path: string, method: string): OperationSlice {
-  const yaml = loadYamlFile(expectedOpenApiPath);
+function loadOperationSlice(source: string, path: string, method: string): OperationSlice {
+  const yaml = loadYamlFile(source);
   if (!isObjectValue(yaml) || !isObjectValue(yaml.paths)) {
     throw new Error("Expected OpenAPI paths are missing");
   }
@@ -595,6 +616,10 @@ export function loadOperationSliceFromExpected(path: string, method: string): Op
     headers: isObjectValue(components.headers) ? components.headers : {},
     responses: isObjectValue(components.responses) ? components.responses : {}
   };
+}
+
+export function loadOperationSliceFromExpected(path: string, method: string): OperationSlice {
+  return loadOperationSlice(expectedOpenApiPath, path, method);
 }
 
 export const loadCreateCollaboratorSliceFromExpected = (): OperationSlice =>
@@ -638,3 +663,24 @@ export const loadGetCollaboratorDocumentSliceFromExpected = (): OperationSlice =
 
 export const loadUnlinkCollaboratorDocumentSliceFromExpected = (): OperationSlice =>
   loadOperationSliceFromExpected("/api/v1/collaborator-documents/{id}", "delete");
+
+export const loadCreateDocumentVersionSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(
+    createDocumentVersionContractPath,
+    "/api/v1/collaborator-documents/{id}/versions",
+    "post"
+  );
+
+export const loadListDocumentVersionsSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(
+    listDocumentVersionsContractPath,
+    "/api/v1/collaborator-documents/{id}/versions",
+    "get"
+  );
+
+export const loadGetDocumentVersionSliceFromContract = (): OperationSlice =>
+  loadOperationSlice(
+    getDocumentVersionContractPath,
+    "/api/v1/collaborator-documents/{id}/versions/{version}",
+    "get"
+  );

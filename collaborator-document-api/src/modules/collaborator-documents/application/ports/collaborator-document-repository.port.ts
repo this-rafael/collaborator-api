@@ -12,6 +12,11 @@ import type {CollaboratorDocument} from "../../domain/aggregates/collaborator-do
 import type {CollaboratorDocumentFailure} from "../../domain/errors/collaborator-document.failure.js";
 import type {CollaboratorDocumentsFailure} from "../contracts/soft-delete-collaborator-documents.input.js";
 import type {CollaboratorDocumentOutput} from "../contracts/collaborator-document-output.js";
+import type {
+  DocumentVersionListPage,
+  DocumentVersionMetadata,
+  DocumentVersionOutput
+} from "../contracts/document-version-output.js";
 
 /**
  * Filtros normalizados aplicados à listagem de vínculos.
@@ -40,6 +45,42 @@ export type CollaboratorDocumentListPage = Readonly<{
 
 /** Porta de persistência do módulo collaborator-documents. */
 export interface CollaboratorDocumentRepository {
+  /**
+   * Busca uma versão específica sem materializar o histórico completo.
+   *
+   * @param input - Identificador do vínculo e número positivo da versão.
+   * @returns Result com a versão encontrada; distingue vínculo inexistente de
+   * versão inexistente.
+   */
+  getVersion(input: {
+    id: string;
+    version: number;
+  }): Promise<Result<DocumentVersionOutput, CollaboratorDocumentFailure>>;
+  /**
+   * Anexa uma versão ao histórico do vínculo em uma atualização atômica.
+   *
+   * @param input - Identificador, metadados normalizados e instante da submissão.
+   * @returns Result com a versão criada; em falha, um código de ciclo de vida,
+   * capacidade ou disponibilidade.
+   */
+  appendVersion(input: {
+    id: string;
+    metadata: DocumentVersionMetadata;
+    submittedAt: Date;
+  }): Promise<Result<DocumentVersionOutput, CollaboratorDocumentFailure>>;
+  /**
+   * Lista o histórico embutido de versões por keyset numérico.
+   *
+   * @param input - Identificador do vínculo, ordenação, limite e âncora opcionais.
+   * @returns Página de versões mesmo para vínculos históricos; 404 somente quando
+   * o vínculo não existe.
+   */
+  listVersions(input: {
+    id: string;
+    order: "asc" | "desc";
+    limit: number;
+    afterVersion?: number;
+  }): Promise<Result<DocumentVersionListPage, CollaboratorDocumentFailure>>;
   /**
    * Aplica soft delete em cascata aos vínculos ativos de um colaborador.
    *
