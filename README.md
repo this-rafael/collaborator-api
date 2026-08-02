@@ -38,6 +38,16 @@ Uma API REST para administrar o ciclo documental de colaboradores: catálogo de 
   </a>
 </div>
 
+<div align="center">
+  <a href="https://this-rafael.github.io/collaborator-api/">
+    <img
+      src="docs/assets/documentation-portal-demo.gif"
+      alt="Demonstração da documentação interativa, navegando pelo portal, OpenAPI, TypeDoc e grafo de arquitetura"
+      width="800"
+    />
+  </a>
+</div>
+
 ---
 
 ## Conteúdo
