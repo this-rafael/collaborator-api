@@ -306,6 +306,31 @@ npm run openapi:lint
 npm run docs:site:check
 ```
 
+## Observabilidade (OpenTelemetry)
+
+A instrumentação é opt-in (`OTEL_ENABLED=true`) e exporta traces e métricas via OTLP para uma stack local com Collector, Tempo, Prometheus e Grafana. Ela preserva o contrato `X-Request-Id` / `traceId` de Problem Details e acrescenta `otelTraceId` e `otelSpanId` aos logs `HTTP_REQUEST` quando há um span ativo.
+
+```bash
+cd collaborator-document-api
+docker compose --profile observability up -d
+OTEL_ENABLED=true OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:14318 pnpm dev
+```
+
+| Serviço                      | Endereço local                          |
+| ---------------------------- | --------------------------------------- |
+| Grafana (dashboard HTTP RED) | [localhost:3011](http://localhost:3011) |
+| Tempo                        | [localhost:3210](http://localhost:3210) |
+| Prometheus                   | [localhost:9091](http://localhost:9091) |
+| OTLP HTTP                    | `http://localhost:14318`                |
+
+<div align="center">
+  <img
+    src="docs/assets/otel/grafana-http-red.png"
+    alt="Dashboard HTTP RED no Grafana com taxa, erros e duração das requisições da Collaborator Document API"
+    width="960"
+  />
+</div>
+
 ## Portal de documentação
 
 O portal é gerado de forma reproduzível e publicado pelo GitHub Pages quando `main` recebe alterações.
