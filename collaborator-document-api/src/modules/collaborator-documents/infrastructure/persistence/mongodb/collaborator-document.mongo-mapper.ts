@@ -80,7 +80,7 @@ export const collaboratorDocumentFromMongoDocument = (
     );
   }
 
-  return CollaboratorDocument.reconstitute({
+  const document = CollaboratorDocument.reconstitute({
     id,
     collaboratorId: value.collaboratorId,
     documentTypeId: value.documentTypeId,
@@ -94,6 +94,15 @@ export const collaboratorDocumentFromMongoDocument = (
     updatedAt: value.updatedAt,
     deletedAt: value.deletedAt ?? null
   });
+  if (document.isErr()) {
+    return err(
+      collaboratorDocumentApplicationFailure(
+        "INTERNAL_SERVER_ERROR",
+        "Collaborator document persistence data is invalid."
+      )
+    );
+  }
+  return document;
 };
 
 /** Converte leitura Mongo para saída primitiva da aplicação. */

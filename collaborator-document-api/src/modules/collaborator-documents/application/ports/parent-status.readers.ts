@@ -7,6 +7,7 @@
  */
 import type {Result} from "neverthrow";
 
+import type {TransactionContext} from "../../../../shared/application/ports/transaction-manager.js";
 import type {CollaboratorDocumentFailure} from "../../domain/errors/collaborator-document.failure.js";
 
 /**
@@ -18,28 +19,34 @@ import type {CollaboratorDocumentFailure} from "../../domain/errors/collaborator
  */
 export type ParentStatus = "ACTIVE";
 
-/** Lê o status público de um colaborador sem acoplar à infra alheia. */
+/** Reserva um colaborador ativo na transação que criará o vínculo. */
 export interface CollaboratorStatusReader {
   /**
-   * Consulta o status atual do colaborador.
+   * Confirma que o colaborador está ativo e registra uma cerca de escrita.
    *
    * @param collaboratorId - Identificador do colaborador.
    * @returns Result com "ACTIVE" em sucesso; em falha, CollaboratorDocumentFailure
    * com códigos COLLABORATOR_NOT_FOUND, COLLABORATOR_DELETED, SERVICE_UNAVAILABLE
    * ou INTERNAL_SERVER_ERROR.
    */
-  read(collaboratorId: string): Promise<Result<ParentStatus, CollaboratorDocumentFailure>>;
+  reserveActive(
+    collaboratorId: string,
+    context: TransactionContext
+  ): Promise<Result<ParentStatus, CollaboratorDocumentFailure>>;
 }
 
-/** Lê o status público de um tipo de documento sem acoplar à infra alheia. */
+/** Reserva um tipo de documento ativo na transação que criará o vínculo. */
 export interface DocumentTypeStatusReader {
   /**
-   * Consulta o status atual do tipo de documento.
+   * Confirma que o tipo está ativo e registra uma cerca de escrita.
    *
    * @param documentTypeId - Identificador do tipo de documento.
    * @returns Result com "ACTIVE" em sucesso; em falha, CollaboratorDocumentFailure
    * com códigos DOCUMENT_TYPE_NOT_FOUND, DOCUMENT_TYPE_DELETED, SERVICE_UNAVAILABLE
    * ou INTERNAL_SERVER_ERROR.
    */
-  read(documentTypeId: string): Promise<Result<ParentStatus, CollaboratorDocumentFailure>>;
+  reserveActive(
+    documentTypeId: string,
+    context: TransactionContext
+  ): Promise<Result<ParentStatus, CollaboratorDocumentFailure>>;
 }

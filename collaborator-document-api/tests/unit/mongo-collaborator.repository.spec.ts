@@ -1,7 +1,7 @@
 import type {MongooseService} from "@tsed/mongoose";
 import type {ClientSession} from "mongoose";
 import type {Result} from "neverthrow";
-import {describe, expect, it} from "vitest";
+import {describe, expect, it, vi} from "vitest";
 
 import {Collaborator} from "../../src/modules/collaborators/domain/entities/collaborator.js";
 import {MongoCollaboratorRepository} from "../../src/modules/collaborators/infrastructure/persistence/mongodb/collaborator.mongo-repository.js";
@@ -211,5 +211,67 @@ describe("MongoCollaboratorRepository", () => {
     if (unchanged.isOk()) expect(unchanged.value).toBe(false);
     expectFailureCode(noSession, "SERVICE_UNAVAILABLE");
     expectFailureCode(technicalFailure, "INTERNAL_SERVER_ERROR");
+  });
+
+  // BDD gap: parent creation/delete interleaving needs a write fence, beyond the existing cascade scenarios.
+  it("reserves an active collaborator in the supplied transaction before link creation", async () => {
+    const context = createMongoTransactionContext({} as ClientSession);
+    const updateOne = vi.fn(async () => ({modifiedCount: 1}));
+    const repository = new MongoCollaboratorRepository(mongooseWithModel({updateOne}));
+
+    const result = await repository.reserveActiveForDocumentLink(validId, context);
+
+    expect(result.isOk()).toBe(true);
+    expect(updateOne).toHaveBeenCalledWith(
+      {_id: expect.anything(), deletedAt: null},
+      {$inc: {documentLinkFence: 1}},
+      {session: expect.anything()}
+    );
+  });
+
+  it("reports every failed collaborator-link reservation without hiding retryable writes", async () => {
+    const context = createMongoTransactionContext({} as ClientSession);
+    const notReserved = (existing: {deletedAt: Date | null} | null) =>
+      mongooseWithModel({
+        updateOne: async () => ({modifiedCount: 0}),
+        findById: () => ({
+          select: () => ({
+            session: () => ({lean: async () => existing})
+          })
+        })
+      });
+    const transient = {
+      hasErrorLabel: (label: string) => label === "TransientTransactionError"
+    };
+
+    const noSession = await new MongoCollaboratorRepository(
+      mongooseWithModel({updateOne: async () => ({modifiedCount: 1})})
+    ).reserveActiveForDocumentLink(validId, {} as never);
+    const invalidId = await new MongoCollaboratorRepository(
+      mongooseWithModel({})
+    ).reserveActiveForDocumentLink("invalid", context);
+    const missing = await new MongoCollaboratorRepository(
+      notReserved(null)
+    ).reserveActiveForDocumentLink(validId, context);
+    const deleted = await new MongoCollaboratorRepository(
+      notReserved({deletedAt: now})
+    ).reserveActiveForDocumentLink(validId, context);
+    const inconsistent = await new MongoCollaboratorRepository(
+      notReserved({deletedAt: null})
+    ).reserveActiveForDocumentLink(validId, context);
+    const retryable = new MongoCollaboratorRepository(
+      mongooseWithModel({
+        updateOne: async () => {
+          throw transient;
+        }
+      })
+    ).reserveActiveForDocumentLink(validId, context);
+
+    expectFailureCode(noSession, "SERVICE_UNAVAILABLE");
+    expectFailureCode(invalidId, "VALIDATION_ERROR");
+    expectFailureCode(missing, "COLLABORATOR_NOT_FOUND");
+    expectFailureCode(deleted, "COLLABORATOR_DELETED");
+    expectFailureCode(inconsistent, "INTERNAL_SERVER_ERROR");
+    await expect(retryable).rejects.toBe(transient);
   });
 });

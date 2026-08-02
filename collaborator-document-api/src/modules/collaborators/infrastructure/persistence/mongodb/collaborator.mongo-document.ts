@@ -9,6 +9,7 @@ export type CollaboratorMongoDocument = {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+  documentLinkFence?: number;
 };
 
 /** Esquema Mongoose para a coleção de colaboradores. */
@@ -20,7 +21,8 @@ export const collaboratorMongoSchema = new Schema<CollaboratorMongoDocument>(
     email: {type: String, required: true},
     createdAt: {type: Date, required: true},
     updatedAt: {type: Date, required: true},
-    deletedAt: {type: Date, default: null}
+    deletedAt: {type: Date, default: null},
+    documentLinkFence: {type: Number, default: 0, select: false}
   },
   {collection: "collaborators", timestamps: false}
 );

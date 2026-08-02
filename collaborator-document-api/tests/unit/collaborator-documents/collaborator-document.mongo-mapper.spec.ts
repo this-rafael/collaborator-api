@@ -96,6 +96,30 @@ describe("CollaboratorDocument Mongo mapper", () => {
     );
   });
 
+  // BDD gap: persisted lifecycle corruption is not a client validation error.
+  it("hides lifecycle-corrupt persistence data behind an internal failure", () => {
+    const invalidPending = persisted({
+      currentVersion: 1,
+      versions: [{version: 1}],
+      lastSubmittedAt: later
+    });
+    const invalidHistory = persisted({
+      status: "SUBMITTED",
+      currentVersion: 3,
+      versions: [{version: 1}, {version: 3}],
+      lastSubmittedAt: later
+    });
+
+    expectFailureCode(
+      collaboratorDocumentFromMongoDocument(invalidPending),
+      "INTERNAL_SERVER_ERROR"
+    );
+    expectFailureCode(
+      collaboratorDocumentOutputFromMongoDocument(invalidHistory),
+      "INTERNAL_SERVER_ERROR"
+    );
+  });
+
   it("projects output ISO timestamps including optional date fields", () => {
     const result = collaboratorDocumentOutputFromMongoDocument(
       persisted({

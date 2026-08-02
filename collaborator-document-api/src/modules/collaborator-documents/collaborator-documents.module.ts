@@ -1,6 +1,7 @@
 import {Module} from "@tsed/di";
 
 import {MongoObjectIdGenerator} from "../../shared/infrastructure/persistence/mongodb/mongo-object-id-generator.js";
+import {MongoTransactionManager} from "../../shared/infrastructure/persistence/mongodb/mongo-transaction-manager.js";
 import {SystemClock} from "../../shared/infrastructure/time/system-clock.js";
 import {
   CollaboratorStatusReaderAdapter,
@@ -18,6 +19,7 @@ import {CollaboratorDocumentsRuntime} from "./collaborator-documents.runtime.js"
     CollaboratorStatusReaderAdapter,
     DocumentTypeStatusReaderAdapter,
     CollaboratorDocumentIndexProvisioner,
+    MongoTransactionManager,
     MongoObjectIdGenerator,
     SystemClock
   ]

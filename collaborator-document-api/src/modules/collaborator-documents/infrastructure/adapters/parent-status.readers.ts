@@ -1,6 +1,7 @@
 import {Injectable, InjectorService} from "@tsed/di";
 import {err, ok, type Result} from "neverthrow";
 
+import type {TransactionContext} from "../../../../shared/application/ports/transaction-manager.js";
 import type {
   CollaboratorStatusReader,
   DocumentTypeStatusReader,
@@ -16,19 +17,30 @@ import {
 export class CollaboratorStatusReaderAdapter implements CollaboratorStatusReader {
   constructor(private readonly injector: InjectorService) {}
 
-  async read(collaboratorId: string): Promise<Result<ParentStatus, CollaboratorDocumentFailure>> {
+  async reserveActive(
+    collaboratorId: string,
+    context: TransactionContext
+  ): Promise<Result<ParentStatus, CollaboratorDocumentFailure>> {
     try {
       const {CollaboratorsRuntime} =
         await import("../../../collaborators/collaborators.runtime.js");
       const runtime =
         this.injector.get<InstanceType<typeof CollaboratorsRuntime>>(CollaboratorsRuntime);
-      const result = await runtime.application.get.execute({id: collaboratorId});
+      const result = await runtime.reserveActiveForDocumentLink(collaboratorId, context);
       if (result.isErr()) {
         if (result.error.code === "COLLABORATOR_NOT_FOUND") {
           return err(
             collaboratorDocumentApplicationFailure(
               "COLLABORATOR_NOT_FOUND",
               "Collaborator was not found."
+            )
+          );
+        }
+        if (result.error.code === "COLLABORATOR_DELETED") {
+          return err(
+            collaboratorDocumentApplicationFailure(
+              "COLLABORATOR_DELETED",
+              "Collaborator was deleted."
             )
           );
         }
@@ -44,14 +56,6 @@ export class CollaboratorStatusReaderAdapter implements CollaboratorStatusReader
           collaboratorDocumentApplicationFailure(
             "INTERNAL_SERVER_ERROR",
             "Collaborator status lookup failed."
-          )
-        );
-      }
-      if (result.value.deletedAt !== null) {
-        return err(
-          collaboratorDocumentApplicationFailure(
-            "COLLABORATOR_DELETED",
-            "Collaborator was deleted."
           )
         );
       }
@@ -72,19 +76,30 @@ export class CollaboratorStatusReaderAdapter implements CollaboratorStatusReader
 export class DocumentTypeStatusReaderAdapter implements DocumentTypeStatusReader {
   constructor(private readonly injector: InjectorService) {}
 
-  async read(documentTypeId: string): Promise<Result<ParentStatus, CollaboratorDocumentFailure>> {
+  async reserveActive(
+    documentTypeId: string,
+    context: TransactionContext
+  ): Promise<Result<ParentStatus, CollaboratorDocumentFailure>> {
     try {
       const {DocumentTypesRuntime} =
         await import("../../../document-types/document-types.runtime.js");
       const runtime =
         this.injector.get<InstanceType<typeof DocumentTypesRuntime>>(DocumentTypesRuntime);
-      const result = await runtime.application.get.execute({id: documentTypeId});
+      const result = await runtime.reserveActiveForDocumentLink(documentTypeId, context);
       if (result.isErr()) {
         if (result.error.code === "DOCUMENT_TYPE_NOT_FOUND") {
           return err(
             collaboratorDocumentApplicationFailure(
               "DOCUMENT_TYPE_NOT_FOUND",
               "Document type was not found."
+            )
+          );
+        }
+        if (result.error.code === "DOCUMENT_TYPE_DELETED") {
+          return err(
+            collaboratorDocumentApplicationFailure(
+              "DOCUMENT_TYPE_DELETED",
+              "Document type was deleted."
             )
           );
         }
@@ -100,14 +115,6 @@ export class DocumentTypeStatusReaderAdapter implements DocumentTypeStatusReader
           collaboratorDocumentApplicationFailure(
             "INTERNAL_SERVER_ERROR",
             "Document type status lookup failed."
-          )
-        );
-      }
-      if (result.value.deletedAt !== null) {
-        return err(
-          collaboratorDocumentApplicationFailure(
-            "DOCUMENT_TYPE_DELETED",
-            "Document type was deleted."
           )
         );
       }

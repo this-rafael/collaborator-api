@@ -7,6 +7,7 @@
  */
 import type {Clock} from "../../../shared/application/ports/clock.js";
 import type {IdGenerator} from "../../../shared/application/ports/id-generator.js";
+import type {TransactionManager} from "../../../shared/application/ports/transaction-manager.js";
 import type {CollaboratorDocumentRepository} from "./ports/collaborator-document-repository.port.js";
 import type {
   CollaboratorStatusReader,
@@ -26,6 +27,7 @@ export type CollaboratorDocumentsApplicationDependencies = Readonly<{
   repository: CollaboratorDocumentRepository;
   collaborators: CollaboratorStatusReader;
   documentTypes: DocumentTypeStatusReader;
+  transactions: TransactionManager;
   clock: Clock;
   ids: IdGenerator;
 }>;
@@ -51,6 +53,7 @@ export const createCollaboratorDocumentsApplication = (
       dependencies.repository,
       dependencies.collaborators,
       dependencies.documentTypes,
+      dependencies.transactions,
       dependencies.clock,
       dependencies.ids
     ),

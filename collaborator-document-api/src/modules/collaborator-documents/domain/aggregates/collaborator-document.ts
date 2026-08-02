@@ -169,6 +169,22 @@ export class CollaboratorDocument {
         collaboratorDocumentDomainFailure("VALIDATION_ERROR", "id must be a valid ObjectId")
       );
     }
+    if (!normalizedObjectId(props.collaboratorId)) {
+      return err(
+        collaboratorDocumentDomainFailure(
+          "VALIDATION_ERROR",
+          "collaboratorId must be a valid ObjectId"
+        )
+      );
+    }
+    if (!normalizedObjectId(props.documentTypeId)) {
+      return err(
+        collaboratorDocumentDomainFailure(
+          "VALIDATION_ERROR",
+          "documentTypeId must be a valid ObjectId"
+        )
+      );
+    }
     if (
       !isValidDate(props.createdAt) ||
       !isValidDate(props.updatedAt) ||
@@ -209,6 +225,8 @@ export class CollaboratorDocument {
         collaboratorDocumentDomainFailure("VALIDATION_ERROR", "versions must be an array")
       );
     }
+    const lifecycle = validateLifecycle(props, status.value.value);
+    if (lifecycle.isErr()) return err(lifecycle.error);
 
     return ok(new CollaboratorDocument(freezeProps({...props, status: status.value.value})));
   }
@@ -222,6 +240,62 @@ function normalizedObjectId(value: unknown): string | null {
 
 function isValidDate(value: Date): boolean {
   return value instanceof Date && !Number.isNaN(value.getTime());
+}
+
+function validateLifecycle(
+  props: CollaboratorDocumentProps,
+  status: DocumentStatusValue
+): Result<void, CollaboratorDocumentDomainFailure> {
+  if (status === "PENDING") {
+    if (
+      props.currentVersion !== 0 ||
+      props.versions.length !== 0 ||
+      props.lastSubmittedAt !== null
+    ) {
+      return err(
+        collaboratorDocumentDomainFailure(
+          "VALIDATION_ERROR",
+          "PENDING documents must have version 0, empty history, and no last submission"
+        )
+      );
+    }
+    return ok(undefined);
+  }
+
+  if (props.currentVersion < 1 || props.lastSubmittedAt === null) {
+    return err(
+      collaboratorDocumentDomainFailure(
+        "VALIDATION_ERROR",
+        "SUBMITTED documents must have a current version and last submission"
+      )
+    );
+  }
+  if (props.versions.length !== props.currentVersion) {
+    return err(
+      collaboratorDocumentDomainFailure(
+        "VALIDATION_ERROR",
+        "submitted history must contain every version up to currentVersion"
+      )
+    );
+  }
+
+  for (const [index, version] of props.versions.entries()) {
+    if (!isValidDocumentVersion(version) || version.version !== index + 1) {
+      return err(
+        collaboratorDocumentDomainFailure(
+          "VALIDATION_ERROR",
+          "submitted history versions must be positive, contiguous, and ordered"
+        )
+      );
+    }
+  }
+  return ok(undefined);
+}
+
+function isValidDocumentVersion(value: unknown): value is DocumentVersionProps {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const version = (value as {version?: unknown}).version;
+  return typeof version === "number" && Number.isSafeInteger(version) && version >= 1;
 }
 
 function freezeProps(value: CollaboratorDocumentProps): CollaboratorDocumentProps {

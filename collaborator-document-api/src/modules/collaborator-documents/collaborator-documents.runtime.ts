@@ -15,6 +15,7 @@ import {
 } from "./infrastructure/adapters/parent-status.readers.js";
 import {MongoCollaboratorDocumentRepository} from "./infrastructure/persistence/mongodb/collaborator-document.mongo-repository.js";
 import {MongoObjectIdGenerator} from "../../shared/infrastructure/persistence/mongodb/mongo-object-id-generator.js";
+import {MongoTransactionManager} from "../../shared/infrastructure/persistence/mongodb/mongo-transaction-manager.js";
 import {HmacCursorCodec} from "../../shared/infrastructure/security/hmac-cursor-codec.js";
 import {SystemClock} from "../../shared/infrastructure/time/system-clock.js";
 import type {TransactionContext} from "../../shared/application/ports/transaction-manager.js";
@@ -49,6 +50,7 @@ export class CollaboratorDocumentsRuntime {
     private readonly repository: MongoCollaboratorDocumentRepository,
     collaborators: CollaboratorStatusReaderAdapter,
     documentTypes: DocumentTypeStatusReaderAdapter,
+    transactions: MongoTransactionManager,
     private readonly clock: SystemClock,
     ids: MongoObjectIdGenerator
   ) {
@@ -56,6 +58,7 @@ export class CollaboratorDocumentsRuntime {
       repository,
       collaborators,
       documentTypes,
+      transactions,
       clock: this.clock,
       ids
     });

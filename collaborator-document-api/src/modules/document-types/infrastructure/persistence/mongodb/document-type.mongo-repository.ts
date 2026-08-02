@@ -16,6 +16,7 @@ import {
 } from "../../../domain/errors/document-type.failure.js";
 import {documentTypeNotFoundFailure} from "../../../domain/errors/document-type-not-found.failure.js";
 import {getMongoSession} from "../../../../../shared/infrastructure/persistence/mongodb/mongo-transaction-context.js";
+import {classifyMongoTransactionError} from "../../../../../shared/infrastructure/persistence/mongodb/mongo-transaction-manager.js";
 import {
   documentTypeFromMongoDocument,
   documentTypeToMongoDocument,
@@ -114,6 +115,13 @@ export class MongoDocumentTypeRepository implements DocumentTypeRepository {
     return this.softDeleteActiveSafely(documentType, context);
   }
 
+  reserveActiveForDocumentLink(
+    id: string,
+    context: TransactionContext
+  ): Promise<Result<void, DocumentTypeFailure>> {
+    return this.reserveActiveForDocumentLinkSafely(id, context);
+  }
+
   private connection(): Connection | undefined {
     try {
       const connection = this.mongoose.get();
@@ -135,6 +143,48 @@ export class MongoDocumentTypeRepository implements DocumentTypeRepository {
       const created = await model.create(document.value);
       return documentTypeFromMongoDocument(created.toObject() as DocumentTypeMongoRead);
     } catch (error) {
+      rethrowTransientTransactionError(error);
+      return err(mapMongoFailure(error));
+    }
+  }
+
+  private async reserveActiveForDocumentLinkSafely(
+    id: string,
+    context: TransactionContext
+  ): Promise<Result<void, DocumentTypeFailure>> {
+    const model = this.model();
+    const session = getMongoSession(context);
+    if (!model || !session) return err(unavailable());
+    if (!Types.ObjectId.isValid(id)) {
+      return err(documentTypeDomainFailure("VALIDATION_ERROR", "document type id is invalid"));
+    }
+
+    try {
+      const reserved = await model.updateOne(
+        {_id: new Types.ObjectId(id), deletedAt: null},
+        {$inc: {documentLinkFence: 1}},
+        {session}
+      );
+      if (reserved.modifiedCount === 1) return ok(undefined);
+
+      const existing = await model.findById(id).select({deletedAt: 1}).session(session).lean();
+      if (!existing) return err(documentTypeNotFoundFailure());
+      if (existing.deletedAt) {
+        return err(
+          documentTypeDomainFailure(
+            "DOCUMENT_TYPE_DELETED",
+            "Document type has already been deleted."
+          )
+        );
+      }
+      return err(
+        documentTypeApplicationFailure(
+          "INTERNAL_SERVER_ERROR",
+          "Document type link reservation could not be completed."
+        )
+      );
+    } catch (error) {
+      rethrowTransientTransactionError(error);
       return err(mapMongoFailure(error));
     }
   }
@@ -256,6 +306,7 @@ export class MongoDocumentTypeRepository implements DocumentTypeRepository {
       );
       return ok(result.modifiedCount === 1);
     } catch (error) {
+      rethrowTransientTransactionError(error);
       return err(mapMongoFailure(error));
     }
   }
@@ -269,6 +320,10 @@ export class MongoDocumentTypeRepository implements DocumentTypeRepository {
       return undefined;
     }
   }
+}
+
+function rethrowTransientTransactionError(error: unknown): void {
+  if (classifyMongoTransactionError(error) === "TRANSIENT") throw error;
 }
 
 function mapMongoFailure(error: unknown): DocumentTypeFailure {

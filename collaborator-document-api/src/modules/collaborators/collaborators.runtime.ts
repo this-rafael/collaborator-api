@@ -11,6 +11,9 @@ import {MongoObjectIdGenerator} from "../../shared/infrastructure/persistence/mo
 import {HmacCursorCodec} from "../../shared/infrastructure/security/hmac-cursor-codec.js";
 import {SystemClock} from "../../shared/infrastructure/time/system-clock.js";
 import {RateLimitMiddleware} from "../../shared/presentation/http/middlewares/rate-limit.middleware.js";
+import type {TransactionContext} from "../../shared/application/ports/transaction-manager.js";
+import type {Result} from "neverthrow";
+import type {CollaboratorFailure} from "./domain/errors/collaborator.failure.js";
 
 /** Configuração HTTP do módulo de colaboradores. */
 export type CollaboratorsHttpSettings = Readonly<{
@@ -40,7 +43,7 @@ export class CollaboratorsRuntime {
   private cursorCodecInstance?: HmacCursorCodec;
 
   constructor(
-    repository: MongoCollaboratorRepository,
+    private readonly repository: MongoCollaboratorRepository,
     documents: CollaboratorDocumentsRuntime,
     transactions: MongoTransactionManager,
     private readonly clock: SystemClock,
@@ -58,6 +61,14 @@ export class CollaboratorsRuntime {
   get cursorCodec(): HmacCursorCodec {
     this.cursorCodecInstance ??= new HmacCursorCodec(this.settings.cursorHmacSecret, this.clock);
     return this.cursorCodecInstance;
+  }
+
+  /** Reserva um colaborador ativo contra exclusão concorrente de um novo vínculo. */
+  reserveActiveForDocumentLink(
+    id: string,
+    context: TransactionContext
+  ): Promise<Result<void, CollaboratorFailure>> {
+    return this.repository.reserveActiveForDocumentLink(id, context);
   }
 
   rateLimiter(operationId: string, kind: "read" | "write"): RateLimitMiddleware {

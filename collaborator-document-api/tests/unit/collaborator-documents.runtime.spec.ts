@@ -20,6 +20,7 @@ describe("CollaboratorDocumentsRuntime", () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     ).executeByDocumentType({documentTypeId, deletedAt}, context);
 
@@ -48,6 +49,7 @@ describe("CollaboratorDocumentsRuntime", () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     ).executeByDocumentType(input as never, context);
 
@@ -65,6 +67,7 @@ describe("CollaboratorDocumentsRuntime", () => {
 
     const result = await new CollaboratorDocumentsRuntime(
       repository as never,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,

@@ -242,4 +242,64 @@ describe("CollaboratorDocument aggregate", () => {
       if (result.isErr()) expect(result.error.code).toBe("VALIDATION_ERROR");
     }
   });
+
+  // BDD gap: LINK-SUBMITTED describes a valid lifecycle, but not corruption found on hydration.
+  it("rejects persisted histories that violate the document lifecycle", async () => {
+    const {CollaboratorDocument} = await import(aggregateModule);
+    const submittedAt = new Date("2026-07-30T12:30:00.000Z");
+    const persisted = {
+      id,
+      collaboratorId,
+      documentTypeId,
+      status: "SUBMITTED" as const,
+      currentVersion: 3,
+      versions: [{version: 1}, {version: 2}, {version: 3}],
+      lastSubmittedAt: submittedAt,
+      linkedAt: now,
+      unlinkedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null
+    };
+
+    expect(CollaboratorDocument.reconstitute(persisted).isOk()).toBe(true);
+
+    const invalidStates = [
+      {...persisted, collaboratorId: "invalid"},
+      {...persisted, documentTypeId: "invalid"},
+      {
+        ...persisted,
+        status: "PENDING" as const,
+        currentVersion: 1,
+        versions: [],
+        lastSubmittedAt: null
+      },
+      {
+        ...persisted,
+        status: "PENDING" as const,
+        currentVersion: 0,
+        versions: [{version: 1}],
+        lastSubmittedAt: null
+      },
+      {
+        ...persisted,
+        status: "PENDING" as const,
+        currentVersion: 0,
+        versions: [],
+        lastSubmittedAt: submittedAt
+      },
+      {...persisted, currentVersion: 0, versions: []},
+      {...persisted, versions: [{version: 1}, {version: 3}]},
+      {...persisted, currentVersion: 2, versions: [{version: 1}, {version: 1}]},
+      {...persisted, currentVersion: 2, versions: [{version: 2}, {version: 1}]},
+      {...persisted, currentVersion: 1, versions: [{version: 0}]},
+      {...persisted, currentVersion: 1, versions: [{version: 1.5}]}
+    ];
+
+    for (const state of invalidStates) {
+      const result = CollaboratorDocument.reconstitute(state);
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) expect(result.error.code).toBe("VALIDATION_ERROR");
+    }
+  });
 });

@@ -239,6 +239,20 @@ Excluir um colaborador ou tipo documental propaga a exclusão lógica aos víncu
 
 Índices únicos parciais protegem CPF, e-mail, código documental e a combinação ativa de colaborador com tipo.
 
+### Criação concorrente e reconstituição segura
+
+A criação de um vínculo não depende mais de uma leitura prévia do colaborador e do tipo documental. Na mesma transação que grava o vínculo, a API reserva cada pai ativo por uma atualização condicional (`deletedAt: null`) que incrementa uma cerca de escrita (`documentLinkFence`).
+
+Com isso, uma criação simultânea à exclusão lógica tem resultado serializável:
+
+- se a exclusão vencer, a reserva não encontra um pai ativo e a criação retorna a falha modelada correspondente;
+- se a criação vencer, a exclusão é repetida pela transação MongoDB quando necessário e propaga o soft delete ao vínculo recém-criado;
+- erros rotulados como transitórios pelo driver não são convertidos prematuramente em `Result`: chegam ao gerenciador transacional para que o retry seja aplicado.
+
+O teste de integração `collaborator-document-parent-race.spec.ts` executa os dois entrelaçamentos contra um MongoDB replica set real e confirma que nenhum vínculo ativo sobrevive à exclusão do colaborador ou do tipo documental.
+
+Também há validação na reconstituição da persistência. Um ciclo `PENDING` precisa ter versão `0`, histórico vazio e nenhuma submissão; um ciclo `SUBMITTED` precisa ter histórico positivo, contínuo e ordenado até `currentVersion`, além de `lastSubmittedAt`. Dados persistidos que violam essas invariantes são tratados como falha interna pelo mapeador, sem normalização silenciosa nem exposição de estado inconsistente.
+
 ## Execução local
 
 Requisitos:
@@ -276,7 +290,7 @@ As suítes cobrem quatro níveis:
 
 ### Cobertura de testes
 
-A execução local registrada abaixo alcançou **98,2%** de cobertura em statements e linhas, **95,3%** em branches e **99,14%** em funções. As lacunas visíveis concentram-se em caminhos de borda de controladores e na ramificação de um aggregate; elas ficam documentadas no próprio relatório, sem esconder o resultado atrás de uma métrica agregada.
+A última execução de `pnpm verify` alcançou **98,14%** de cobertura em statements e linhas, **95,13%** em branches e **99,17%** em funções, com **773 testes** aprovados. As lacunas visíveis concentram-se em caminhos de borda de controladores e na ramificação de um aggregate; elas ficam documentadas no próprio relatório, sem esconder o resultado atrás de uma métrica agregada.
 
 <div align="center">
   <img

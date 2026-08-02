@@ -13,47 +13,29 @@ describe("Parent status reader adapters", () => {
   it("maps collaborator lookup outcomes including catch and generic failures", async () => {
     const successInjector = {
       get: () => ({
-        application: {
-          get: {execute: vi.fn().mockResolvedValue(ok({deletedAt: null}))}
-        }
+        reserveActiveForDocumentLink: vi.fn().mockResolvedValue(ok(undefined))
       })
     };
     const deletedInjector = {
       get: () => ({
-        application: {
-          get: {
-            execute: vi
-              .fn()
-              .mockResolvedValue(ok({deletedAt: new Date("2026-07-30T12:00:00.000Z")}))
-          }
-        }
+        reserveActiveForDocumentLink: vi.fn().mockResolvedValue(err({code: "COLLABORATOR_DELETED"}))
       })
     };
     const notFoundInjector = {
       get: () => ({
-        application: {
-          get: {
-            execute: vi.fn().mockResolvedValue(err({code: "COLLABORATOR_NOT_FOUND"}))
-          }
-        }
+        reserveActiveForDocumentLink: vi
+          .fn()
+          .mockResolvedValue(err({code: "COLLABORATOR_NOT_FOUND"}))
       })
     };
     const unavailableInjector = {
       get: () => ({
-        application: {
-          get: {
-            execute: vi.fn().mockResolvedValue(err({code: "SERVICE_UNAVAILABLE"}))
-          }
-        }
+        reserveActiveForDocumentLink: vi.fn().mockResolvedValue(err({code: "SERVICE_UNAVAILABLE"}))
       })
     };
     const genericInjector = {
       get: () => ({
-        application: {
-          get: {
-            execute: vi.fn().mockResolvedValue(err({code: "VALIDATION_ERROR"}))
-          }
-        }
+        reserveActiveForDocumentLink: vi.fn().mockResolvedValue(err({code: "VALIDATION_ERROR"}))
       })
     };
     const throwingInjector = {
@@ -63,69 +45,71 @@ describe("Parent status reader adapters", () => {
     };
 
     await expect(
-      new CollaboratorStatusReaderAdapter(successInjector as never).read(collaboratorId)
+      new CollaboratorStatusReaderAdapter(successInjector as never).reserveActive(
+        collaboratorId,
+        {} as never
+      )
     ).resolves.toMatchObject({value: "ACTIVE"});
     await expect(
-      new CollaboratorStatusReaderAdapter(deletedInjector as never).read(collaboratorId)
+      new CollaboratorStatusReaderAdapter(deletedInjector as never).reserveActive(
+        collaboratorId,
+        {} as never
+      )
     ).resolves.toMatchObject({error: {code: "COLLABORATOR_DELETED"}});
     await expect(
-      new CollaboratorStatusReaderAdapter(notFoundInjector as never).read(collaboratorId)
+      new CollaboratorStatusReaderAdapter(notFoundInjector as never).reserveActive(
+        collaboratorId,
+        {} as never
+      )
     ).resolves.toMatchObject({error: {code: "COLLABORATOR_NOT_FOUND"}});
     await expect(
-      new CollaboratorStatusReaderAdapter(unavailableInjector as never).read(collaboratorId)
+      new CollaboratorStatusReaderAdapter(unavailableInjector as never).reserveActive(
+        collaboratorId,
+        {} as never
+      )
     ).resolves.toMatchObject({error: {code: "SERVICE_UNAVAILABLE"}});
     await expect(
-      new CollaboratorStatusReaderAdapter(genericInjector as never).read(collaboratorId)
+      new CollaboratorStatusReaderAdapter(genericInjector as never).reserveActive(
+        collaboratorId,
+        {} as never
+      )
     ).resolves.toMatchObject({error: {code: "INTERNAL_SERVER_ERROR"}});
     await expect(
-      new CollaboratorStatusReaderAdapter(throwingInjector as never).read(collaboratorId)
+      new CollaboratorStatusReaderAdapter(throwingInjector as never).reserveActive(
+        collaboratorId,
+        {} as never
+      )
     ).resolves.toMatchObject({error: {code: "SERVICE_UNAVAILABLE"}});
   });
 
   it("maps document type lookup outcomes including catch and generic failures", async () => {
     const successInjector = {
       get: () => ({
-        application: {
-          get: {execute: vi.fn().mockResolvedValue(ok({deletedAt: null}))}
-        }
+        reserveActiveForDocumentLink: vi.fn().mockResolvedValue(ok(undefined))
       })
     };
     const deletedInjector = {
       get: () => ({
-        application: {
-          get: {
-            execute: vi
-              .fn()
-              .mockResolvedValue(ok({deletedAt: new Date("2026-07-30T12:00:00.000Z")}))
-          }
-        }
+        reserveActiveForDocumentLink: vi
+          .fn()
+          .mockResolvedValue(err({code: "DOCUMENT_TYPE_DELETED"}))
       })
     };
     const notFoundInjector = {
       get: () => ({
-        application: {
-          get: {
-            execute: vi.fn().mockResolvedValue(err({code: "DOCUMENT_TYPE_NOT_FOUND"}))
-          }
-        }
+        reserveActiveForDocumentLink: vi
+          .fn()
+          .mockResolvedValue(err({code: "DOCUMENT_TYPE_NOT_FOUND"}))
       })
     };
     const unavailableInjector = {
       get: () => ({
-        application: {
-          get: {
-            execute: vi.fn().mockResolvedValue(err({code: "SERVICE_UNAVAILABLE"}))
-          }
-        }
+        reserveActiveForDocumentLink: vi.fn().mockResolvedValue(err({code: "SERVICE_UNAVAILABLE"}))
       })
     };
     const genericInjector = {
       get: () => ({
-        application: {
-          get: {
-            execute: vi.fn().mockResolvedValue(err({code: "VALIDATION_ERROR"}))
-          }
-        }
+        reserveActiveForDocumentLink: vi.fn().mockResolvedValue(err({code: "VALIDATION_ERROR"}))
       })
     };
     const throwingInjector = {
@@ -135,22 +119,40 @@ describe("Parent status reader adapters", () => {
     };
 
     await expect(
-      new DocumentTypeStatusReaderAdapter(successInjector as never).read(documentTypeId)
+      new DocumentTypeStatusReaderAdapter(successInjector as never).reserveActive(
+        documentTypeId,
+        {} as never
+      )
     ).resolves.toMatchObject({value: "ACTIVE"});
     await expect(
-      new DocumentTypeStatusReaderAdapter(deletedInjector as never).read(documentTypeId)
+      new DocumentTypeStatusReaderAdapter(deletedInjector as never).reserveActive(
+        documentTypeId,
+        {} as never
+      )
     ).resolves.toMatchObject({error: {code: "DOCUMENT_TYPE_DELETED"}});
     await expect(
-      new DocumentTypeStatusReaderAdapter(notFoundInjector as never).read(documentTypeId)
+      new DocumentTypeStatusReaderAdapter(notFoundInjector as never).reserveActive(
+        documentTypeId,
+        {} as never
+      )
     ).resolves.toMatchObject({error: {code: "DOCUMENT_TYPE_NOT_FOUND"}});
     await expect(
-      new DocumentTypeStatusReaderAdapter(unavailableInjector as never).read(documentTypeId)
+      new DocumentTypeStatusReaderAdapter(unavailableInjector as never).reserveActive(
+        documentTypeId,
+        {} as never
+      )
     ).resolves.toMatchObject({error: {code: "SERVICE_UNAVAILABLE"}});
     await expect(
-      new DocumentTypeStatusReaderAdapter(genericInjector as never).read(documentTypeId)
+      new DocumentTypeStatusReaderAdapter(genericInjector as never).reserveActive(
+        documentTypeId,
+        {} as never
+      )
     ).resolves.toMatchObject({error: {code: "INTERNAL_SERVER_ERROR"}});
     await expect(
-      new DocumentTypeStatusReaderAdapter(throwingInjector as never).read(documentTypeId)
+      new DocumentTypeStatusReaderAdapter(throwingInjector as never).reserveActive(
+        documentTypeId,
+        {} as never
+      )
     ).resolves.toMatchObject({error: {code: "SERVICE_UNAVAILABLE"}});
   });
 });

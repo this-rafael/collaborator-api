@@ -78,6 +78,17 @@ describe("ListPendingDocumentsQuery", () => {
     [{cpf: "123", limit: 20}, "cpf"],
     [{documentTypeCode: "aso", limit: 20}, "documentTypeCode"],
     [{cursor: "", limit: 20}, "cursor"],
+    [
+      {
+        limit: 20,
+        after: {
+          documentTypeId: "not-an-object-id",
+          collaboratorId: "66a64ab05bd7213b90d9b001",
+          id: "66a64ab05bd7213b90d9d001"
+        }
+      },
+      "cursor"
+    ],
     [{limit: 0}, "limit"],
     [{limit: 101}, "limit"],
     [{limit: 1.5}, "limit"]

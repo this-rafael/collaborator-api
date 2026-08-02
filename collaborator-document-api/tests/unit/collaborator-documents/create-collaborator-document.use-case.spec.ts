@@ -1,4 +1,5 @@
-import {describe, expect, it} from "vitest";
+import {err, ok} from "neverthrow";
+import {describe, expect, it, vi} from "vitest";
 
 import {linkPendingFixture} from "../../helpers/collaborator-document-fixtures.js";
 import {
@@ -12,6 +13,9 @@ const createUseCaseModule =
 
 const clock = {now: () => new Date("2026-07-30T12:00:00.000Z")};
 const ids = {next: () => "66a64ab05bd7213b90d9c001"};
+const transactions = {
+  execute: async (work: (context: never) => Promise<unknown>) => work({} as never)
+};
 const input = {
   collaboratorId: "66a64ab05bd7213b90d9b001",
   documentTypeId: "66a64ab05bd7213b90d9b010"
@@ -25,6 +29,7 @@ describe("CreateCollaboratorDocumentUseCase", () => {
       CollaboratorDocumentRepositoryStub.success(fixture),
       CollaboratorStatusReaderStub.success(),
       DocumentTypeStatusReaderStub.success(),
+      transactions as never,
       clock,
       ids
     ).execute(input);
@@ -47,6 +52,7 @@ describe("CreateCollaboratorDocumentUseCase", () => {
       CollaboratorDocumentRepositoryStub.success(),
       CollaboratorStatusReaderStub.notFound(),
       DocumentTypeStatusReaderStub.success(),
+      transactions as never,
       clock,
       ids
     ).execute(input);
@@ -61,6 +67,7 @@ describe("CreateCollaboratorDocumentUseCase", () => {
       CollaboratorDocumentRepositoryStub.success(),
       CollaboratorStatusReaderStub.deleted(),
       DocumentTypeStatusReaderStub.success(),
+      transactions as never,
       clock,
       ids
     ).execute(input);
@@ -75,6 +82,7 @@ describe("CreateCollaboratorDocumentUseCase", () => {
       CollaboratorDocumentRepositoryStub.success(),
       CollaboratorStatusReaderStub.success(),
       DocumentTypeStatusReaderStub.notFound(),
+      transactions as never,
       clock,
       ids
     ).execute(input);
@@ -89,6 +97,7 @@ describe("CreateCollaboratorDocumentUseCase", () => {
       CollaboratorDocumentRepositoryStub.success(),
       CollaboratorStatusReaderStub.success(),
       DocumentTypeStatusReaderStub.deleted(),
+      transactions as never,
       clock,
       ids
     ).execute(input);
@@ -103,6 +112,7 @@ describe("CreateCollaboratorDocumentUseCase", () => {
       CollaboratorDocumentRepositoryStub.duplicate(),
       CollaboratorStatusReaderStub.success(),
       DocumentTypeStatusReaderStub.success(),
+      transactions as never,
       clock,
       ids
     ).execute(input);
@@ -117,6 +127,7 @@ describe("CreateCollaboratorDocumentUseCase", () => {
       CollaboratorDocumentRepositoryStub.unavailable(),
       CollaboratorStatusReaderStub.success(),
       DocumentTypeStatusReaderStub.success(),
+      transactions as never,
       clock,
       ids
     ).execute(input);
@@ -131,6 +142,7 @@ describe("CreateCollaboratorDocumentUseCase", () => {
       CollaboratorDocumentRepositoryStub.success(),
       CollaboratorStatusReaderStub.success(),
       DocumentTypeStatusReaderStub.success(),
+      transactions as never,
       {
         now: () => {
           throw new Error("clock failed");
@@ -142,6 +154,7 @@ describe("CreateCollaboratorDocumentUseCase", () => {
       CollaboratorDocumentRepositoryStub.success(),
       CollaboratorStatusReaderStub.success(),
       DocumentTypeStatusReaderStub.success(),
+      transactions as never,
       clock,
       {next: () => "not-an-object-id"}
     ).execute(input);
@@ -152,5 +165,82 @@ describe("CreateCollaboratorDocumentUseCase", () => {
     }
     expect(domainFailure.isErr()).toBe(true);
     if (domainFailure.isErr()) expect(domainFailure.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  // BDD gap: LINK-CREATE and parent DELETE scenarios do not specify their interleaving.
+  it("reserves both active parents and inserts the link in the same transaction", async () => {
+    const module = await import(createUseCaseModule);
+    const fixture = linkPendingFixture();
+    const context = {};
+    const calls: string[] = [];
+    const transactions = {
+      execute: vi.fn(async (work: (received: object) => Promise<unknown>) => {
+        calls.push("transaction");
+        return work(context);
+      })
+    };
+    const collaborators = {
+      reserveActive: vi.fn(async (_id: string, received: object) => {
+        calls.push("collaborator");
+        expect(received).toBe(context);
+        return ok("ACTIVE" as const);
+      })
+    };
+    const documentTypes = {
+      reserveActive: vi.fn(async (_id: string, received: object) => {
+        calls.push("documentType");
+        expect(received).toBe(context);
+        return ok("ACTIVE" as const);
+      })
+    };
+    const repository = {
+      create: vi.fn(async (_document: unknown, received: object) => {
+        calls.push("create");
+        expect(received).toBe(context);
+        return ok(fixture);
+      })
+    };
+
+    const result = await new module.CreateCollaboratorDocumentUseCase(
+      repository as never,
+      collaborators as never,
+      documentTypes as never,
+      transactions as never,
+      clock,
+      ids
+    ).execute(input);
+
+    expect(result.isOk()).toBe(true);
+    expect(calls).toEqual(["transaction", "collaborator", "documentType", "create"]);
+    expect(transactions.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns transaction failures without reserving a parent or inserting a link", async () => {
+    const module = await import(createUseCaseModule);
+    const reserveActive = vi.fn();
+    const create = vi.fn();
+    const transactions = {
+      execute: vi.fn(async () =>
+        err({
+          kind: "application" as const,
+          code: "SERVICE_UNAVAILABLE" as const,
+          message: "MongoDB is unavailable."
+        })
+      )
+    };
+
+    const result = await new module.CreateCollaboratorDocumentUseCase(
+      {create} as never,
+      {reserveActive} as never,
+      {reserveActive} as never,
+      transactions as never,
+      clock,
+      ids
+    ).execute(input);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");
+    expect(reserveActive).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
   });
 });

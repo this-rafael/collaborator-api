@@ -7,6 +7,7 @@ import {Types, type Connection} from "mongoose";
 
 import type {TransactionContext} from "../../../../../shared/application/ports/transaction-manager.js";
 import {getMongoSession} from "../../../../../shared/infrastructure/persistence/mongodb/mongo-transaction-context.js";
+import {classifyMongoTransactionError} from "../../../../../shared/infrastructure/persistence/mongodb/mongo-transaction-manager.js";
 import {
   collaboratorDocumentsFailure,
   type CollaboratorDocumentsFailure
@@ -79,9 +80,10 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
   }
 
   create(
-    document: CollaboratorDocument
+    document: CollaboratorDocument,
+    context: TransactionContext
   ): Promise<Result<CollaboratorDocumentOutput, CollaboratorDocumentFailure>> {
-    return this.createSafely(document);
+    return this.createSafely(document, context);
   }
 
   findById(id: string): Promise<Result<CollaboratorDocumentOutput, CollaboratorDocumentFailure>> {
@@ -153,7 +155,8 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
         .collection("collaborator_documents")
         .updateMany({[field]: value, deletedAt: null}, {$set: {deletedAt}}, {session});
       return ok(undefined);
-    } catch {
+    } catch (error) {
+      rethrowTransientTransactionError(error);
       return err(
         collaboratorDocumentsFailure(
           "INTERNAL_SERVER_ERROR",
@@ -164,17 +167,19 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
   }
 
   private async createSafely(
-    document: CollaboratorDocument
+    document: CollaboratorDocument,
+    context: TransactionContext
   ): Promise<Result<CollaboratorDocumentOutput, CollaboratorDocumentFailure>> {
     try {
       const model = this.model();
       const mongoDocument = collaboratorDocumentToMongoDocument(document);
-      if (!model) return err(unavailable());
+      const session = getMongoSession(context);
+      if (!model || !session) return err(unavailable());
       if (mongoDocument.isErr()) return err(mongoDocument.error);
 
-      const created = await model.create(mongoDocument.value);
+      const [created] = await model.create([mongoDocument.value], {session});
       return collaboratorDocumentOutputFromMongoDocument(
-        created.toObject() as CollaboratorDocumentMongoRead
+        created!.toObject() as CollaboratorDocumentMongoRead
       );
     } catch (error) {
       return err(mapMongoFailure(error));
@@ -496,6 +501,10 @@ export class MongoCollaboratorDocumentRepository implements CollaboratorDocument
       return err(mapMongoFailure(error));
     }
   }
+}
+
+function rethrowTransientTransactionError(error: unknown): void {
+  if (classifyMongoTransactionError(error) === "TRANSIENT") throw error;
 }
 
 function buildListFilter(filters: CollaboratorDocumentListFilters): Record<string, unknown> {

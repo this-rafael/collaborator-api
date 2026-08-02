@@ -22,6 +22,7 @@ import {
   type CollaboratorFailure
 } from "../../../domain/errors/collaborator.failure.js";
 import {getMongoSession} from "../../../../../shared/infrastructure/persistence/mongodb/mongo-transaction-context.js";
+import {classifyMongoTransactionError} from "../../../../../shared/infrastructure/persistence/mongodb/mongo-transaction-manager.js";
 import {
   collaboratorFromMongoDocument,
   collaboratorToMongoDocument,
@@ -63,6 +64,13 @@ export class MongoCollaboratorRepository implements CollaboratorRepository {
     context: TransactionContext
   ): Promise<Result<boolean, CollaboratorFailure>> {
     return this.softDeleteActiveSafely(collaborator, context);
+  }
+
+  reserveActiveForDocumentLink(
+    id: string,
+    context: TransactionContext
+  ): Promise<Result<void, CollaboratorFailure>> {
+    return this.reserveActiveForDocumentLinkSafely(id, context);
   }
 
   private connection(): Connection | undefined {
@@ -212,6 +220,52 @@ export class MongoCollaboratorRepository implements CollaboratorRepository {
       );
       return ok(result.modifiedCount === 1);
     } catch (error) {
+      rethrowTransientTransactionError(error);
+      return err(mapMongoFailure(error));
+    }
+  }
+
+  private async reserveActiveForDocumentLinkSafely(
+    id: string,
+    context: TransactionContext
+  ): Promise<Result<void, CollaboratorFailure>> {
+    const model = this.model();
+    const session = getMongoSession(context);
+    if (!model || !session) return err(unavailable());
+    if (!Types.ObjectId.isValid(id)) {
+      return err(collaboratorDomainFailure("VALIDATION_ERROR", "collaborator id is invalid"));
+    }
+
+    try {
+      const reserved = await model.updateOne(
+        {_id: new Types.ObjectId(id), deletedAt: null},
+        {$inc: {documentLinkFence: 1}},
+        {session}
+      );
+      if (reserved.modifiedCount === 1) return ok(undefined);
+
+      const existing = await model.findById(id).select({deletedAt: 1}).session(session).lean();
+      if (!existing) {
+        return err(
+          collaboratorApplicationFailure("COLLABORATOR_NOT_FOUND", "Collaborator was not found.")
+        );
+      }
+      if (existing.deletedAt) {
+        return err(
+          collaboratorDomainFailure(
+            "COLLABORATOR_DELETED",
+            "Collaborator has already been deleted."
+          )
+        );
+      }
+      return err(
+        collaboratorApplicationFailure(
+          "INTERNAL_SERVER_ERROR",
+          "Collaborator link reservation could not be completed."
+        )
+      );
+    } catch (error) {
+      rethrowTransientTransactionError(error);
       return err(mapMongoFailure(error));
     }
   }
@@ -225,6 +279,10 @@ export class MongoCollaboratorRepository implements CollaboratorRepository {
       return undefined;
     }
   }
+}
+
+function rethrowTransientTransactionError(error: unknown): void {
+  if (classifyMongoTransactionError(error) === "TRANSIENT") throw error;
 }
 
 function mapMongoFailure(error: unknown): CollaboratorFailure {

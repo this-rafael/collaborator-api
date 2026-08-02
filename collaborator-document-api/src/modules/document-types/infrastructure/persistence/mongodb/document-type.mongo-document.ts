@@ -16,6 +16,8 @@ export type DocumentTypeMongoDocument = {
   updatedAt: Date;
   /** Instante do soft delete; `null` enquanto ativo. */
   deletedAt: Date | null;
+  /** Cerca interna para serializar criação de vínculos com exclusões lógicas. */
+  documentLinkFence?: number;
 };
 
 /** Esquema Mongoose para a coleção de tipos de documento. */
@@ -27,7 +29,8 @@ export const documentTypeMongoSchema = new Schema<DocumentTypeMongoDocument>(
     description: {type: String, default: null},
     createdAt: {type: Date, required: true},
     updatedAt: {type: Date, required: true},
-    deletedAt: {type: Date, default: null}
+    deletedAt: {type: Date, default: null},
+    documentLinkFence: {type: Number, default: 0, select: false}
   },
   {collection: "document_types", timestamps: false}
 );

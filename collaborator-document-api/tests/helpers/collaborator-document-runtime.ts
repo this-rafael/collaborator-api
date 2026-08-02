@@ -58,11 +58,17 @@ export type DocumentVersionGetInput = Readonly<{
 export type ParentStatus = "ACTIVE";
 
 export interface CollaboratorStatusReader {
-  read(collaboratorId: string): Promise<Result<ParentStatus, CollaboratorDocumentRuntimeFailure>>;
+  reserveActive(
+    collaboratorId: string,
+    context: object
+  ): Promise<Result<ParentStatus, CollaboratorDocumentRuntimeFailure>>;
 }
 
 export interface DocumentTypeStatusReader {
-  read(documentTypeId: string): Promise<Result<ParentStatus, CollaboratorDocumentRuntimeFailure>>;
+  reserveActive(
+    documentTypeId: string,
+    context: object
+  ): Promise<Result<ParentStatus, CollaboratorDocumentRuntimeFailure>>;
 }
 
 export interface CollaboratorDocumentRepository {
@@ -391,8 +397,9 @@ export class CollaboratorStatusReaderStub implements CollaboratorStatusReader {
     > = Promise.resolve(ok("ACTIVE"))
   ) {}
 
-  async read(
-    _collaboratorId: string
+  async reserveActive(
+    _collaboratorId: string,
+    _context: object
   ): Promise<Result<ParentStatus, CollaboratorDocumentRuntimeFailure>> {
     return this.result;
   }
@@ -429,8 +436,9 @@ export class DocumentTypeStatusReaderStub implements DocumentTypeStatusReader {
     > = Promise.resolve(ok("ACTIVE"))
   ) {}
 
-  async read(
-    _documentTypeId: string
+  async reserveActive(
+    _documentTypeId: string,
+    _context: object
   ): Promise<Result<ParentStatus, CollaboratorDocumentRuntimeFailure>> {
     return this.result;
   }

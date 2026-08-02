@@ -102,7 +102,7 @@ describe("MongoCollaboratorDocumentRepository", () => {
     )._unsafeUnwrap();
 
     const results = await Promise.all([
-      repository.create(document),
+      repository.create(document, {} as never),
       repository.findById("66a64ab05bd7213b90d9c001"),
       repository.list({filters: {lifecycle: "active"}, limit: 20}),
       repository.unlinkActive("66a64ab05bd7213b90d9c001", deletedAt, deletedAt)
@@ -112,6 +112,47 @@ describe("MongoCollaboratorDocumentRepository", () => {
       expect(result.isErr()).toBe(true);
       if (result.isErr()) expect(result.error.code).toBe("SERVICE_UNAVAILABLE");
     }
+  });
+
+  // BDD gap: LINK-CREATE does not yet assert that the insert belongs to the parent reservation transaction.
+  it("creates a document link with the supplied transaction session", async () => {
+    const document = (
+      await import("../../src/modules/collaborator-documents/domain/aggregates/collaborator-document.js")
+    ).CollaboratorDocument.createPendingCycle(
+      {
+        id: "66a64ab05bd7213b90d9c001",
+        collaboratorId,
+        documentTypeId: "66a64ab05bd7213b90d9b010"
+      },
+      deletedAt
+    )._unsafeUnwrap();
+    const create = vi.fn(async () => [
+      {
+        toObject: () => ({
+          _id: {toString: () => document.id},
+          collaboratorId,
+          documentTypeId: "66a64ab05bd7213b90d9b010",
+          status: "PENDING",
+          currentVersion: 0,
+          versions: [],
+          lastSubmittedAt: null,
+          linkedAt: deletedAt,
+          unlinkedAt: null,
+          createdAt: deletedAt,
+          updatedAt: deletedAt,
+          deletedAt: null
+        })
+      }
+    ]);
+    const repository = new MongoCollaboratorDocumentRepository({
+      get: () => ({readyState: 1, models: {CollaboratorDocument: {create}}})
+    } as unknown as MongooseService);
+    const context = transactionContext();
+
+    const result = await repository.create(document, context);
+
+    expect(result.isOk()).toBe(true);
+    expect(create).toHaveBeenCalledWith([expect.anything()], {session: expect.anything()});
   });
 
   it("treats invalid identifiers as not-found for get and unlink", async () => {

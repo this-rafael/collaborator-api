@@ -11,6 +11,9 @@ import {MongoObjectIdGenerator} from "../../shared/infrastructure/persistence/mo
 import {HmacCursorCodec} from "../../shared/infrastructure/security/hmac-cursor-codec.js";
 import {SystemClock} from "../../shared/infrastructure/time/system-clock.js";
 import {RateLimitMiddleware} from "../../shared/presentation/http/middlewares/rate-limit.middleware.js";
+import type {TransactionContext} from "../../shared/application/ports/transaction-manager.js";
+import type {Result} from "neverthrow";
+import type {DocumentTypeFailure} from "./domain/errors/document-type.failure.js";
 
 /** Configuração HTTP do módulo de tipos de documento. */
 export type DocumentTypesHttpSettings = Readonly<{
@@ -34,7 +37,7 @@ export class DocumentTypesRuntime {
   private cursorCodecInstance?: HmacCursorCodec;
 
   constructor(
-    repository: MongoDocumentTypeRepository,
+    private readonly repository: MongoDocumentTypeRepository,
     documents: CollaboratorDocumentsRuntime,
     transactions: MongoTransactionManager,
     private readonly clock: SystemClock,
@@ -54,6 +57,14 @@ export class DocumentTypesRuntime {
   get cursorCodec(): HmacCursorCodec {
     this.cursorCodecInstance ??= new HmacCursorCodec(this.settings.cursorHmacSecret, this.clock);
     return this.cursorCodecInstance;
+  }
+
+  /** Reserva um tipo ativo contra exclusão concorrente de um novo vínculo. */
+  reserveActiveForDocumentLink(
+    id: string,
+    context: TransactionContext
+  ): Promise<Result<void, DocumentTypeFailure>> {
+    return this.repository.reserveActiveForDocumentLink(id, context);
   }
 
   rateLimiter(operationId: string, kind: "read" | "write"): RateLimitMiddleware {

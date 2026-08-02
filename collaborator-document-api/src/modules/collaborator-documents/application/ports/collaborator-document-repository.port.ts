@@ -118,7 +118,8 @@ export interface CollaboratorDocumentRepository {
    * SERVICE_UNAVAILABLE ou INTERNAL_SERVER_ERROR.
    */
   create(
-    document: CollaboratorDocument
+    document: CollaboratorDocument,
+    context: TransactionContext
   ): Promise<Result<CollaboratorDocumentOutput, CollaboratorDocumentFailure>>;
   /**
    * Busca um vínculo documental por id.

@@ -5,6 +5,10 @@ import {err, ok, type Result} from "neverthrow";
 
 import type {Clock} from "../../../../shared/application/ports/clock.js";
 import type {IdGenerator} from "../../../../shared/application/ports/id-generator.js";
+import type {
+  TransactionFailure,
+  TransactionManager
+} from "../../../../shared/application/ports/transaction-manager.js";
 import {CollaboratorDocument} from "../../domain/aggregates/collaborator-document.js";
 import {
   collaboratorDocumentApplicationFailure,
@@ -44,6 +48,7 @@ export class CreateCollaboratorDocumentUseCase {
     private readonly repository: Pick<CollaboratorDocumentRepository, "create">,
     private readonly collaborators: CollaboratorStatusReader,
     private readonly documentTypes: DocumentTypeStatusReader,
+    private readonly transactions: TransactionManager,
     private readonly clock: Clock,
     private readonly ids: IdGenerator
   ) {}
@@ -59,35 +64,37 @@ export class CreateCollaboratorDocumentUseCase {
    */
   async execute(
     input: CreateCollaboratorDocumentInput
-  ): Promise<Result<CollaboratorDocumentOutput, CollaboratorDocumentFailure>> {
-    const collaborator = await this.collaborators.read(input.collaboratorId);
-    if (collaborator.isErr()) return err(collaborator.error);
+  ): Promise<Result<CollaboratorDocumentOutput, CollaboratorDocumentFailure | TransactionFailure>> {
+    return this.transactions.execute(async (context) => {
+      const collaborator = await this.collaborators.reserveActive(input.collaboratorId, context);
+      if (collaborator.isErr()) return err(collaborator.error);
 
-    const documentType = await this.documentTypes.read(input.documentTypeId);
-    if (documentType.isErr()) return err(documentType.error);
+      const documentType = await this.documentTypes.reserveActive(input.documentTypeId, context);
+      if (documentType.isErr()) return err(documentType.error);
 
-    let id: string;
-    let now: Date;
-    try {
-      id = this.ids.next();
-      now = this.clock.now();
-    } catch {
-      return err(
-        collaboratorDocumentApplicationFailure(
-          "INTERNAL_SERVER_ERROR",
-          "Collaborator document creation dependencies failed."
-        )
+      let id: string;
+      let now: Date;
+      try {
+        id = this.ids.next();
+        now = this.clock.now();
+      } catch {
+        return err(
+          collaboratorDocumentApplicationFailure(
+            "INTERNAL_SERVER_ERROR",
+            "Collaborator document creation dependencies failed."
+          )
+        );
+      }
+
+      const document = CollaboratorDocument.createPendingCycle(
+        {id, collaboratorId: input.collaboratorId, documentTypeId: input.documentTypeId},
+        now
       );
-    }
+      if (document.isErr()) return err(document.error);
 
-    const document = CollaboratorDocument.createPendingCycle(
-      {id, collaboratorId: input.collaboratorId, documentTypeId: input.documentTypeId},
-      now
-    );
-    if (document.isErr()) return err(document.error);
-
-    const created = await this.repository.create(document.value);
-    if (created.isErr()) return err(created.error);
-    return ok(created.value);
+      const created = await this.repository.create(document.value, context);
+      if (created.isErr()) return err(created.error);
+      return ok(created.value);
+    });
   }
 }
