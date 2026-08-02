@@ -2,6 +2,7 @@ import {$log} from "@tsed/logger";
 import {PlatformExpress} from "@tsed/platform-express";
 
 import type {AppEnv} from "./config/env.js";
+import {shutdownOtel} from "./observability/otel-sdk.js";
 import {Server} from "./Server.js";
 
 type BootstrapEnv = Pick<AppEnv, "nodeEnv" | "port" | "mongodbUri" | "logLevel"> &
@@ -88,4 +89,5 @@ export async function startApplication(env: BootstrapEnv) {
  */
 export async function stopApplication(platform: {stop: () => Promise<unknown>}) {
   await platform.stop();
+  await shutdownOtel();
 }

@@ -4,7 +4,7 @@ services:
     container_name: collaborator-document-mongodb
     command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - mongodb_data:/data/db
     healthcheck:
@@ -70,18 +70,85 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: collaborator-document-api
+    # Prefer healthy Mongo (replica set already initialized by mongodb-init).
+    # podman-compose drops one-shot containers, so service_completed_successfully
+    # on mongodb-init breaks API startup.
     depends_on:
-      mongodb-init:
-        condition: service_completed_successfully
+      mongodb:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3000
       MONGODB_URI: mongodb://mongodb:27017/collaborator_documents?replicaSet=rs0&directConnection=true
+      CURSOR_HMAC_SECRET: ${CURSOR_HMAC_SECRET:-change-this-development-secret-to-at-least-32-bytes}
       LOG_LEVEL: info
+      OTEL_ENABLED: "true"
+      OTEL_SERVICE_NAME: collaborator-document-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
     ports:
-      - "3000:3000"
+      - "3010:3000"
     profiles:
       - full
+
+  tempo:
+    image: docker.io/grafana/tempo:2.6.1
+    container_name: collaborator-document-tempo
+    command: ["-config.file=/etc/tempo.yml"]
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo.yml:ro,Z
+    ports:
+      - "3210:3200"
+    profiles:
+      - observability
+
+  otel-collector:
+    image: docker.io/otel/opentelemetry-collector-contrib:0.120.0
+    container_name: collaborator-document-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro,Z
+    ports:
+      - "14317:4317"
+      - "14318:4318"
+      - "18889:8889"
+    depends_on:
+      - tempo
+    profiles:
+      - observability
+
+  prometheus:
+    image: docker.io/prom/prometheus:v3.2.1
+    container_name: collaborator-document-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+    ports:
+      - "9091:9090"
+    depends_on:
+      - otel-collector
+    profiles:
+      - observability
+
+  grafana:
+    image: docker.io/grafana/grafana:11.4.0
+    container_name: collaborator-document-grafana
+    ports:
+      - "3011:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_DEFAULT_THEME: dark
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro,Z
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro,Z
+    depends_on:
+      - prometheus
+      - tempo
+    profiles:
+      - observability
 
   sonarqube:
     image: docker.io/library/sonarqube:community
@@ -123,6 +190,7 @@ services:
 
 volumes:
   mongodb_data:
+  grafana_data:
   sonarqube_data:
   sonarqube_extensions:
   sonarqube_logs:

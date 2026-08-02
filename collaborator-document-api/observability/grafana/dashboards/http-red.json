@@ -1,0 +1,230 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {"type": "grafana", "uid": "-- Grafana --"},
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Explore Tempo",
+      "tooltip": "Open Tempo Explore",
+      "type": "link",
+      "url": "/explore?orgId=1&left=%7B%22datasource%22:%22tempo%22,%22queries%22:%5B%7B%22queryType%22:%22traceqlSearch%22%7D%5D%7D"
+    }
+  ],
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum by (http_route, http_response_status_code) (rate(http_server_request_duration_seconds_count{service_name=\"collaborator-document-api\"}[5m])) or sum by (http_route, http_status_code) (rate(http_server_duration_milliseconds_count{service_name=\"collaborator-document-api\"}[5m])) or sum by (http_route, http_status_code) (rate(http_server_duration_count{service_name=\"collaborator-document-api\"}[5m]))",
+          "legendFormat": "{{http_route}} {{http_response_status_code}}{{http_status_code}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP request rate (R)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket{service_name=\"collaborator-document-api\"}[5m]))) or histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_duration_milliseconds_bucket{service_name=\"collaborator-document-api\"}[5m])) / 1000) or histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_duration_bucket{service_name=\"collaborator-document-api\"}[5m])))",
+          "legendFormat": "p95 {{http_route}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket{service_name=\"collaborator-document-api\"}[5m]))) or histogram_quantile(0.50, sum by (le, http_route) (rate(http_server_duration_bucket{service_name=\"collaborator-document-api\"}[5m])))",
+          "legendFormat": "p50 {{http_route}}",
+          "refId": "B"
+        }
+      ],
+      "title": "HTTP latency (D) — p50 / p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"collaborator-document-api\", http_response_status_code=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_request_duration_seconds_count{service_name=\"collaborator-document-api\"}[5m])), 1e-9) or sum(rate(http_server_duration_count{service_name=\"collaborator-document-api\", http_status_code=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_duration_count{service_name=\"collaborator-document-api\"}[5m])), 1e-9)",
+          "legendFormat": "5xx ratio",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"collaborator-document-api\", http_response_status_code=~\"4..\"}[5m])) / clamp_min(sum(rate(http_server_request_duration_seconds_count{service_name=\"collaborator-document-api\"}[5m])), 1e-9) or sum(rate(http_server_duration_count{service_name=\"collaborator-document-api\", http_status_code=~\"4..\"}[5m])) / clamp_min(sum(rate(http_server_duration_count{service_name=\"collaborator-document-api\"}[5m])), 1e-9)",
+          "legendFormat": "4xx ratio",
+          "refId": "B"
+        }
+      ],
+      "title": "HTTP error ratio (E)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum by (http_route) (rate(http_server_request_duration_seconds_count{service_name=\"collaborator-document-api\", http_route=~\"/api/v1/.*\"}[5m])) or sum by (http_route) (rate(http_server_duration_count{service_name=\"collaborator-document-api\", http_route=~\"/api/v1/.*\"}[5m]))",
+          "legendFormat": "{{http_route}}",
+          "refId": "A"
+        }
+      ],
+      "title": "API route rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "id": 5,
+      "targets": [
+        {
+          "expr": "v8js_memory_heap_used{service_name=\"collaborator-document-api\"} or process_runtime_nodejs_memory_heap_used_bytes{service_name=\"collaborator-document-api\"}",
+          "legendFormat": "heap used",
+          "refId": "A"
+        },
+        {
+          "expr": "v8js_memory_heap_total{service_name=\"collaborator-document-api\"} or process_runtime_nodejs_memory_heap_total_bytes{service_name=\"collaborator-document-api\"}",
+          "legendFormat": "heap total",
+          "refId": "B"
+        }
+      ],
+      "title": "Node.js heap",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "id": 6,
+      "targets": [
+        {
+          "expr": "nodejs_eventloop_delay_p99{service_name=\"collaborator-document-api\"} or process_runtime_nodejs_event_loop_delay_p99_seconds{service_name=\"collaborator-document-api\"}",
+          "legendFormat": "p99",
+          "refId": "A"
+        },
+        {
+          "expr": "nodejs_eventloop_delay_p50{service_name=\"collaborator-document-api\"} or process_runtime_nodejs_event_loop_delay_p50_seconds{service_name=\"collaborator-document-api\"}",
+          "legendFormat": "p50",
+          "refId": "B"
+        }
+      ],
+      "title": "Event loop delay",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["collaborator-document-api", "opentelemetry", "red"],
+  "templating": {"list": []},
+  "time": {"from": "now-30m", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "HTTP RED",
+  "uid": "collaborator-document-http-red",
+  "version": 1
+}

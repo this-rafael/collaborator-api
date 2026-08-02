@@ -1,5 +1,8 @@
 import type {Request, Response, NextFunction} from "express";
+import {isSpanContextValid, trace} from "@opentelemetry/api";
 import {$log} from "@tsed/logger";
+
+import {getRequestTraceId} from "./request-id.middleware.js";
 
 const CPF_PATTERN = /\d{3}\.?\d{3}\.?\d{3}-?\d{2}/g;
 
@@ -48,7 +51,9 @@ function maskEmails(value: string): string {
  *
  * Adiciona o header `X-Observability-Route` (com dados
  * sensíveis mascarados) e loga métricas de duração,
- * status e resultado ao finalizar a resposta.
+ * status e resultado ao finalizar a resposta. Quando há
+ * span OTel ativo, correlaciona `request.id` e inclui
+ * `otelTraceId` / `otelSpanId` no log estruturado.
  */
 export function requestObservabilityMiddleware(
   req: Request,
@@ -57,6 +62,19 @@ export function requestObservabilityMiddleware(
 ): void {
   const normalizedRoute = maskSensitive(req.path);
   const startedAt = process.hrtime.bigint();
+  const requestId = getRequestTraceId(req);
+  const span = trace.getActiveSpan();
+  let otelTraceId: string | undefined;
+  let otelSpanId: string | undefined;
+
+  if (span) {
+    const context = span.spanContext();
+    if (isSpanContextValid(context)) {
+      span.setAttribute("request.id", requestId);
+      otelTraceId = context.traceId;
+      otelSpanId = context.spanId;
+    }
+  }
 
   res.setHeader("X-Observability-Route", normalizedRoute);
   res.once("finish", () => {
@@ -70,7 +88,9 @@ export function requestObservabilityMiddleware(
       status: res.statusCode,
       durationMs: Math.round(durationMs * 100) / 100,
       operationId,
-      result: getResultLabel(res.statusCode)
+      result: getResultLabel(res.statusCode),
+      requestId,
+      ...(otelTraceId ? {otelTraceId, otelSpanId} : {})
     });
   });
 

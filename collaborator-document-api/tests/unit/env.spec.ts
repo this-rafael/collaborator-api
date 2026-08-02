@@ -20,8 +20,38 @@ describe("Environment configuration", () => {
       logLevel: "debug",
       cors: {allowlist: []},
       rateLimit: {readLimit: 60, writeLimit: 20, windowMs: 60000},
-      openapi: {path: "/openapi.json", specVersion: "3.1.0"}
+      openapi: {path: "/openapi.json", specVersion: "3.1.0"},
+      otel: {
+        enabled: false,
+        serviceName: "collaborator-document-api",
+        exporterOtlpEndpoint: "http://localhost:14318"
+      }
     });
+  });
+
+  it("enables OpenTelemetry with a valid OTLP endpoint", () => {
+    expect(
+      loadEnv({
+        ...validEnv,
+        OTEL_ENABLED: "true",
+        OTEL_SERVICE_NAME: "api-test",
+        OTEL_EXPORTER_OTLP_ENDPOINT: "http://collector:4318/"
+      }).otel
+    ).toEqual({
+      enabled: true,
+      serviceName: "api-test",
+      exporterOtlpEndpoint: "http://collector:4318"
+    });
+  });
+
+  it("rejects an invalid OTLP endpoint when OpenTelemetry is enabled", () => {
+    expect(() =>
+      loadEnv({
+        ...validEnv,
+        OTEL_ENABLED: "true",
+        OTEL_EXPORTER_OTLP_ENDPOINT: "not-a-url"
+      })
+    ).toThrow("OTEL_EXPORTER_OTLP_ENDPOINT must be a valid http(s) URL");
   });
 
   it("reports every missing required value without exposing values", () => {

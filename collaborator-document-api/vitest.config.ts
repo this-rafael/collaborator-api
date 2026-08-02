@@ -6,7 +6,7 @@ export default defineConfig({
     swc.vite({
       jsc: {
         parser: {syntax: "typescript", decorators: true},
-        transform: {legacyDecorator: true, decoratorMetadata: true},
+        transform: {legacyDecorator: true, decoratorMetadata: true, useDefineForClassFields: false},
         keepClassNames: true,
         target: "es2024"
       },

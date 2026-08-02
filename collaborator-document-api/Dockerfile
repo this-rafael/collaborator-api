@@ -31,4 +31,4 @@ EXPOSE 3000
 
 USER node
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "--import", "./dist/instrumentation.js", "dist/index.js"]

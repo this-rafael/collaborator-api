@@ -24,16 +24,51 @@ docker compose up -d mongodb mongodb-init
 
 O serviço `mongodb-init` inicializa o replica set `rs0` e encerra. O Mongo fica saudável quando o healthcheck passa.
 
-URI padrão:
+URI padrão (host → container; porta remapeada para coexistir com outros stacks):
 
 ```text
-mongodb://localhost:27017/collaborator_documents?replicaSet=rs0
+mongodb://localhost:27018/collaborator_documents?replicaSet=rs0
 ```
 
-Para subir API + Mongo juntos:
+Para subir API + Mongo juntos (API em `http://localhost:3010`):
 
 ```bash
 docker compose --profile full up --build
+```
+
+## OpenTelemetry (traces + metrics)
+
+Stack local (Collector + Tempo + Prometheus + Grafana), opt-in via `OTEL_ENABLED=true`. Portas host remapeadas para não conflitar com stacks vizinhos:
+
+| Serviço           | Host    | Container |
+| ----------------- | ------- | --------- |
+| MongoDB           | `27018` | `27017`   |
+| API (`full`)      | `3010`  | `3000`    |
+| Grafana           | `3011`  | `3000`    |
+| Tempo             | `3210`  | `3200`    |
+| OTLP gRPC         | `14317` | `4317`    |
+| OTLP HTTP         | `14318` | `4318`    |
+| Collector metrics | `18889` | `8889`    |
+| Prometheus        | `9091`  | `9090`    |
+
+```bash
+docker compose --profile observability up -d
+OTEL_ENABLED=true OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:14318 pnpm dev
+```
+
+- OTLP HTTP: `http://localhost:14318` (`OTEL_EXPORTER_OTLP_ENDPOINT`; default no código)
+- Grafana: [http://localhost:3011](http://localhost:3011) (`admin` / `admin`) — dashboard **HTTP RED**
+- Tempo: [http://localhost:3210](http://localhost:3210)
+- Prometheus: [http://localhost:9091](http://localhost:9091)
+
+O contrato `X-Request-Id` / `traceId` em Problem Details permanece inalterado; o log `HTTP_REQUEST` inclui `requestId` e, quando houver span ativo, `otelTraceId` / `otelSpanId`.
+
+Para API em container com a stack (API em `:3010`):
+
+```bash
+docker compose --profile full --profile observability up --build
+# aguardar /health/ready em :3010
+node scripts/otel-load.mjs   # seed obrigatório + carga; BASE_URL default http://localhost:3010
 ```
 
 ## Desenvolvimento
@@ -117,7 +152,7 @@ Isso roda `test:coverage` (gera `coverage/lcov.info`), espera o status `UP` e ex
 
 ## Git hooks (Lefthook)
 
-A configuração ativa fica na **raiz do repositório**: [`lefthook.yml`](../lefthook.yml).
+A configuração ativa fica na **raiz do repositório**: `[lefthook.yml](../lefthook.yml)`.
 
 Após `pnpm install` neste pacote, o `prepare` registra o hook `pre-commit`. Em todo commit com arquivos sob `collaborator-document-api/`, o Prettier formata os staged files (`--write` + re-stage) e, em seguida, rodam em paralelo `typecheck`, `lint` e `test:unit`.
 
@@ -136,5 +171,6 @@ pnpm hooks:pre-commit
 - TypeDoc (`pnpm docs:api`)
 - SonarQube Community + Scanner (Compose profile `quality`)
 - Docker Compose com MongoDB replica set (`rs0`)
+- OpenTelemetry Collector + Tempo + Prometheus + Grafana (profile `observability`)
 
 Domínio, Mongoose, Problem Details e demais diferenciais entram nas fases seguintes do ROADMAP.

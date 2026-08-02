@@ -1,3 +1,5 @@
+import {parseOtelEnv, type OtelConfig} from "../observability/otel-config.js";
+
 /**
  * Valores válidos para a variável de ambiente `NODE_ENV`.
  */
@@ -69,6 +71,8 @@ export type AppEnv = Readonly<{
   rateLimit: RateLimitConfig;
   /** Configuração do endpoint OpenAPI. */
   openapi: OpenApiConfig;
+  /** Configuração OpenTelemetry (opt-in via `OTEL_ENABLED`). */
+  otel: OtelConfig;
 }>;
 
 /**
@@ -162,6 +166,7 @@ function validateRateLimits(
  * - `LOG_LEVEL` deve estar em `logLevels`.
  * - `RATE_LIMIT_GET` e `RATE_LIMIT_WRITE` devem ser inteiros não negativos.
  * - `RATE_LIMIT_WINDOW_MS` deve ser \>= 1000.
+ * - Se `OTEL_ENABLED=true`, `OTEL_EXPORTER_OTLP_ENDPOINT` deve ser http(s) válido.
  *
  * @param source - Fonte das variáveis (default `process.env`).
  * @returns Configuração tipada e imutável da aplicação (`AppEnv`).
@@ -207,6 +212,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
 
   const {readLimit, writeLimit, windowMs} = validateRateLimits(source, issues);
   const rawOpenApiPath = optional(source, "OPENAPI_PATH", "/openapi.json");
+  const otel = parseOtelEnv(source, issues);
 
   if (issues.length > 0) {
     throw new EnvironmentValidationError(issues);
@@ -229,6 +235,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     openapi: {
       path: rawOpenApiPath,
       specVersion: "3.1.0"
-    }
+    },
+    otel
   };
 }
